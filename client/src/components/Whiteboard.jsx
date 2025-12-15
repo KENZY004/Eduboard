@@ -57,7 +57,7 @@ const Whiteboard = () => {
 
     // Socket Init
     useEffect(() => {
-        const newSocket = io('http://localhost:5000');
+        const newSocket = io(import.meta.env.VITE_API_BASE_URL);
         setSocket(newSocket);
         newSocket.emit('join-room', roomId);
 
@@ -1154,7 +1154,7 @@ const Whiteboard = () => {
         formData.append('image', file);
 
         try {
-            const res = await axios.post('http://localhost:5000/api/upload', formData, {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
