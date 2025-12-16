@@ -11,13 +11,18 @@ const PrivateRoute = ({ children }) => {
   return token ? children : <Navigate to="/login" />;
 };
 
+const PublicRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? <Navigate to="/" /> : children;
+};
+
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-purple-500/30">
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
           <Route
             path="/"
             element={
