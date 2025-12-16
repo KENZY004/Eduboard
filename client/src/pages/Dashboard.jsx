@@ -105,28 +105,6 @@ const Dashboard = () => {
                     </form>
                 </div>
 
-                {/* Decor / Info Tile (Small) */}
-                <div className="surface-card rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div>
-                        <div className="flex justify-between items-start mb-4">
-                            <BsStars className="text-purple-400 text-xl" />
-                            <span className="text-xs font-mono text-slate-500">v2.0.0</span>
-                        </div>
-                        <h4 className="text-white font-bold text-lg">Pro Features Active</h4>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                        <div className="bg-white/5 rounded-lg p-3 text-center border border-white/5">
-                            <FaGlobe className="mx-auto text-slate-400 mb-1" />
-                            <span className="text-xs text-slate-500">Global</span>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-3 text-center border border-white/5">
-                            <FaClock className="mx-auto text-slate-400 mb-1" />
-                            <span className="text-xs text-slate-500">Real-time</span>
-                        </div>
-                    </div>
-                </div>
 
             </motion.div>
         </div>

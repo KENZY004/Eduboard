@@ -22,9 +22,24 @@ body,
   font-family: var(--font-inter);
   background-color: var(--bg-depth);
   color: var(--text-primary);
-  overflow-x: hidden;
+  overflow: hidden;
   letter-spacing: -0.015em;
   /* Tighter tracking for "engineered" look */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+html,
+body,
+#root {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* Aurora Background */

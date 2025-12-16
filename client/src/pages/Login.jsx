@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaLock, FaEnvelope } from 'react-icons/fa';
-import { BsLightningChargeFill, BsStars } from 'react-icons/bs';
+import { FaArrowRight, FaLock, FaEnvelope, FaPencilAlt, FaUsers, FaInfinity } from 'react-icons/fa';
+import { BsLightningChargeFill } from 'react-icons/bs';
+import { HiOutlineSparkles } from 'react-icons/hi';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -27,14 +28,14 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b]">
 
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
+                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10"
             >
                 <div>
                     <motion.div
@@ -105,7 +106,7 @@ const Login = () => {
                         type="submit"
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
                     >
-                        Sign In Details <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        Sign In <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                     </motion.button>
                 </form>
 
@@ -117,43 +118,78 @@ const Login = () => {
                 </p>
             </motion.div>
 
-            {/* Right: Abstract Composition */}
-            <div className="hidden lg:flex relative items-center justify-center bg-[#020617] overflow-hidden">
-                {/* Expanding Rings */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[800px] h-[800px] border border-white/5 rounded-full absolute animate-[spin_60s_linear_infinite]"></div>
-                    <div className="w-[600px] h-[600px] border border-white/5 rounded-full absolute animate-[spin_40s_linear_infinite_reverse]"></div>
-                    <div className="w-[400px] h-[400px] border border-white/5 rounded-full absolute animate-[spin_20s_linear_infinite]"></div>
-                </div>
+            {/* Right: Education Theme */}
+            <div className="hidden lg:flex relative items-center justify-center overflow-hidden">
+                {/* Subtle Grid Background */}
+                <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: `
+                        linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '60px 60px'
+                }}></div>
 
-                <div className="relative z-10 w-full max-w-md">
+                {/* Gradient Orbs */}
+                <div className="absolute top-20 right-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+                <div className="relative z-10 w-full max-w-lg px-8">
                     <motion.div
-                        animate={{ y: [0, -20, 0] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.8 }}
+                        className="space-y-6"
                     >
-                        {/* Glass Card */}
-                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl relative z-20">
-                            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl h-48 w-full mb-6 flex items-center justify-center relative overflow-hidden">
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
-                                <BsStars className="text-6xl text-white animate-pulse" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Unleash Creativity</h3>
-                            <p className="text-slate-400">
-                                Join thousands of educators and students transforming the way they learn with our infinite canvas.
-                            </p>
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-3 gap-4 mb-8">
+                            <motion.div
+                                whileHover={{ y: -5 }}
+                                className="backdrop-blur-xl bg-white/5 border border-white/10 p-5 rounded-2xl text-center"
+                            >
+                                <div className="text-3xl font-bold text-white mb-1">∞</div>
+                                <div className="text-xs text-slate-400 uppercase tracking-wider">Canvas</div>
+                            </motion.div>
+                            <motion.div
+                                whileHover={{ y: -5 }}
+                                className="backdrop-blur-xl bg-white/5 border border-white/10 p-5 rounded-2xl text-center"
+                            >
+                                <div className="text-3xl font-bold text-indigo-400 mb-1">24/7</div>
+                                <div className="text-xs text-slate-400 uppercase tracking-wider">Access</div>
+                            </motion.div>
+                            <motion.div
+                                whileHover={{ y: -5 }}
+                                className="backdrop-blur-xl bg-white/5 border border-white/10 p-5 rounded-2xl text-center"
+                            >
+                                <div className="text-3xl font-bold text-purple-400 mb-1">RT</div>
+                                <div className="text-xs text-slate-400 uppercase tracking-wider">Sync</div>
+                            </motion.div>
                         </div>
 
-                        {/* Floating Badge */}
+                        {/* Education-themed highlights */}
                         <motion.div
-                            animate={{ y: [0, 15, 0], x: [0, 10, 0] }}
-                            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                            className="absolute -top-10 -right-10 bg-[#0f172a] p-4 rounded-2xl border border-white/10 shadow-xl z-30"
+                            whileHover={{ scale: 1.02 }}
+                            className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl"
                         >
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
-                                <span className="text-white font-mono text-sm">System Online</span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-lg">
+                                    📚
+                                </div>
+                                <h3 className="text-white font-semibold">For Learning</h3>
                             </div>
+                            <p className="text-slate-400 text-sm">Visual thinking space for students and educators</p>
+                        </motion.div>
+
+                        <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl"
+                        >
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg">
+                                    ✏️
+                                </div>
+                                <h3 className="text-white font-semibold">Interactive Canvas</h3>
+                            </div>
+                            <p className="text-slate-400 text-sm">Draw, annotate, and collaborate in real-time</p>
                         </motion.div>
                     </motion.div>
                 </div>
