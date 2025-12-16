@@ -10,10 +10,29 @@ router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
+        // Validate input
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                message: 'Username, email, and password are required',
+                error: 'MISSING_FIELDS'
+            });
+        }
+
+        // Validate password length
+        if (password.length < 6) {
+            return res.status(400).json({
+                message: 'Password must be at least 6 characters long',
+                error: 'PASSWORD_TOO_SHORT'
+            });
+        }
+
         // Check if user exists
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
-            return res.status(400).json({ message: 'User with that email or username already exists' });
+            return res.status(400).json({
+                message: 'User with that email or username already exists',
+                error: 'USER_EXISTS'
+            });
         }
 
         // Hash password
@@ -32,9 +51,22 @@ router.post('/register', async (req, res) => {
         // Create token
         const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
-        res.status(201).json({ token, user: { id: savedUser._id, username: savedUser.username, email: savedUser.email, role: savedUser.role } });
+        res.status(201).json({
+            token,
+            user: {
+                id: savedUser._id,
+                username: savedUser.username,
+                email: savedUser.email,
+                role: savedUser.role
+            }
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Registration error:', err);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 
@@ -43,24 +75,51 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({
+                message: 'Email and password are required',
+                error: 'MISSING_CREDENTIALS'
+            });
+        }
+
         // Check user
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials',
+                error: 'INVALID_CREDENTIALS'
+            });
         }
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials',
+                error: 'INVALID_CREDENTIALS'
+            });
         }
 
         // Create token
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
 
-        res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+            }
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Login error:', err);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 
