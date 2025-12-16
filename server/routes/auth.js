@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
         // Create token
         const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
-        res.status(201).json({ token, user: { id: savedUser._id, username: savedUser.username, email: savedUser.email } });
+        res.status(201).json({ token, user: { id: savedUser._id, username: savedUser.username, email: savedUser.email, role: savedUser.role } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
         // Create token
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
 
-        res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+        res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

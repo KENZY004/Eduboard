@@ -7,8 +7,10 @@ import { motion } from 'framer-motion';
 
 const Dashboard = () => {
     const [roomId, setRoomId] = useState('');
+    const [copiedLink, setCopiedLink] = useState(false);
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
+    const isTeacher = user?.role === 'teacher';
 
     const createMeeting = () => {
         const id = uuidv4();
@@ -42,7 +44,7 @@ const Dashboard = () => {
                 <div className="flex items-center gap-6">
                     <div className="text-right hidden sm:block">
                         <p className="text-white font-medium">{user?.username}</p>
-                        <p className="text-xs text-slate-500 font-mono">WORKSPACE: PERSONAL</p>
+                        <p className="text-xs text-slate-500 font-mono uppercase">{user?.role || 'Student'}</p>
                     </div>
                     <button
                         onClick={handleLogout}
@@ -58,30 +60,47 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 h-[600px]"
+                className={`grid grid-cols-1 ${isTeacher ? 'md:grid-cols-3 grid-rows-2' : 'md:grid-cols-1'} gap-6 ${isTeacher ? 'h-[600px]' : 'h-auto'}`}
             >
-                {/* Main Action: New Board (Large) */}
-                <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    className="md:col-span-2 md:row-span-2 surface-card rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden group cursor-pointer"
-                    onClick={createMeeting}
-                >
-                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
+                {/* Main Action: New Board (Large) - Teachers Only */}
+                {isTeacher && (
+                    <motion.div
+                        whileHover={{ scale: 1.01 }}
+                        className="md:col-span-2 md:row-span-2 surface-card rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden group cursor-pointer"
+                        onClick={createMeeting}
+                    >
+                        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
 
-                    <div className="relative z-10">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 text-indigo-400 mb-6 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                            <FaPlus className="text-2xl" />
+                        <div className="relative z-10">
+                            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 text-indigo-400 mb-6 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                                <FaPlus className="text-2xl" />
+                            </div>
+                            <h2 className="text-5xl font-bold text-white mb-4 tracking-tight">Create New <br /> Whiteboard</h2>
+                            <p className="text-slate-400 text-lg max-w-md font-light">
+                                Start a new session on an infinite high-performance canvas. Optimized for teaching and sketching.
+                            </p>
                         </div>
-                        <h2 className="text-5xl font-bold text-white mb-4 tracking-tight">Create New <br /> Whiteboard</h2>
-                        <p className="text-slate-400 text-lg max-w-md font-light">
-                            Start a new session on an infinite high-performance canvas. Optimized for teaching and sketching.
+
+                        <div className="flex items-center gap-3 text-indigo-400 font-medium mt-8 group-hover:translate-x-2 transition-transform">
+                            Launch Editor <FaRocket />
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Student Message - Students Only */}
+                {!isTeacher && (
+                    <div className="surface-card rounded-3xl p-8 mb-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+                                <FaSignInAlt className="text-cyan-400 text-xl" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white">Student Access</h3>
+                        </div>
+                        <p className="text-slate-400">
+                            As a student, you can join whiteboards shared by your teachers using the room code below.
                         </p>
                     </div>
-
-                    <div className="flex items-center gap-3 text-indigo-400 font-medium mt-8 group-hover:translate-x-2 transition-transform">
-                        Launch Editor <FaRocket />
-                    </div>
-                </motion.div>
+                )}
 
                 {/* Secondary Action: Join (Medium) */}
                 <div className="surface-card rounded-3xl p-8 flex flex-col justify-center relative overflow-hidden">

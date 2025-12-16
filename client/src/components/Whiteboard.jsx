@@ -31,6 +31,7 @@ const Whiteboard = () => {
     // useEffect(() => { window.elements = elements; }, [elements]);
 
     const user = JSON.parse(localStorage.getItem('user'));
+    const isStudent = user?.role === 'student';
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('#ffffff');
@@ -559,6 +560,8 @@ const Whiteboard = () => {
     };
 
     const startDrawing = (e) => {
+        // View-only mode for students
+        if (isStudent) return;
         // Spacebar Panning Logic
         if (isSpacePressed) {
             const { clientX, clientY } = e;
@@ -1449,171 +1452,184 @@ const Whiteboard = () => {
                 className="absolute inset-0 z-0 touch-none"
             />
 
-            {/* Main Toolbar - Minimal Island */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-4">
-
-                {/* Secondary Actions (Undo, Redo, Clear) */}
-                <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1.5 shadow-2xl shadow-black/50">
-                    <button onClick={handleUndo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo /></button>
-                    <button onClick={handleRedo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo /></button>
-                    <div className="w-px h-4 bg-white/10 mx-1"></div>
-                    <button onClick={handleClear} className="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash /></button>
-                </div>
-
-                {/* Primary Tools Dock */}
-                <div className="flex items-center gap-2 bg-[#020617] border border-white/10 rounded-2xl p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5">
-
-                    {/* Tools */}
-                    <div className="flex items-center gap-1 bg-[#0f172a] rounded-xl p-1 border border-white/5">
-                        {[
-                            { id: 'pen', icon: FaPen },
-                            { id: 'highlighter', icon: FaHighlighter },
-                            { id: 'eraser', icon: FaEraser },
-                            { id: 'line', icon: FaSlash },
-                            { id: 'text', icon: FaFont },
-                        ].map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => setTool(t.id)}
-                                className={`p-3 rounded-lg transition-all duration-200 ${tool === t.id
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                            >
-                                <t.icon className={t.id === 'line' ? 'transform -rotate-45' : ''} />
-                            </button>
-                        ))}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowShapeMenu(!showShapeMenu)}
-                                className={`p-3 rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                                title="Shapes"
-                            >
-                                <FaDrawPolygon />
-                            </button>
-                            <AnimatePresence>
-                                {showShapeMenu && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl"
-                                    >
-                                        {[
-                                            { id: 'rect', icon: BsSquare, label: 'Square' },
-                                            { id: 'circle', icon: BsCircle, label: 'Circle' },
-                                            { id: 'triangle', icon: BsTriangle, label: 'Triangle' },
-                                            { id: 'star', icon: BsStar, label: 'Star' },
-                                            { id: 'pentagon', icon: BsPentagon, label: 'Pentagon' },
-                                            { id: 'hexagon', icon: BsHexagon, label: 'Hexagon' },
-                                            { id: 'octagon', icon: BsOctagon, label: 'Octagon' },
-                                        ].map(s => (
-                                            <button
-                                                key={s.id}
-                                                onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
-                                                className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
-                                                title={s.label}
-                                            >
-                                                <s.icon className="text-xl" />
-                                            </button>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
-
-                    <div className="w-px h-8 bg-white/10 mx-1"></div>
-
-                    {/* Quick Insert */}
-                    <div className="flex items-center gap-1">
-                        <button onClick={addStickyNote} className="p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
-                            <FaStickyNote />
-                        </button>
-                        <button onClick={() => fileInputRef.current.click()} className="p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
-                            <FaImage />
-                        </button>
-                    </div>
-
-                    <div className="w-px h-8 bg-white/10 mx-1"></div>
-
-                    {/* Properties */}
-                    <div className="flex items-center gap-2 px-2">
-                        <div className="relative group">
-                            <input
-                                type="color"
-                                value={color}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setColor(val);
-                                    if (selectedElement) {
-                                        updateElement(selectedElement.index, { color: val });
-                                    } else if (editingElement) {
-                                        // Update editing state for live preview
-                                        setEditingElement(prev => ({ ...prev, color: val }));
-                                        // Also update actual element (though saveNote will finalize)
-                                        updateElement(editingElement.index, { color: val });
-                                    }
-                                }}
-                                className="w-10 h-10 rounded-full cursor-pointer border-0 bg-transparent p-0 overflow-hidden"
-                            />
-                            <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-black/10 pointer-events-none"></div>
-                        </div>
-
-                        <div className="flex flex-col gap-1 w-24">
-                            <input
-                                type="range"
-                                min="1"
-                                max="50"
-                                value={brushSize}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    setBrushSize(val);
-                                    if (selectedElement) {
-                                        const index = selectedElement.index;
-                                        const el = elements[index];
-                                        if (el.type === 'text') {
-                                            // Recalc height for text reflow
-                                            const ctx = canvasRef.current.getContext('2d');
-                                            const fontSize = val * 5;
-                                            ctx.font = `${fontSize}px sans-serif`;
-                                            const lineHeight = fontSize * 1.2;
-                                            // Keep current width
-                                            const newHeight = wrapText(ctx, el.text, 0, 0, el.width, lineHeight);
-                                            updateElement(index, { size: val, height: Math.max(newHeight, fontSize) });
-                                        } else {
-                                            updateElement(index, { size: val });
-                                        }
-                                    } else if (editingElement) {
-                                        // Live update for text editing size
-                                        // We need to update editingElement state to trigger textarea font-size change
-                                        setEditingElement(prev => ({ ...prev, color: prev.color })); // Force re-render? No, use val.
-                                        // Actually `size` isn't in editingElement top-level usually?
-                                        // Wait, textarea style uses `elements[editingElement.index]?.size` (Line 934)
-                                        // So we MUST update the element itself.
-
-                                        const index = editingElement.index;
-                                        const el = elements[index];
-                                        if (el.type === 'text') {
-                                            const ctx = canvasRef.current.getContext('2d');
-                                            const fontSize = val * 5;
-                                            ctx.font = `${fontSize}px sans-serif`;
-                                            const lineHeight = fontSize * 1.2;
-                                            const newHeight = wrapText(ctx, el.text, 0, 0, el.width, lineHeight);
-                                            updateElement(index, { size: val, height: Math.max(newHeight, fontSize) });
-                                        } else {
-                                            updateElement(index, { size: val });
-                                        }
-                                    }
-                                }}
-                                className="w-full h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                            />
+            {/* View Only Badge for Students */}
+            {isStudent && (
+                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="bg-cyan-500/20 border border-cyan-500/30 px-6 py-3 rounded-full backdrop-blur-xl">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                            <span className="text-cyan-400 font-medium text-sm">View Only Mode</span>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            )}
+
+            {/* Main Toolbar - Minimal Island - Hidden for Students */}
+            {!isStudent && (
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-4">
+                    {/* Secondary Actions (Undo, Redo, Clear) */}
+                    < div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1.5 shadow-2xl shadow-black/50">
+                        <button onClick={handleUndo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo /></button>
+                        <button onClick={handleRedo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo /></button>
+                        <div className="w-px h-4 bg-white/10 mx-1"></div>
+                        <button onClick={handleClear} className="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash /></button>
+                    </div>
+
+                    {/* Primary Tools Dock */}
+                    <div className="flex items-center gap-2 bg-[#020617] border border-white/10 rounded-2xl p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5">
+
+                        {/* Tools */}
+                        <div className="flex items-center gap-1 bg-[#0f172a] rounded-xl p-1 border border-white/5">
+                            {[
+                                { id: 'pen', icon: FaPen },
+                                { id: 'highlighter', icon: FaHighlighter },
+                                { id: 'eraser', icon: FaEraser },
+                                { id: 'line', icon: FaSlash },
+                                { id: 'text', icon: FaFont },
+                            ].map((t) => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setTool(t.id)}
+                                    className={`p-3 rounded-lg transition-all duration-200 ${tool === t.id
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <t.icon className={t.id === 'line' ? 'transform -rotate-45' : ''} />
+                                </button>
+                            ))}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowShapeMenu(!showShapeMenu)}
+                                    className={`p-3 rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                    title="Shapes"
+                                >
+                                    <FaDrawPolygon />
+                                </button>
+                                <AnimatePresence>
+                                    {showShapeMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl"
+                                        >
+                                            {[
+                                                { id: 'rect', icon: BsSquare, label: 'Square' },
+                                                { id: 'circle', icon: BsCircle, label: 'Circle' },
+                                                { id: 'triangle', icon: BsTriangle, label: 'Triangle' },
+                                                { id: 'star', icon: BsStar, label: 'Star' },
+                                                { id: 'pentagon', icon: BsPentagon, label: 'Pentagon' },
+                                                { id: 'hexagon', icon: BsHexagon, label: 'Hexagon' },
+                                                { id: 'octagon', icon: BsOctagon, label: 'Octagon' },
+                                            ].map(s => (
+                                                <button
+                                                    key={s.id}
+                                                    onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
+                                                    className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                                                    title={s.label}
+                                                >
+                                                    <s.icon className="text-xl" />
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+
+                        <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+                        {/* Quick Insert */}
+                        <div className="flex items-center gap-1">
+                            <button onClick={addStickyNote} className="p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
+                                <FaStickyNote />
+                            </button>
+                            <button onClick={() => fileInputRef.current.click()} className="p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
+                                <FaImage />
+                            </button>
+                        </div>
+
+                        <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+                        {/* Properties */}
+                        <div className="flex items-center gap-2 px-2">
+                            <div className="relative group">
+                                <input
+                                    type="color"
+                                    value={color}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setColor(val);
+                                        if (selectedElement) {
+                                            updateElement(selectedElement.index, { color: val });
+                                        } else if (editingElement) {
+                                            // Update editing state for live preview
+                                            setEditingElement(prev => ({ ...prev, color: val }));
+                                            // Also update actual element (though saveNote will finalize)
+                                            updateElement(editingElement.index, { color: val });
+                                        }
+                                    }}
+                                    className="w-10 h-10 rounded-full cursor-pointer border-0 bg-transparent p-0 overflow-hidden"
+                                />
+                                <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-black/10 pointer-events-none"></div>
+                            </div>
+
+                            <div className="flex flex-col gap-1 w-24">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="50"
+                                    value={brushSize}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        setBrushSize(val);
+                                        if (selectedElement) {
+                                            const index = selectedElement.index;
+                                            const el = elements[index];
+                                            if (el.type === 'text') {
+                                                // Recalc height for text reflow
+                                                const ctx = canvasRef.current.getContext('2d');
+                                                const fontSize = val * 5;
+                                                ctx.font = `${fontSize}px sans-serif`;
+                                                const lineHeight = fontSize * 1.2;
+                                                // Keep current width
+                                                const newHeight = wrapText(ctx, el.text, 0, 0, el.width, lineHeight);
+                                                updateElement(index, { size: val, height: Math.max(newHeight, fontSize) });
+                                            } else {
+                                                updateElement(index, { size: val });
+                                            }
+                                        } else if (editingElement) {
+                                            // Live update for text editing size
+                                            // We need to update editingElement state to trigger textarea font-size change
+                                            setEditingElement(prev => ({ ...prev, color: prev.color })); // Force re-render? No, use val.
+                                            // Actually `size` isn't in editingElement top-level usually?
+                                            // Wait, textarea style uses `elements[editingElement.index]?.size` (Line 934)
+                                            // So we MUST update the element itself.
+
+                                            const index = editingElement.index;
+                                            const el = elements[index];
+                                            if (el.type === 'text') {
+                                                const ctx = canvasRef.current.getContext('2d');
+                                                const fontSize = val * 5;
+                                                ctx.font = `${fontSize}px sans-serif`;
+                                                const lineHeight = fontSize * 1.2;
+                                                const newHeight = wrapText(ctx, el.text, 0, 0, el.width, lineHeight);
+                                                updateElement(index, { size: val, height: Math.max(newHeight, fontSize) });
+                                            } else {
+                                                updateElement(index, { size: val });
+                                            }
+                                        }
+                                    }}
+                                    className="w-full h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div >
+            )}
+        </div >
     );
 };
 
