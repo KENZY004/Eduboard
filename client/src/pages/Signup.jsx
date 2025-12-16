@@ -27,14 +27,14 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b]">
 
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
+                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10"
             >
                 <div>
                     <motion.div
@@ -43,7 +43,7 @@ const Signup = () => {
                         transition={{ delay: 0.2 }}
                         className="flex items-center gap-2 mb-12"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                             <BsLightningChargeFill className="text-white text-xl" />
                         </div>
                         <span className="font-bold text-2xl text-white tracking-tight">EduBoard</span>
@@ -51,7 +51,7 @@ const Signup = () => {
 
                     <h2 className="text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
                         Start your <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Journey.</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Journey.</span>
                     </h2>
                     <p className="text-slate-400 text-lg mb-8">Join the platform redefining digital collaboration.</p>
                 </div>
@@ -71,7 +71,7 @@ const Signup = () => {
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Username</label>
                         <div className="relative">
-                            <FaUser className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaUser className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="text"
                                 name="username"
@@ -86,7 +86,7 @@ const Signup = () => {
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
                         <div className="relative">
-                            <FaEnvelope className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaEnvelope className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="email"
                                 name="email"
@@ -101,7 +101,7 @@ const Signup = () => {
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
                         <div className="relative">
-                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="password"
                                 name="password"
@@ -118,7 +118,7 @@ const Signup = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         type="submit"
-                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
                     >
                         Create Account <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                     </motion.button>
@@ -126,49 +126,59 @@ const Signup = () => {
 
                 <p className="mt-10 text-slate-500 text-center text-sm">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-white hover:text-cyan-300 transition-colors font-medium border-b border-cyan-500/30 hover:border-cyan-500">
+                    <Link to="/login" className="text-white hover:text-indigo-300 transition-colors font-medium border-b border-indigo-500/30 hover:border-indigo-500">
                         Sign In
                     </Link>
                 </p>
             </motion.div>
 
-            {/* Right: Abstract Composition */}
-            <div className="hidden lg:flex relative items-center justify-center bg-[#020617] overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-[#020617] to-[#020617]"></div>
+            {/* Right: Minimal Visual */}
+            <div className="hidden lg:flex relative items-center justify-center overflow-hidden">
+                {/* Grid Background */}
+                <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: `
+                        linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '60px 60px'
+                }}></div>
 
-                <div className="relative z-10 w-full max-w-md">
+                {/* Gradient Orbs */}
+                <div className="absolute top-20 right-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+                {/* Subject Icons */}
+                <div className="relative z-10 grid grid-cols-2 gap-6 max-w-sm">
                     <motion.div
-                        animate={{ y: [0, -20, 0], rotate: [0, 1, 0] }}
-                        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative"
+                        whileHover={{ scale: 1.05 }}
+                        className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl text-center"
                     >
-                        {/* Card */}
-                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-10 rounded-[2rem] shadow-2xl relative z-20">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="p-3 bg-white/10 rounded-xl">
-                                    <BsRocketTakeoff className="text-3xl text-cyan-400" />
-                                </div>
-                                <div className="text-right">
-                                    <h4 className="text-2xl font-bold text-white">Pro Plan</h4>
-                                    <p className="text-cyan-400 text-sm">Unlocked</p>
-                                </div>
-                            </div>
+                        <div className="text-5xl mb-3">📐</div>
+                        <div className="text-white font-medium text-sm">Math</div>
+                    </motion.div>
 
-                            <div className="space-y-4">
-                                <div className="h-2 bg-white/10 rounded-full w-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: "75%" }}
-                                        transition={{ duration: 1.5, delay: 0.5 }}
-                                        className="h-full bg-cyan-500"
-                                    ></motion.div>
-                                </div>
-                                <p className="text-slate-400 text-sm">Setting up your limitless workspace...</p>
-                            </div>
-                        </div>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl text-center"
+                    >
+                        <div className="text-5xl mb-3">🔬</div>
+                        <div className="text-white font-medium text-sm">Science</div>
+                    </motion.div>
 
-                        {/* Decoration */}
-                        <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-cyan-500/10 blur-3xl rounded-full"></div>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl text-center"
+                    >
+                        <div className="text-5xl mb-3">📚</div>
+                        <div className="text-white font-medium text-sm">History</div>
+                    </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl text-center"
+                    >
+                        <div className="text-5xl mb-3">🎨</div>
+                        <div className="text-white font-medium text-sm">Art</div>
                     </motion.div>
                 </div>
             </div>
