@@ -28,6 +28,20 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// Health Check Route
+app.get('/', (req, res) => {
+  res.json({
+    status: 'Server is running! 🚀',
+    message: 'EduBoard API Server',
+    endpoints: {
+      auth: '/api/auth',
+      upload: '/api/upload',
+      uploads: '/uploads'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 
@@ -55,9 +69,6 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   res.json({ imageUrl });
 });
 
-
-
-// ...
 
 // Socket.io Logic
 io.on('connection', (socket) => {
