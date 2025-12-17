@@ -69,6 +69,99 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   res.json({ imageUrl });
 });
 
+// Board Management Endpoints
+
+// Create a new named board
+app.post('/api/boards/create', async (req, res) => {
+  try {
+    const { name, userId, roomId } = req.body;
+
+    if (!name || !userId || !roomId) {
+      return res.status(400).json({ message: 'Name, userId, and roomId are required' });
+    }
+
+    const newBoard = new Board({
+      roomId,
+      name,
+      createdBy: userId,
+      elements: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await newBoard.save();
+    res.status(201).json({
+      roomId: newBoard.roomId,
+      name: newBoard.name,
+      createdAt: newBoard.createdAt
+    });
+  } catch (err) {
+    console.error('Error creating board:', err);
+    res.status(500).json({ message: 'Failed to create board' });
+  }
+});
+
+// Get all boards for a specific user
+app.get('/api/boards/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const boards = await Board.find({ createdBy: userId })
+      .select('roomId name createdAt updatedAt')
+      .sort({ updatedAt: -1 }); // Most recently updated first
+
+    res.json(boards);
+  } catch (err) {
+    console.error('Error fetching user boards:', err);
+    res.status(500).json({ message: 'Failed to fetch boards' });
+  }
+});
+
+// Get specific board details
+app.get('/api/boards/:roomId', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const board = await Board.findOne({ roomId });
+
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    res.json({
+      roomId: board.roomId,
+      name: board.name,
+      elements: board.elements,
+      createdAt: board.createdAt,
+      updatedAt: board.updatedAt
+    });
+  } catch (err) {
+    console.error('Error fetching board:', err);
+    res.status(500).json({ message: 'Failed to fetch board' });
+  }
+});
+
+// Delete a board
+app.delete('/api/boards/:roomId', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { userId } = req.query; // Get userId from query params for authorization
+
+    // Find and delete the board only if it belongs to the user
+    const result = await Board.findOneAndDelete({
+      roomId,
+      createdBy: userId
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Board not found or unauthorized' });
+    }
+
+    res.json({ message: 'Board deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting board:', err);
+    res.status(500).json({ message: 'Failed to delete board' });
+  }
+});
+
 
 // Socket.io Logic
 io.on('connection', (socket) => {
@@ -101,7 +194,12 @@ io.on('connection', (socket) => {
       // Try to update existing element in the array
       const updatedMatch = await Board.findOneAndUpdate(
         { roomId: roomId, "elements.id": element.id },
-        { $set: { "elements.$": element } },
+        {
+          $set: {
+            "elements.$": element,
+            updatedAt: new Date()
+          }
+        },
         { new: true }
       );
 
@@ -109,7 +207,10 @@ io.on('connection', (socket) => {
         // If not found, push new element
         await Board.findOneAndUpdate(
           { roomId: roomId },
-          { $push: { elements: element } },
+          {
+            $push: { elements: element },
+            $set: { updatedAt: new Date() }
+          },
           { upsert: true, new: true }
         );
       }

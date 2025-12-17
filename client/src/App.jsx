@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Whiteboard from './components/Whiteboard';
@@ -8,7 +8,8 @@ import Dashboard from './pages/Dashboard';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  const location = useLocation();
+  return token ? children : <Navigate to="/login" state={{ from: location.pathname }} />;
 };
 
 const PublicRoute = ({ children }) => {

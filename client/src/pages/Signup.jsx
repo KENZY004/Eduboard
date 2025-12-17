@@ -34,26 +34,26 @@ const Signup = () => {
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
             >
                 <div>
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center gap-2 mb-12"
+                        className="flex items-center gap-2 mb-8 sm:mb-12"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                            <BsLightningChargeFill className="text-white text-xl" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                            <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
                         </div>
-                        <span className="font-bold text-2xl text-white tracking-tight">EduBoard</span>
+                        <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
                     </motion.div>
 
-                    <h2 className="text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
-                        Start your <br />
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                        Start your <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Journey.</span>
                     </h2>
-                    <p className="text-slate-400 text-lg mb-8">Join the platform redefining digital collaboration.</p>
+                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Join the platform redefining digital collaboration.</p>
                 </div>
 
                 {error && (
@@ -149,21 +149,17 @@ const Signup = () => {
                                     <BsRocketTakeoff className="text-3xl text-cyan-400" />
                                 </div>
                                 <div className="text-right">
-                                    <h4 className="text-2xl font-bold text-white">Pro Plan</h4>
-                                    <p className="text-cyan-400 text-sm">Unlocked</p>
+                                    <h4 className="text-2xl font-bold text-white">Free Forever</h4>
+                                    <p className="text-cyan-400 text-sm">No limits</p>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="h-2 bg-white/10 rounded-full w-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: "75%" }}
-                                        transition={{ duration: 1.5, delay: 0.5 }}
-                                        className="h-full bg-cyan-500"
-                                    ></motion.div>
+                                <div className="space-y-2">
+                                    <p className="text-white font-medium">✓ Infinite canvas</p>
+                                    <p className="text-white font-medium">✓ Real-time collaboration</p>
+                                    <p className="text-white font-medium">✓ All drawing tools</p>
                                 </div>
-                                <p className="text-slate-400 text-sm">Setting up your limitless workspace...</p>
                             </div>
                         </div>
 
