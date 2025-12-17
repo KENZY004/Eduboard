@@ -1411,11 +1411,11 @@ const Whiteboard = () => {
                 />
             )}
 
-            {/* Zoom Controls */}
-            <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-[#020617] border border-white/10 p-2 rounded-lg shadow-xl z-50">
-                <button onClick={() => handleZoom(-0.1)} className="p-2 text-slate-400 hover:text-white transition-colors"><BsZoomOut /></button>
-                <span className="text-white font-mono text-sm w-12 text-center">{Math.round(scale * 100)}%</span>
-                <button onClick={() => handleZoom(0.1)} className="p-2 text-slate-400 hover:text-white transition-colors"><BsZoomIn /></button>
+            {/* Zoom Controls - Moved to top-right to avoid overlap */}
+            <div className="absolute top-20 right-4 sm:right-6 flex items-center gap-2 bg-[#020617] border border-white/10 p-1.5 sm:p-2 rounded-lg shadow-xl z-50">
+                <button onClick={() => handleZoom(-0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-white transition-colors"><BsZoomOut /></button>
+                <span className="text-white font-mono text-xs sm:text-sm w-10 sm:w-12 text-center">{Math.round(scale * 100)}%</span>
+                <button onClick={() => handleZoom(0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-white transition-colors"><BsZoomIn /></button>
             </div>
 
             <canvas
@@ -1466,20 +1466,20 @@ const Whiteboard = () => {
 
             {/* Main Toolbar - Minimal Island - Hidden for Students */}
             {!isStudent && (
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-4">
+                <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
-                    < div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1.5 shadow-2xl shadow-black/50">
-                        <button onClick={handleUndo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo /></button>
-                        <button onClick={handleRedo} className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo /></button>
-                        <div className="w-px h-4 bg-white/10 mx-1"></div>
-                        <button onClick={handleClear} className="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash /></button>
+                    <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
+                        <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
+                        <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                        <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                        <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
                     </div>
 
                     {/* Primary Tools Dock */}
-                    <div className="flex items-center gap-2 bg-[#020617] border border-white/10 rounded-2xl p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5">
+                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-x-auto max-w-full">
 
                         {/* Tools */}
-                        <div className="flex items-center gap-1 bg-[#0f172a] rounded-xl p-1 border border-white/5">
+                        <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
                             {[
                                 { id: 'pen', icon: FaPen },
                                 { id: 'highlighter', icon: FaHighlighter },
@@ -1490,11 +1490,11 @@ const Whiteboard = () => {
                                 <button
                                     key={t.id}
                                     onClick={() => setTool(t.id)}
-                                    className={`p-3 rounded-lg transition-all duration-200 ${tool === t.id
+                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${tool === t.id
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                 >
-                                    <t.icon className={t.id === 'line' ? 'transform -rotate-45' : ''} />
+                                    <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
                                 </button>
                             ))}
                             <div className="relative">
@@ -1539,22 +1539,22 @@ const Whiteboard = () => {
                             </div>
                         </div>
 
-                        <div className="w-px h-8 bg-white/10 mx-1"></div>
+                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
 
                         {/* Quick Insert */}
-                        <div className="flex items-center gap-1">
-                            <button onClick={addStickyNote} className="p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
-                                <FaStickyNote />
+                        <div className="flex items-center gap-0.5 sm:gap-1">
+                            <button onClick={addStickyNote} className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
+                                <FaStickyNote className="text-sm sm:text-base" />
                             </button>
-                            <button onClick={() => fileInputRef.current.click()} className="p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
-                                <FaImage />
+                            <button onClick={() => fileInputRef.current.click()} className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
+                                <FaImage className="text-sm sm:text-base" />
                             </button>
                         </div>
 
-                        <div className="w-px h-8 bg-white/10 mx-1"></div>
+                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
 
                         {/* Properties */}
-                        <div className="flex items-center gap-2 px-2">
+                        <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2">
                             <div className="relative group">
                                 <input
                                     type="color"
@@ -1571,12 +1571,12 @@ const Whiteboard = () => {
                                             updateElement(editingElement.index, { color: val });
                                         }
                                     }}
-                                    className="w-10 h-10 rounded-full cursor-pointer border-0 bg-transparent p-0 overflow-hidden"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer border-0 bg-transparent p-0 overflow-hidden"
                                 />
                                 <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-black/10 pointer-events-none"></div>
                             </div>
 
-                            <div className="flex flex-col gap-1 w-24">
+                            <div className="hidden sm:flex flex-col gap-1 w-20 sm:w-24">
                                 <input
                                     type="range"
                                     min="1"

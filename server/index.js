@@ -139,6 +139,29 @@ app.get('/api/boards/:roomId', async (req, res) => {
   }
 });
 
+// Delete a board
+app.delete('/api/boards/:roomId', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { userId } = req.query; // Get userId from query params for authorization
+
+    // Find and delete the board only if it belongs to the user
+    const result = await Board.findOneAndDelete({
+      roomId,
+      createdBy: userId
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Board not found or unauthorized' });
+    }
+
+    res.json({ message: 'Board deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting board:', err);
+    res.status(500).json({ message: 'Failed to delete board' });
+  }
+});
+
 
 // Socket.io Logic
 io.on('connection', (socket) => {

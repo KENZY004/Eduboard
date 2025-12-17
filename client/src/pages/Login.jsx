@@ -36,26 +36,26 @@ const Login = () => {
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-8 lg:px-24 py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
             >
                 <div>
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center gap-2 mb-12"
+                        className="flex items-center gap-2 mb-8 sm:mb-12"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                            <BsLightningChargeFill className="text-white text-xl" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                            <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
                         </div>
-                        <span className="font-bold text-2xl text-white tracking-tight">EduBoard</span>
+                        <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
                     </motion.div>
 
-                    <h2 className="text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
-                        Welcome back to <br />
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                        Welcome back to <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Infinity.</span>
                     </h2>
-                    <p className="text-slate-400 text-lg mb-8">Login to access your high-performance workspace.</p>
+                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Login to access your high-performance workspace.</p>
                 </div>
 
                 {error && (
@@ -135,28 +135,25 @@ const Login = () => {
                         className="relative"
                     >
                         {/* Glass Card */}
-                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl relative z-20">
-                            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl h-48 w-full mb-6 flex items-center justify-center relative overflow-hidden">
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
-                                <BsStars className="text-6xl text-white animate-pulse" />
+                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-10 rounded-3xl shadow-2xl relative z-20">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="p-3 bg-white/10 rounded-xl">
+                                    <BsStars className="text-3xl text-indigo-400" />
+                                </div>
+                                <div className="text-right">
+                                    <h4 className="text-2xl font-bold text-white">Welcome Back</h4>
+                                    <p className="text-indigo-400 text-sm">Ready to create</p>
+                                </div>
                             </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Unleash Creativity</h3>
-                            <p className="text-slate-400">
-                                Join thousands of educators and students transforming the way they learn with our infinite canvas.
-                            </p>
-                        </div>
 
-                        {/* Floating Badge */}
-                        <motion.div
-                            animate={{ y: [0, 15, 0], x: [0, 10, 0] }}
-                            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                            className="absolute -top-10 -right-10 bg-[#0f172a] p-4 rounded-2xl border border-white/10 shadow-xl z-30"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
-                                <span className="text-white font-mono text-sm">System Online</span>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <p className="text-white font-medium">✓ Pick up where you left off</p>
+                                    <p className="text-white font-medium">✓ Access your saved boards</p>
+                                    <p className="text-white font-medium">✓ Collaborate in real-time</p>
+                                </div>
                             </div>
-                        </motion.div>
+                        </div>
                     </motion.div>
                 </div>
             </div>
