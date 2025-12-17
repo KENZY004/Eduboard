@@ -184,6 +184,11 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Real-time stroke updates (while drawing) - no DB save, just broadcast
+  socket.on('drawing-stroke', (strokeData) => {
+    socket.to(strokeData.roomId).emit('drawing-stroke', strokeData);
+  });
+
   socket.on('draw-element', async (element) => {
     // Broadcast element to room
     socket.to(element.roomId).emit('draw-element', element);
