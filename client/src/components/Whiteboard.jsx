@@ -84,6 +84,15 @@ const Whiteboard = () => {
             });
         });
 
+        // Real-time stroke updates (while drawing)
+        socket.on('drawing-stroke', (strokeData) => {
+            // Update currentStrokeRef for other users to see live drawing
+            if (strokeData.userId !== user?.id) {
+                currentStrokeRef.current = strokeData.stroke;
+                renderCanvas();
+            }
+        });
+
         socket.on('load-board', (loadedElements) => {
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
@@ -822,6 +831,15 @@ const Whiteboard = () => {
                 const newPoint = { x: offsetX, y: offsetY };
                 currentStrokeRef.current.points.push(newPoint);
 
+                // Emit real-time stroke updates (throttled to every 3rd point to reduce network load)
+                if (socket && currentStrokeRef.current.points.length % 3 === 0) {
+                    socket.emit('drawing-stroke', {
+                        roomId,
+                        userId: user?.id,
+                        stroke: currentStrokeRef.current
+                    });
+                }
+
                 // Force Render safely
                 renderCanvas();
             }
@@ -1201,11 +1219,52 @@ const Whiteboard = () => {
         setTool('sticky');
     }
 
+    const handleZoom = (delta) => {
+        setScale(prev => Math.min(Math.max(prev + delta, 0.1), 5));
+    }
+
     const copyRoomId = () => {
         navigator.clipboard.writeText(roomId);
         setShowCopied(true);
         setTimeout(() => setShowCopied(false), 2000);
     }
+
+    // Touch pan support for mobile
+    const touchStartRef = useRef(null);
+    const handleTouchStart = (e) => {
+        if (e.touches.length === 2) {
+            // Two-finger touch for panning
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            touchStartRef.current = {
+                x: (touch1.clientX + touch2.clientX) / 2,
+                y: (touch1.clientY + touch2.clientY) / 2,
+                initialPan: { ...panOffset }
+            };
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (e.touches.length === 2 && touchStartRef.current) {
+            e.preventDefault();
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentX = (touch1.clientX + touch2.clientX) / 2;
+            const currentY = (touch1.clientY + touch2.clientY) / 2;
+
+            const deltaX = (currentX - touchStartRef.current.x) / scale;
+            const deltaY = (currentY - touchStartRef.current.y) / scale;
+
+            setPanOffset({
+                x: touchStartRef.current.initialPan.x + deltaX,
+                y: touchStartRef.current.initialPan.y + deltaY
+            });
+        }
+    };
+
+    const handleTouchEnd = () => {
+        touchStartRef.current = null;
+    };
 
     // Wheel Logic (Zoom & Pan)
     useEffect(() => {
@@ -1424,6 +1483,9 @@ const Whiteboard = () => {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 onDoubleClick={(e) => {
                     const { x: offsetX, y: offsetY } = getMousePos(e);
                     // Check for sticky note OR text
@@ -1576,7 +1638,7 @@ const Whiteboard = () => {
                                 <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-black/10 pointer-events-none"></div>
                             </div>
 
-                            <div className="hidden sm:flex flex-col gap-1 w-20 sm:w-24">
+                            <div className="flex flex-col gap-1 w-16 sm:w-24">
                                 <input
                                     type="range"
                                     min="1"
