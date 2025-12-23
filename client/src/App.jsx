@@ -13,13 +13,34 @@ import { ThemeProvider } from './context/ThemeContext';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const location = useLocation();
-  return token ? children : <Navigate to="/login" state={{ from: location.pathname }} />;
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location.pathname }} />;
+  }
+
+  // If admin tries to access dashboard, redirect to admin panel
+  if (user.role === 'admin' && location.pathname === '/dashboard') {
+    return <Navigate to="/admin" />;
+  }
+
+  return children;
 };
 
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return token ? <Navigate to="/dashboard" /> : children;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  if (token) {
+    // Redirect based on role
+    if (user.role === 'admin') {
+      return <Navigate to="/admin" />;
+    }
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
 };
 
 const AdminRoute = ({ children }) => {

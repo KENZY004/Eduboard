@@ -6,8 +6,8 @@ const transporter = nodemailer.createTransport({
     port: 587,
     secure: false, // Use TLS
     auth: {
-        user: process.env.SMTP_USER || 'kenzninnu409@gmail.com',
-        pass: process.env.SMTP_PASS || 'pdzo jqtl dzdi rnzh'
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
     }
 });
 
@@ -24,7 +24,7 @@ transporter.verify((error, success) => {
  * Send email notification to admin when a teacher registers
  */
 const sendTeacherRegistrationNotification = async (teacherData, documents) => {
-    const adminEmail = process.env.ADMIN_EMAIL || 'kenzninnu409@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL;
 
     const documentList = documents.map(doc => {
         const docType = doc.type.replace('_', ' ').toUpperCase();
@@ -32,7 +32,7 @@ const sendTeacherRegistrationNotification = async (teacherData, documents) => {
     }).join('');
 
     const mailOptions = {
-        from: `"EduBoard Verification" <${process.env.SMTP_USER || 'kenzninnu409@gmail.com'}>`,
+        from: `"EduBoard Verification" <${process.env.SMTP_USER}>`,
         to: adminEmail,
         subject: '🔔 New Teacher Registration - Verification Required',
         html: `
@@ -94,7 +94,7 @@ const sendTeacherRegistrationNotification = async (teacherData, documents) => {
  */
 const sendApprovalEmail = async (teacherEmail, teacherName) => {
     const mailOptions = {
-        from: `"EduBoard" <${process.env.SMTP_USER || 'kenzninnu409@gmail.com'}>`,
+        from: `"EduBoard" <${process.env.SMTP_USER}>`,
         to: teacherEmail,
         subject: '🎉 Your Teacher Account Has Been Approved!',
         html: `
@@ -122,7 +122,7 @@ const sendApprovalEmail = async (teacherEmail, teacherName) => {
                     </div>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" 
+                        <a href="${process.env.CLIENT_URL}/login" 
                            style="display: inline-block; background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 6px rgba(8, 145, 178, 0.3);">
                             Login to EduBoard
                         </a>
@@ -155,7 +155,7 @@ const sendApprovalEmail = async (teacherEmail, teacherName) => {
  */
 const sendRejectionEmail = async (teacherEmail, teacherName, reason) => {
     const mailOptions = {
-        from: `"EduBoard" <${process.env.SMTP_USER || 'kenzninnu409@gmail.com'}>`,
+        from: `"EduBoard" <${process.env.SMTP_USER}>`,
         to: teacherEmail,
         subject: 'Update on Your Teacher Account Application',
         html: `
@@ -188,7 +188,7 @@ const sendRejectionEmail = async (teacherEmail, teacherName, reason) => {
                     </p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="mailto:${process.env.ADMIN_EMAIL || 'kenzninnu409@gmail.com'}" 
+                        <a href="mailto:${process.env.ADMIN_EMAIL}" 
                            style="display: inline-block; background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">
                             Contact Support
                         </a>

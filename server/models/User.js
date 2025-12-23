@@ -42,7 +42,11 @@ const UserSchema = new mongoose.Schema({
     },
     rejectionReason: {
         type: String
-    }
+    },
+    savedBoards: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Board'
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

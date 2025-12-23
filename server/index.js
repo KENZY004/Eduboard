@@ -168,6 +168,85 @@ app.delete('/api/boards/:roomId', async (req, res) => {
   }
 });
 
+// Get saved boards for a student
+app.get('/api/boards/saved/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user and populate saved boards
+    const user = await User.findById(userId).populate({
+      path: 'savedBoards',
+      select: 'name roomId createdBy updatedAt',
+      populate: {
+        path: 'createdBy',
+        select: 'username'
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user.savedBoards || []);
+  } catch (err) {
+    console.error('Error fetching saved boards:', err);
+    res.status(500).json({ message: 'Failed to fetch saved boards' });
+  }
+});
+
+// Save a board to student's saved list
+app.post('/api/boards/save/:boardId', async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const { userId } = req.body;
+
+    // Check if board exists
+    const board = await Board.findById(boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Add board to user's saved boards if not already saved
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.savedBoards.includes(boardId)) {
+      user.savedBoards.push(boardId);
+      await user.save();
+    }
+
+    res.json({ message: 'Board saved successfully' });
+  } catch (err) {
+    console.error('Error saving board:', err);
+    res.status(500).json({ message: 'Failed to save board' });
+  }
+});
+
+// Unsave a board from student's saved list
+app.delete('/api/boards/unsave/:boardId', async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const { userId } = req.query;
+
+    // Remove board from user's saved boards
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.savedBoards = user.savedBoards.filter(id => id.toString() !== boardId);
+    await user.save();
+
+    res.json({ message: 'Board unsaved successfully' });
+  } catch (err) {
+    console.error('Error unsaving board:', err);
+    res.status(500).json({ message: 'Failed to unsave board' });
+  }
+});
+
+
 
 // Socket.io Logic
 io.on('connection', (socket) => {
