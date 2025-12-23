@@ -21,8 +21,27 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['teacher', 'student'],
+        enum: ['teacher', 'student', 'admin'],
         default: 'student'
+    },
+    isVerified: {
+        type: Boolean,
+        default: function () {
+            return this.role === 'student'; // Students are auto-verified
+        }
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: function () {
+            return this.role === 'student' ? 'approved' : 'pending';
+        }
+    },
+    verificationDate: {
+        type: Date
+    },
+    rejectionReason: {
+        type: String
     }
 }, { timestamps: true });
 

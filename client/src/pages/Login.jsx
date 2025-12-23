@@ -18,13 +18,36 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, formData);
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
-            navigate(from);
+
+            // Redirect based on role
+            if (res.data.user.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate(from);
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            const errorData = err.response?.data;
+
+            // Check if it's an unverified teacher
+            if (errorData?.error === 'ACCOUNT_NOT_VERIFIED') {
+                // Store token temporarily for verification page
+                if (err.response?.data?.token) {
+                    localStorage.setItem('token', err.response.data.token);
+                }
+                setError(errorData.message);
+                // Redirect to verification pending page after showing error
+                setTimeout(() => {
+                    navigate('/verification-pending');
+                }, 2000);
+            } else {
+                setError(errorData?.message || 'Login failed');
+            }
         }
     };
 

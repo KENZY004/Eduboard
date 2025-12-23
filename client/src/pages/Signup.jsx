@@ -7,23 +7,74 @@ import { BsLightningChargeFill } from 'react-icons/bs';
 import StudentCharacter from '../components/StudentCharacter';
 
 const Signup = () => {
-    const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'student' });
+    const [documents, setDocuments] = useState({
+        id_proof: null,
+        teaching_certificate: null,
+        degree: null
+    });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleFileChange = (e) => {
+        const { name, files } = e.target;
+        if (files && files[0]) {
+            setDocuments({ ...documents, [name]: files[0] });
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
+
         try {
+            // Step 1: Register user
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, formData);
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
-            navigate('/dashboard');
+
+            // Step 2: If teacher, upload documents
+            if (formData.role === 'teacher') {
+                // Validate documents
+                if (!documents.id_proof || !documents.teaching_certificate) {
+                    setError('Please upload ID proof and teaching certificate');
+                    setLoading(false);
+                    return;
+                }
+
+                const formDataUpload = new FormData();
+                formDataUpload.append('id_proof', documents.id_proof);
+                formDataUpload.append('teaching_certificate', documents.teaching_certificate);
+                if (documents.degree) {
+                    formDataUpload.append('degree', documents.degree);
+                }
+
+                await axios.post(
+                    `${import.meta.env.VITE_API_BASE_URL}/api/verification/upload-documents`,
+                    formDataUpload,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${res.data.token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+
+                // Redirect to verification pending page
+                navigate('/verification-pending');
+            } else {
+                // Student - redirect to dashboard
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');
+            setLoading(false);
         }
     };
 
@@ -120,13 +171,141 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* Role Selection */}
+                    <div className="group">
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 ml-1">I am a</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'student'
+                                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
+                                    : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                                }`}>
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="student"
+                                    checked={formData.role === 'student'}
+                                    onChange={handleChange}
+                                    className="sr-only"
+                                />
+                                <div className="text-center">
+                                    <div className="text-2xl mb-1">🎓</div>
+                                    <div className="font-semibold text-white">Student</div>
+                                </div>
+                            </label>
+                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
+                                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
+                                    : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                                }`}>
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="teacher"
+                                    checked={formData.role === 'teacher'}
+                                    onChange={handleChange}
+                                    className="sr-only"
+                                />
+                                <div className="text-center">
+                                    <div className="text-2xl mb-1">👨‍🏫</div>
+                                    <div className="font-semibold text-white">Teacher</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Document Upload for Teachers */}
+                    {formData.role === 'teacher' && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700"
+                        >
+                            <h3 className="text-sm font-semibold text-cyan-400 flex items-center gap-2">
+                                📄 Verification Documents
+                            </h3>
+                            <p className="text-xs text-slate-400">Upload documents to verify your teacher status</p>
+
+                            {/* ID Proof */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 mb-2">
+                                    ID Proof <span className="text-red-400">*</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
+                                    <div className="text-cyan-400">📎</div>
+                                    <input
+                                        type="file"
+                                        name="id_proof"
+                                        onChange={handleFileChange}
+                                        accept=".jpg,.jpeg,.png,.pdf"
+                                        className="hidden"
+                                    />
+                                    <span className="text-sm text-slate-300 truncate">
+                                        {documents.id_proof ? documents.id_proof.name : 'Choose file...'}
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Teaching Certificate */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 mb-2">
+                                    Teaching Certificate <span className="text-red-400">*</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
+                                    <div className="text-cyan-400">📎</div>
+                                    <input
+                                        type="file"
+                                        name="teaching_certificate"
+                                        onChange={handleFileChange}
+                                        accept=".jpg,.jpeg,.png,.pdf"
+                                        className="hidden"
+                                    />
+                                    <span className="text-sm text-slate-300 truncate">
+                                        {documents.teaching_certificate ? documents.teaching_certificate.name : 'Choose file...'}
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Degree (Optional) */}
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 mb-2">
+                                    Degree (Optional)
+                                </label>
+                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
+                                    <div className="text-cyan-400">📎</div>
+                                    <input
+                                        type="file"
+                                        name="degree"
+                                        onChange={handleFileChange}
+                                        accept=".jpg,.jpeg,.png,.pdf"
+                                        className="hidden"
+                                    />
+                                    <span className="text-sm text-slate-300 truncate">
+                                        {documents.degree ? documents.degree.name : 'Choose file...'}
+                                    </span>
+                                </label>
+                            </div>
+                        </motion.div>
+                    )}
+
                     <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: loading ? 1 : 1.02 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
                         type="submit"
-                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
+                        disabled={loading}
+                        className={`w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                     >
-                        Create Account <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        {loading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Processing...
+                            </>
+                        ) : (
+                            <>
+                                {formData.role === 'teacher' ? 'Submit for Verification' : 'Create Account'}
+                                <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                            </>
+                        )}
                     </motion.button>
                 </form>
 

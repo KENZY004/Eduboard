@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'; // Use env in pro
 // REGISTER
 router.post('/register', async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, role } = req.body;
 
         // Validate input
         if (!username || !email || !password) {
@@ -40,10 +40,18 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Create user
+        const userRole = role || 'student';
+
+        // Only teachers need verification, admins and students are auto-verified
+        const needsVerification = userRole === 'teacher';
+
         const newUser = new User({
             username,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role: userRole,
+            isVerified: !needsVerification, // true for admin/student, false for teacher
+            verificationStatus: needsVerification ? 'pending' : 'approved'
         });
 
         const savedUser = await newUser.save();
@@ -57,8 +65,13 @@ router.post('/register', async (req, res) => {
                 id: savedUser._id,
                 username: savedUser.username,
                 email: savedUser.email,
-                role: savedUser.role
-            }
+                role: savedUser.role,
+                isVerified: savedUser.isVerified,
+                verificationStatus: savedUser.verificationStatus
+            },
+            message: savedUser.role === 'teacher'
+                ? 'Registration successful! Please upload your verification documents.'
+                : 'Registration successful!'
         });
     } catch (err) {
         console.error('Registration error:', err);
@@ -101,6 +114,16 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        // Check if teacher is verified
+        if (user.role === 'teacher' && !user.isVerified) {
+            return res.status(403).json({
+                message: 'Your account is pending verification. Please wait for admin approval.',
+                error: 'ACCOUNT_NOT_VERIFIED',
+                verificationStatus: user.verificationStatus,
+                rejectionReason: user.rejectionReason
+            });
+        }
+
         // Create token
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
 
@@ -110,7 +133,9 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                isVerified: user.isVerified,
+                verificationStatus: user.verificationStatus
             }
         });
     } catch (err) {

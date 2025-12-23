@@ -46,6 +46,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 const imageRoutes = require('./routes/imageRoutes');
 app.use('/api/images', imageRoutes);
+const verificationRoutes = require('./routes/verificationRoutes');
+app.use('/api/verification', verificationRoutes);
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
