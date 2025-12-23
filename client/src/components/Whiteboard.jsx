@@ -189,8 +189,15 @@ const Whiteboard = () => {
             ctx.fillRect(x, y, width, height);
             ctx.shadowBlur = 0;
             ctx.fillStyle = '#000';
-            ctx.font = '16px sans-serif';
-            wrapText(ctx, text || "", x + 10, y + 30, width - 20, 20);
+            // Font size proportional to note size (10% of note width)
+            // This ensures text scales with the note and always fits inside
+            const fontSize = width * 0.10;
+            ctx.font = `${fontSize}px sans-serif`;
+            // Use fixed padding in world coordinates that scales with note
+            const paddingX = width * 0.05;
+            const paddingY = height * 0.15; // Start text lower to avoid overlap
+            const lineHeight = fontSize * 1.2;
+            wrapText(ctx, text || "", x + paddingX, y + paddingY, width - paddingX * 2, lineHeight);
         } else if (type === 'circle') {
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
@@ -205,12 +212,6 @@ const Whiteboard = () => {
             ctx.moveTo(x, y);
             ctx.lineTo(endX, endY);
             ctx.stroke();
-        } else if (type === 'text') {
-            ctx.fillStyle = color;
-            ctx.font = `${size * 5}px sans-serif`;
-            ctx.textBaseline = 'top';
-            // Use wrapText for text rendering
-            wrapText(ctx, text || "", x, y, width || 200, size * 5 * 1.2); // 1.2 line height
         } else if (['triangle', 'pentagon', 'hexagon', 'octagon'].includes(type)) {
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
@@ -301,7 +302,7 @@ const Whiteboard = () => {
         elements.forEach((element, index) => {
             // Skip rendering if currently being edited (prevents double text defect)
             if (editingElement && editingElement.index === index) {
-                if (element.type === 'text') return;
+                if (element.type === 'sticky') return;
             }
             drawElement(ctx, element);
 
@@ -312,7 +313,7 @@ const Whiteboard = () => {
                 // Draw border
                 const { x, y, width, height } = element;
                 // Handle different shapes? For now rect/image/sticky
-                if (['rect', 'image', 'sticky', 'text', 'triangle', 'pentagon', 'hexagon', 'octagon', 'star'].includes(element.type)) {
+                if (['rect', 'image', 'sticky', 'triangle', 'pentagon', 'hexagon', 'octagon', 'star'].includes(element.type)) {
                     ctx.strokeRect(x, y, width, height);
                     // Draw Handle
                     ctx.fillStyle = '#3b82f6';
@@ -387,20 +388,12 @@ const Whiteboard = () => {
 
     const isWithinElement = (x, y, element) => {
         const { type, x: ex, y: ey, width, height } = element;
-        if (type === 'rect' || type === 'image' || type === 'text') { // Text now has width/height
-            // For text, y is often the baseline or top depending on how we draw.
-            // Let's assume (x,y) is top-left for easy hit detection, but fillText uses baseline.
-            // Adjustment: We'll store x,y as top-left for text too to match other shapes.
-            // Ensure minimum hit area for text and add buffer
-            // HANDLE UNDEFINED WIDTH/HEIGHT safely
+        if (type === 'rect' || type === 'image' || type === 'sticky' ||
+            type === 'triangle' || type === 'pentagon' || type === 'hexagon' || type === 'octagon' || type === 'star') {
+            // For all rectangular elements including images and polygons (using bounding box)
             const w = Math.max(width || 0, 20);
             const h = Math.max(height || 0, 20);
             return x >= ex - 10 && x <= ex + w + 10 && y >= ey - 10 && y <= ey + h + 10;
-        }
-        if (type === 'sticky') {
-            const w = width || 200;
-            const h = height || 200;
-            return x >= ex && x <= ex + w && y >= ey && y <= ey + h;
         }
         return false;
     };
@@ -462,7 +455,8 @@ const Whiteboard = () => {
         const measuredHeight = wrapText(ctx, newText, 0, 0, calculatedWidth, lineHeight); // Returns bottom Y
 
         // Enforce minimum height based on type
-        const minHeight = editingElement.type === 'sticky' ? 200 : fontSize;
+        // For sticky notes, preserve original scale-independent size
+        const minHeight = editingElement.type === 'sticky' ? (elements[index].height || 200 / scale) : fontSize;
 
         const oldProps = {
             text: editingElement.text,
@@ -585,18 +579,59 @@ const Whiteboard = () => {
 
         const { x: offsetX, y: offsetY } = getMousePos(e);
 
+        // FIRST: Check resize handle if something is already selected
+        if (selectedElement !== null && tool === 'select') {
+            const el = elements[selectedElement.index];
+            const w = el.width || (el.type === 'text' ? 50 : 0);
+            const h = el.height || (el.type === 'text' ? 20 : 0);
+            // Scale-independent handle size: always 20px on screen, converted to world coords
+            const handleSize = 20 / scale; // Larger hit area that scales with zoom
+            if (offsetX >= el.x + w - handleSize && offsetX <= el.x + w + handleSize &&
+                offsetY >= el.y + h - handleSize && offsetY <= el.y + h + handleSize) {
+                setAction('resizing');
+                setIsDrawing(true); // Enable drawing for resize
+                setUndoSnapshot({ ...el });
+                console.log('Resize handle clicked for element:', selectedElement.index, 'at scale:', scale);
+                return;
+            }
+        }
+
+        // SECOND: Check if clicking on an image or sticky note - always allow selection regardless of current tool
+        let priorityHitIndex = -1;
+        for (let i = elements.length - 1; i >= 0; i--) {
+            if ((elements[i].type === 'image' || elements[i].type === 'sticky') && isWithinElement(offsetX, offsetY, elements[i])) {
+                priorityHitIndex = i;
+                break;
+            }
+        }
+
+        // If clicked on an image or sticky note, select it and allow moving
+        if (priorityHitIndex !== -1) {
+            const el = elements[priorityHitIndex];
+            setTool('select');
+            setSelectedElement({ index: priorityHitIndex, offsetX: offsetX - el.x, offsetY: offsetY - el.y });
+            setUndoSnapshot({ ...el });
+            setAction('moving');
+            setIsDrawing(true); // Enable drawing mode for movement
+            console.log('Element clicked and selected:', priorityHitIndex, 'Type:', el.type);
+            return;
+        }
+
         if (tool === 'select') {
             // ... (select logic)
             // 1. Check Resize Handle (Bottom-Right of selected)
             if (selectedElement !== null) {
                 const el = elements[selectedElement.index];
-                const w = el.width || (el.type === 'text' ? 50 : 0); // fallback for text
+                const w = el.width || (el.type === 'text' ? 50 : 0);
                 const h = el.height || (el.type === 'text' ? 20 : 0);
-                // allow 10px hit area
-                if (offsetX >= el.x + w - 10 && offsetX <= el.x + w + 10 &&
-                    offsetY >= el.y + h - 10 && offsetY <= el.y + h + 10) {
+                // allow 10px hit area (in world coordinates)
+                const handleSize = 10;
+                if (offsetX >= el.x + w - handleSize && offsetX <= el.x + w + handleSize &&
+                    offsetY >= el.y + h - handleSize && offsetY <= el.y + h + handleSize) {
                     setAction('resizing');
+                    setIsDrawing(true); // Enable drawing for resize
                     setUndoSnapshot({ ...elements[selectedElement.index] });
+                    console.log('Resize handle clicked for element:', selectedElement.index);
                     return;
                 }
             }
@@ -637,7 +672,7 @@ const Whiteboard = () => {
             return;
         }
 
-        if (tool === 'text' || tool === 'sticky') {
+        if (tool === 'sticky') {
             // Check for existing element hit first (Smart Tool)
             let hitIndex = -1;
             for (let i = elements.length - 1; i >= 0; i--) {
@@ -648,7 +683,7 @@ const Whiteboard = () => {
             }
 
             if (hitIndex !== -1) {
-                // If we hit something, interact with it instead of creating new text
+                // If we hit something, interact with it instead of creating new sticky
                 setTool('select');
                 setSelectedElement({ index: hitIndex, offsetX: offsetX - elements[hitIndex].x, offsetY: offsetY - elements[hitIndex].y });
                 setUndoSnapshot({ ...elements[hitIndex] }); // Capture state for undo
@@ -656,51 +691,24 @@ const Whiteboard = () => {
                 return;
             }
 
-            // Create new element (Text or Sticky)
+            // Create new sticky note
             const id = crypto.randomUUID();
-            const newElement = tool === 'text' ? {
-                id,
-                type: 'text',
-                x: offsetX, y: offsetY,
-                text: '',
-                color: color,
-                size: brushSize,
-                width: 100,
-                height: brushSize * 5,
-                isFixedWidth: false // Default to Auto-Width
-            } : {
+            const newElement = {
                 id,
                 type: 'sticky',
-                x: offsetX - 100, // Center on click
-                y: offsetY - 100,
-                width: 200,
-                height: 200,
+                // Scale-independent sizing: Always 200px on screen
+                x: offsetX - (100 / scale), // Center on click
+                y: offsetY - (100 / scale),
+                width: 200 / scale,  // Scale-independent width
+                height: 200 / scale, // Scale-independent height
                 text: "Double click to edit..."
             };
 
             setElements(prev => [...prev, newElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]); // FIX: Normalize history format
+            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
 
-            // For text, enter edit mode immediately. For sticky, just place it?
-            // User habits: Text -> Type immediately. Sticky -> Click to place, double click to edit.
-            // But let's follow text pattern? 
-            // Actually, for sticky, let's just place it. If user wants to edit they double click.
-            // But if we want to mimic text tool "smartness", we just place it and switch to select.
-
-            if (tool === 'text') {
-                setEditingElement({
-                    index: elements.length,
-                    type: 'text',
-                    text: '',
-                    x: offsetX,
-                    y: offsetY,
-                    width: 100,
-                    height: brushSize * 5
-                });
-            } else {
-                // For sticky, switch to select immediately
-                setTool('select');
-            }
+            // For sticky, switch to select immediately
+            setTool('select');
             return;
         }
 
@@ -798,7 +806,14 @@ const Whiteboard = () => {
             let newWidth = offsetX - el.x;
             let newHeight = offsetY - el.y;
 
-            if (el.type === 'text') {
+            if (el.type === 'image') {
+                // Maintain aspect ratio for images
+                const aspectRatio = el.aspectRatio || (el.width / el.height);
+                newHeight = newWidth / aspectRatio;
+                const props = { width: newWidth, height: newHeight };
+                draggedElementRef.current = props;
+                updateElement(index, props);
+            } else if (el.type === 'text') {
                 // Calculate height based on wrapping with newWidth
                 const ctx = canvasRef.current.getContext('2d');
                 const fontSize = (el.size || 5) * 5;
@@ -1175,38 +1190,63 @@ const Whiteboard = () => {
         formData.append('image', file);
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, formData, {
+            // Upload to Cloudinary via our API
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/images/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            const { imageUrl } = res.data;
+            const { url } = res.data;
 
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
                 let w = img.width;
                 let h = img.height;
-                if (w > 500) {
-                    const ratio = 500 / w;
-                    w = 500;
-                    h = h * ratio;
+
+                // Scale-independent sizing: Images maintain visual size regardless of zoom
+                // Target visual size: 300px on screen
+                const targetScreenSize = 300;
+                const scaleFactor = 1 / scale; // Inverse of current zoom
+
+                // Calculate size in world coordinates
+                if (w > h) {
+                    w = targetScreenSize * scaleFactor;
+                    h = w / (img.width / img.height);
+                } else {
+                    h = targetScreenSize * scaleFactor;
+                    w = h * (img.width / img.height);
                 }
+
                 const newElement = {
                     id: crypto.randomUUID(),
                     type: 'image',
-                    x: 100, y: 100,
-                    width: w, height: h,
-                    dataURL: imageUrl
+                    x: -panOffset.x + 100 / scale, // Place relative to viewport
+                    y: -panOffset.y + 100 / scale,
+                    width: w,
+                    height: h,
+                    dataURL: url, // Cloudinary URL
+                    aspectRatio: img.width / img.height // Store aspect ratio for resize
                 };
+
+                const newIndex = elements.length;
                 setElements(prev => [...prev, newElement]);
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
                 setRedoStack([]);
                 if (socket) socket.emit('draw-element', { roomId, ...newElement });
 
-                // Auto-switch to select mode so user can move/resize immediately
+                // Auto-switch to select mode and select the newly added image
+                console.log('Image uploaded, switching to select mode, index:', newIndex);
                 setTool('select');
+                setTimeout(() => {
+                    setSelectedElement({
+                        index: newIndex,
+                        offsetX: 0,
+                        offsetY: 0
+                    });
+                    console.log('Image selected:', newIndex);
+                }, 100);
             };
-            img.src = imageUrl;
+            img.src = url;
 
         } catch (error) {
             console.error("Upload failed", error);
@@ -1427,7 +1467,12 @@ const Whiteboard = () => {
                     defaultValue={editingElement.text}
                     onBlur={saveNote}
                     onInput={(e) => {
-                        const isFixed = elements[editingElement.index]?.isFixedWidth || editingElement.type === 'sticky';
+                        // Skip auto-resize for sticky notes - they have fixed dimensions
+                        if (editingElement.type === 'sticky') {
+                            return; // Don't modify dimensions for sticky notes
+                        }
+
+                        const isFixed = elements[editingElement.index]?.isFixedWidth;
                         if (!isFixed) {
                             e.target.style.width = '0px';
                             e.target.style.height = '0px';
@@ -1450,11 +1495,19 @@ const Whiteboard = () => {
                         position: 'absolute',
                         left: (editingElement.x + panOffset.x) * scale,
                         top: (editingElement.y + panOffset.y) * scale,
-                        width: Math.max(100, editingElement.width) * scale,
-                        height: Math.max(50, editingElement.height) * scale,
+                        width: ((elements[editingElement.index]?.width || editingElement.width || 100)) * scale,
+                        height: ((elements[editingElement.index]?.height || editingElement.height || 50)) * scale,
                         backgroundColor: editingElement.type === 'sticky' ? '#fef08a' : 'transparent',
                         color: editingElement.type === 'sticky' ? '#000' : (editingElement.color || color),
-                        fontSize: (editingElement.type === 'sticky' ? 16 : (elements[editingElement.index]?.size || 5) * 5) * scale + 'px',
+                        fontSize: (() => {
+                            if (editingElement.type === 'sticky') {
+                                // Font size proportional to note width (10% of width)
+                                // Multiply by scale to convert to screen pixels
+                                const fontSize = (editingElement.width * 0.10) * scale;
+                                return fontSize + 'px';
+                            }
+                            return ((elements[editingElement.index]?.size || 5) * 5) * scale + 'px';
+                        })(),
                         transformOrigin: 'top left', // Important for reliable scaling
                         fontFamily: 'sans-serif',
                         padding: (editingElement.type === 'sticky' ? 30 : 0) * scale + 'px ' + (10 * scale) + 'px',
@@ -1488,10 +1541,10 @@ const Whiteboard = () => {
                 onTouchEnd={handleTouchEnd}
                 onDoubleClick={(e) => {
                     const { x: offsetX, y: offsetY } = getMousePos(e);
-                    // Check for sticky note OR text
+                    // Check for sticky note only
                     for (let i = elements.length - 1; i >= 0; i--) {
                         const el = elements[i];
-                        if ((el.type === 'sticky' || el.type === 'text') && isWithinElement(offsetX, offsetY, el)) {
+                        if (el.type === 'sticky' && isWithinElement(offsetX, offsetY, el)) {
                             // Enter Edit Mode (React Way)
                             const initialText = el.text === "Double click to edit..." ? "" : el.text;
                             setEditingElement({
@@ -1500,13 +1553,10 @@ const Whiteboard = () => {
                                 text: initialText,
                                 x: el.x,
                                 y: el.y,
-                                width: el.width || (el.type === 'text' ? 100 : 200),
-                                height: el.height || (el.type === 'text' ? 30 : 200),
+                                width: el.width,
+                                height: el.height,
                                 color: el.color
                             });
-                            // Sync Toolbar
-                            if (el.color) setColor(el.color);
-                            if (el.size) setBrushSize(el.size);
                             return;
                         }
                     }
@@ -1538,7 +1588,7 @@ const Whiteboard = () => {
                     </div>
 
                     {/* Primary Tools Dock */}
-                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-x-auto max-w-full">
+                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full">
 
                         {/* Tools */}
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
@@ -1547,7 +1597,6 @@ const Whiteboard = () => {
                                 { id: 'highlighter', icon: FaHighlighter },
                                 { id: 'eraser', icon: FaEraser },
                                 { id: 'line', icon: FaSlash },
-                                { id: 'text', icon: FaFont },
                             ].map((t) => (
                                 <button
                                     key={t.id}
@@ -1561,13 +1610,16 @@ const Whiteboard = () => {
                             ))}
                             <div className="relative">
                                 <button
-                                    onClick={() => setShowShapeMenu(!showShapeMenu)}
-                                    className={`p-3 rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
+                                    onClick={() => {
+                                        console.log('Shape menu clicked, current state:', showShapeMenu);
+                                        setShowShapeMenu(!showShapeMenu);
+                                    }}
+                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                     title="Shapes"
                                 >
-                                    <FaDrawPolygon />
+                                    <FaDrawPolygon className="text-sm sm:text-base" />
                                 </button>
                                 <AnimatePresence>
                                     {showShapeMenu && (
@@ -1575,7 +1627,7 @@ const Whiteboard = () => {
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl"
+                                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl z-50"
                                         >
                                             {[
                                                 { id: 'rect', icon: BsSquare, label: 'Square' },

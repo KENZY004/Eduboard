@@ -3,15 +3,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaLock, FaEnvelope } from 'react-icons/fa';
-import { BsLightningChargeFill, BsStars } from 'react-icons/bs';
+import { BsLightningChargeFill } from 'react-icons/bs';
+import TeacherCharacter from '../components/TeacherCharacter';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from || '/';
-
+    const from = location.state?.from || '/dashboard';
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -36,19 +36,24 @@ const Login = () => {
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-[#020617]/80"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
             >
                 <div>
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center gap-2 mb-8 sm:mb-12"
+                        className="flex items-center justify-between mb-8 sm:mb-12"
                     >
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                            <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                                <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
+                            </div>
+                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
                         </div>
-                        <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                        <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+                            ← Back to Home
+                        </Link>
                     </motion.div>
 
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
@@ -119,41 +124,30 @@ const Login = () => {
                 </p>
             </motion.div>
 
-            {/* Right: Abstract Composition */}
-            <div className="hidden lg:flex relative items-center justify-center bg-[#020617] overflow-hidden">
-                {/* Expanding Rings */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[800px] h-[800px] border border-white/5 rounded-full absolute animate-[spin_60s_linear_infinite]"></div>
-                    <div className="w-[600px] h-[600px] border border-white/5 rounded-full absolute animate-[spin_40s_linear_infinite_reverse]"></div>
-                    <div className="w-[400px] h-[400px] border border-white/5 rounded-full absolute animate-[spin_20s_linear_infinite]"></div>
+            {/* Right: Animated Teacher Character */}
+            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950 overflow-hidden">
+                {/* Decorative background elements */}
+                <div className="absolute inset-0 opacity-30">
+                    <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-400 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-20 w-32 h-32 bg-purple-400 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
                 </div>
 
-                <div className="relative z-10 w-full max-w-md">
-                    <motion.div
-                        animate={{ y: [0, -20, 0] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative"
-                    >
-                        {/* Glass Card */}
-                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-10 rounded-3xl shadow-2xl relative z-20">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="p-3 bg-white/10 rounded-xl">
-                                    <BsStars className="text-3xl text-indigo-400" />
-                                </div>
-                                <div className="text-right">
-                                    <h4 className="text-2xl font-bold text-white">Welcome Back</h4>
-                                    <p className="text-indigo-400 text-sm">Ready to create</p>
-                                </div>
-                            </div>
+                <div className="relative z-10 w-full max-w-lg px-8">
+                    <TeacherCharacter className="w-full h-auto" />
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <p className="text-white font-medium">✓ Pick up where you left off</p>
-                                    <p className="text-white font-medium">✓ Access your saved boards</p>
-                                    <p className="text-white font-medium">✓ Collaborate in real-time</p>
-                                </div>
-                            </div>
-                        </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="mt-8 text-center"
+                    >
+                        <h3 className="text-2xl font-bold text-white mb-3">
+                            Welcome Back, Educator! 👋
+                        </h3>
+                        <p className="text-slate-300 text-lg">
+                            Continue inspiring students with interactive lessons
+                        </p>
                     </motion.div>
                 </div>
             </div>

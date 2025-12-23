@@ -44,6 +44,8 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+const imageRoutes = require('./routes/imageRoutes');
+app.use('/api/images', imageRoutes);
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));

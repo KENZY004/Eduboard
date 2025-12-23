@@ -1,17 +1,65 @@
 @import "tailwindcss";
 
+/* ===== Theme Variables ===== */
 :root {
+  /* Fonts */
   --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Light Mode Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-depth: #e2e8f0;
+  --bg-surface: rgba(255, 255, 255, 0.8);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+
+  --accent-primary: #6366f1;
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #06b6d4;
+  --accent-hover: #4f46e5;
+
+  --border-subtle: #e2e8f0;
+  --border-glow: rgba(99, 102, 241, 0.3);
+
+  --shadow-sm: rgba(0, 0, 0, 0.05);
+  --shadow-md: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
   --bg-depth: #020617;
-  /* Deep Slate/Black */
-  --bg-surface: #0f172a;
+  --bg-surface: rgba(15, 23, 42, 0.6);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+
+  --accent-primary: #6366f1;
+  --accent-secondary: #a78bfa;
+  --accent-tertiary: #22d3ee;
+  --accent-hover: #818cf8;
+
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(99, 102, 241, 0.5);
-  /* Indigo glow */
-  --primary: #6366f1;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.5);
+  --shadow-lg: rgba(0, 0, 0, 0.7);
+
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
+
 
 html,
 body,
@@ -20,11 +68,16 @@ body,
   margin: 0;
   padding: 0;
   font-family: var(--font-inter);
-  background-color: var(--bg-depth);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   overflow-x: hidden;
   letter-spacing: -0.015em;
-  /* Tighter tracking for "engineered" look */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth theme transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* Aurora Background */
@@ -138,4 +191,26 @@ h6 {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Scroll Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.scroll-animate {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
 }
