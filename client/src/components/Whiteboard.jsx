@@ -104,6 +104,24 @@ const Whiteboard = () => {
             }
         });
 
+        // Delete element (for undo synchronization)
+        socket.on('delete-element', (elementId) => {
+            console.log('[DELETE-ELEMENT] Received delete for ID:', elementId);
+            setElements(prev => {
+                console.log('[DELETE-ELEMENT] Current elements:', prev.length);
+                const filtered = prev.filter(el => el.id !== elementId);
+                console.log('[DELETE-ELEMENT] After filter:', filtered.length);
+                return filtered;
+            });
+        });
+
+        // Clear canvas (when teacher clicks Clear All button)
+        socket.on('clear-canvas', () => {
+            console.log('[CLEAR-CANVAS] Clearing all elements');
+            setElements([]);
+            setHistory([]);
+        });
+
         socket.on('load-board', (loadedElements) => {
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
@@ -781,6 +799,11 @@ const Whiteboard = () => {
             setElements(prev => [...prev, newElement]);
             setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
 
+            // Emit immediately so students see note appear
+            if (socket) {
+                socket.emit('draw-element', { roomId, ...newElement });
+            }
+
             // For sticky, switch to select immediately
             setTool('select');
             return;
@@ -1035,16 +1058,12 @@ const Whiteboard = () => {
 
         if (lastAction.type === 'ADD') {
             // Remove the added element
-            // Assuming simplified model where ADDs are appended.
-            // Safe approach: Filter by ID if IDs are reliable, or just pop if local-only linear.
-            // MVP: Pop last element (might be risky if collab inserted stuff? No, 'elements' mixes everyone).
-            // We should remove by ID.
+            console.log('[UNDO] Removing element ID:', lastAction.element.id);
             setElements(prev => prev.filter(el => el.id !== lastAction.element.id));
+            // Emit delete to other users for undo synchronization
             if (socket) {
-                // How to undo ADD in collab? We don't have a 'delete' event yet other than clear?
-                // Actually, we do not have a specific 'delete-element' yet.
-                // But user didn't ask for remote undo yet. Local undo is priority.
-                // MVP: Just local remove.
+                console.log('[UNDO] Emitting delete-element for ID:', lastAction.element.id);
+                socket.emit('delete-element', { roomId, elementId: lastAction.element.id });
             }
         } else if (lastAction.type === 'UPDATE') {
             // Revert changes - FIND INDEX BY ID for stability
@@ -1546,6 +1565,20 @@ const Whiteboard = () => {
                     onInput={(e) => {
                         // Skip auto-resize for sticky notes - they have fixed dimensions
                         if (editingElement.type === 'sticky') {
+                            // Emit text updates in real-time so students see typing
+                            const index = editingElement.index;
+                            const newText = e.target.value;
+
+                            // Update local state
+                            const updated = [...elements];
+                            updated[index] = { ...updated[index], text: newText };
+                            setElements(updated);
+
+                            // Emit to other users
+                            if (socket) {
+                                socket.emit('draw-element', { roomId, ...updated[index] });
+                            }
+
                             return; // Don't modify dimensions for sticky notes
                         }
 
