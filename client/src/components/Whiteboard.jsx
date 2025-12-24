@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
     FaEraser, FaPen, FaTrash, FaSignOutAlt, FaShareAlt, FaCopy,
     FaSlash, FaUndo, FaRedo, FaSave, FaMoon, FaSun, FaDownload, FaFilePdf, FaFont,
-    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon
+    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes
 } from 'react-icons/fa';
 import {
     BsSquare, BsCircle, BsTriangle, BsPentagon, BsHexagon, BsOctagon, BsStar,
@@ -30,7 +30,16 @@ const Whiteboard = () => {
     // Debug: Expose elements -> Removed
     // useEffect(() => { window.elements = elements; }, [elements]);
 
-    const user = JSON.parse(localStorage.getItem('user'));
+    let user = null;
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            user = JSON.parse(userStr);
+        }
+    } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+        user = null;
+    }
     const isStudent = user?.role === 'student';
 
     const [isDrawing, setIsDrawing] = useState(false);
@@ -45,6 +54,12 @@ const Whiteboard = () => {
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isSpacePressed, setIsSpacePressed] = useState(false);
     const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders for remote strokes
+
+    // Per-student permission states
+    const [connectedUsers, setConnectedUsers] = useState([]); // All users in room
+    const [allowedStudents, setAllowedStudents] = useState([]); // Students with permission
+    const [hasEditPermission, setHasEditPermission] = useState(false); // Current student's permission
+    const [showStudentPanel, setShowStudentPanel] = useState(false); // Panel visibility
 
     const [currentElement, setCurrentElement] = useState(null);
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
@@ -62,7 +77,13 @@ const Whiteboard = () => {
     useEffect(() => {
         const newSocket = io(import.meta.env.VITE_API_BASE_URL);
         setSocket(newSocket);
-        newSocket.emit('join-room', roomId);
+
+        // Send user data when joining room
+        newSocket.emit('join-room', roomId, {
+            userId: user?.id,
+            username: user?.username || user?.email?.split('@')[0] || 'Anonymous',
+            role: user?.role || 'student'
+        });
 
         return () => newSocket.close();
     }, [roomId]);
@@ -122,13 +143,24 @@ const Whiteboard = () => {
             setHistory([]);
         });
 
-        socket.on('load-board', (loadedElements) => {
+        socket.on('load-board', (boardData) => {
+            // Handle both old format (array) and new format (object)
+            const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
+            const allowedStudentsList = boardData.allowedStudents || [];
+
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
             loadedElements.forEach(el => {
                 uniqueMap.set(el.id, el); // Latest wins
             });
             setElements(Array.from(uniqueMap.values()));
+            setAllowedStudents(allowedStudentsList);
+
+            // Check if current student has permission
+            if (user?.role === 'student') {
+                const hasPermission = allowedStudentsList.some(s => s._id === user.id);
+                setHasEditPermission(hasPermission);
+            }
         });
 
         socket.on('clear-canvas', () => {
@@ -150,6 +182,29 @@ const Whiteboard = () => {
             }
         });
 
+        // Room users updated (for teacher's student panel)
+        socket.on('room-users-updated', (users) => {
+            setConnectedUsers(users);
+        });
+
+        // Student editing permission changed (for individual students)
+        socket.on('editing-permission-changed', (hasPermission) => {
+            if (user?.role === 'student') {
+                setHasEditPermission(hasPermission);
+            }
+        });
+
+        // Theme synchronization (students follow teacher's theme)
+        socket.on('theme-changed', (isDark) => {
+            console.log('[THEME-SYNC] Received theme-changed event, isDark:', isDark, 'Current role:', user?.role);
+            if (user?.role === 'student') {
+                console.log('[THEME-SYNC] Applying theme change for student');
+                setDarkMode(isDark);
+            } else {
+                console.log('[THEME-SYNC] Ignoring theme change (not a student)');
+            }
+        });
+
         return () => {
             socket.off('draw-element');
             socket.off('drawing-stroke');
@@ -157,6 +212,9 @@ const Whiteboard = () => {
             socket.off('clear-canvas');
             socket.off('cursor-move');
             socket.off('viewport-change');
+            socket.off('room-users-updated');
+            socket.off('editing-permission-changed');
+            socket.off('theme-changed');
         };
     }, [socket]);
 
@@ -654,8 +712,10 @@ const Whiteboard = () => {
     };
 
     const startDrawing = (e) => {
-        // View-only mode for students
-        if (isStudent) return;
+        // Check if user can edit (teacher always can, student needs permission)
+        const canEdit = user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission);
+        if (!canEdit) return;
+
         // Spacebar Panning Logic
         if (isSpacePressed) {
             const { clientX, clientY } = e;
@@ -1549,11 +1609,28 @@ const Whiteboard = () => {
                     </AnimatePresence>
                 </div>
 
-                <div className="flex items-center gap-2 pointer-events-auto">
-                    <button onClick={() => setDarkMode(!darkMode)} className={`p-3 rounded-full shadow-lg transition-all ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-700 hover:bg-gray-50'}`}>
-                        {darkMode ? <FaSun /> : <FaMoon />}
-                    </button>
-                </div>
+                {/* Theme Toggle - Teacher Only */}
+                {user?.role === 'teacher' && (
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={() => {
+                                const newTheme = !darkMode;
+                                console.log('[THEME-SYNC] Teacher toggling theme to:', newTheme);
+                                setDarkMode(newTheme);
+                                // Sync theme to all students
+                                if (socket) {
+                                    console.log('[THEME-SYNC] Emitting change-theme event, roomId:', roomId, 'isDark:', newTheme);
+                                    socket.emit('change-theme', { roomId, isDark: newTheme });
+                                } else {
+                                    console.error('[THEME-SYNC] Socket not available!');
+                                }
+                            }}
+                            className={`p-3 rounded-full shadow-lg transition-all ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-700 hover:bg-gray-50'}`}
+                        >
+                            {darkMode ? <FaSun /> : <FaMoon />}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Note/Text Editing Overlay */}
@@ -1677,24 +1754,159 @@ const Whiteboard = () => {
             {/* View Only Badge for Students */}
             {isStudent && (
                 <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="bg-cyan-500/20 border border-cyan-500/30 px-6 py-3 rounded-full backdrop-blur-xl">
+                    <div className={`px-6 py-3 rounded-full backdrop-blur-xl ${hasEditPermission
+                        ? 'bg-green-500/20 border border-green-500/30'
+                        : 'bg-cyan-500/20 border border-cyan-500/30'
+                        }`}>
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
-                            <span className="text-cyan-400 font-medium text-sm">View Only Mode</span>
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${hasEditPermission ? 'bg-green-400' : 'bg-cyan-400'
+                                }`}></div>
+                            <span className={`font-medium text-sm ${hasEditPermission ? 'text-green-400' : 'text-cyan-400'
+                                }`}>
+                                {hasEditPermission ? 'Editing Enabled' : 'View Only Mode'}
+                            </span>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Main Toolbar - Minimal Island - Hidden for Students */}
-            {!isStudent && (
+            {/* Student Management Panel for Teachers */}
+            {user?.role === 'teacher' && (
+                <AnimatePresence>
+                    {showStudentPanel && (
+                        <motion.div
+                            initial={{ x: 300, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 300, opacity: 0 }}
+                            className="fixed right-4 top-20 w-80 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 max-h-[70vh] overflow-hidden flex flex-col"
+                        >
+                            {/* Header */}
+                            <div className="p-4 border-b border-white/10">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-white font-semibold flex items-center gap-2">
+                                        <FaUsers className="text-blue-400" />
+                                        Connected Students
+                                    </h3>
+                                    <button onClick={() => setShowStudentPanel(false)} className="text-slate-400 hover:text-white transition-colors">
+                                        <FaTimes />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Student List */}
+                            <div className="flex-1 overflow-y-auto p-2">
+                                {connectedUsers.filter(u => u.role === 'student').length === 0 ? (
+                                    <div className="text-center text-slate-400 py-8">
+                                        No students connected
+                                    </div>
+                                ) : (
+                                    connectedUsers
+                                        .filter(u => u.role === 'student')
+                                        .map(student => {
+                                            const hasPermission = allowedStudents.some(s => s._id === student.userId);
+
+                                            return (
+                                                <div
+                                                    key={student.userId}
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors mb-2"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                                            {student.username.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-white font-medium">{student.username}</div>
+                                                            <div className="text-xs text-slate-400">
+                                                                {hasPermission ? 'Can edit' : 'View only'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            if (hasPermission) {
+                                                                socket.emit('revoke-student-permission', { roomId, studentId: student.userId });
+                                                                setAllowedStudents(prev => prev.filter(s => s._id !== student.userId));
+                                                            } else {
+                                                                socket.emit('grant-student-permission', { roomId, studentId: student.userId });
+                                                                setAllowedStudents(prev => [...prev, { _id: student.userId, username: student.username }]);
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${hasPermission
+                                                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                                            : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                                            }`}
+                                                    >
+                                                        {hasPermission ? 'Revoke' : 'Grant'}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                )}
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="p-3 border-t border-white/10 flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
+                                        studentIds.forEach(id => {
+                                            socket.emit('grant-student-permission', { roomId, studentId: id });
+                                        });
+                                        const students = connectedUsers.filter(u => u.role === 'student').map(s => ({ _id: s.userId, username: s.username }));
+                                        setAllowedStudents(students);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+                                >
+                                    Grant All
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
+                                        studentIds.forEach(id => {
+                                            socket.emit('revoke-student-permission', { roomId, studentId: id });
+                                        });
+                                        setAllowedStudents([]);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
+                                >
+                                    Revoke All
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
+
+            {/* Main Toolbar - Hidden for Students unless editing is enabled */}
+            {(user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission)) && (
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
                         <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
                         <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
                         <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
-                        <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
+                        {user?.role === 'teacher' && (
+                            <>
+                                <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
+                                <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                                <button
+                                    onClick={() => setShowStudentPanel(!showStudentPanel)}
+                                    className={`p-2 sm:p-2.5 rounded-full transition-colors relative ${showStudentPanel
+                                        ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    title="Manage Student Permissions"
+                                >
+                                    <FaUsers className="text-sm sm:text-base" />
+                                    {connectedUsers.filter(u => u.role === 'student').length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                                            {connectedUsers.filter(u => u.role === 'student').length}
+                                        </span>
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Primary Tools Dock */}

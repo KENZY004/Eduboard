@@ -248,21 +248,47 @@ app.delete('/api/boards/unsave/:boardId', async (req, res) => {
 
 
 
+// Track connected users per room
+const roomUsers = new Map(); // roomId -> Map of userId -> { username, socketId, role }
+
 // Socket.io Logic
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join-room', async (roomId) => {
+  socket.on('join-room', async (roomId, userData) => {
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    console.log(`User ${socket.id} joined room ${roomId}`, userData);
 
-    // Load Board History
+    // Track user in room (only if userData is provided)
+    if (userData && userData.userId) {
+      if (!roomUsers.has(roomId)) {
+        roomUsers.set(roomId, new Map());
+      }
+      roomUsers.get(roomId).set(userData.userId, {
+        userId: userData.userId,
+        username: userData.username,
+        socketId: socket.id,
+        role: userData.role
+      });
+
+      // Broadcast updated user list to all users in room
+      const users = Array.from(roomUsers.get(roomId).values());
+      io.to(roomId).emit('room-users-updated', users);
+    }
+
+    // Load Board History with allowed students
     try {
-      let board = await Board.findOne({ roomId });
+      let board = await Board.findOne({ roomId }).populate('allowedStudents', 'username email');
       if (board) {
-        socket.emit('load-board', board.elements);
+        socket.emit('load-board', {
+          elements: board.elements,
+          allowedStudents: board.allowedStudents || []
+        });
       } else {
-        socket.emit('load-board', []);
+        socket.emit('load-board', {
+          elements: [],
+          allowedStudents: []
+        });
       }
     } catch (err) {
       console.error('Error loading board:', err);
@@ -329,7 +355,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('clear-canvas', async (roomId) => {
-    socket.to(roomId).emit('clear-canvas');
+    // Broadcast to ALL users in room (including sender)
+    io.to(roomId).emit('clear-canvas');
     // Clear DB
     try {
       await Board.findOneAndUpdate(
@@ -342,6 +369,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Theme synchronization
+  socket.on('change-theme', ({ roomId, isDark }) => {
+    console.log(`[THEME-SYNC] Received change-theme from ${socket.id} for room ${roomId}, isDark: ${isDark}`);
+    // Broadcast theme change to all students in room
+    socket.to(roomId).emit('theme-changed', isDark);
+    console.log(`[THEME-SYNC] Broadcasted theme-changed to room ${roomId}`);
+  });
+
   socket.on('cursor-move', (data) => {
     socket.to(data.roomId).emit('cursor-move', data);
   });
@@ -350,8 +385,78 @@ io.on('connection', (socket) => {
     socket.to(data.roomId).emit('viewport-change', data);
   });
 
+  // Grant editing permission to specific student
+  socket.on('grant-student-permission', async ({ roomId, studentId }) => {
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        { $addToSet: { allowedStudents: studentId } }
+      );
+
+      // Notify specific student
+      const roomUsersList = roomUsers.get(roomId);
+      if (roomUsersList) {
+        const student = roomUsersList.get(studentId);
+        if (student) {
+          io.to(student.socketId).emit('editing-permission-changed', true);
+        }
+      }
+    } catch (err) {
+      console.error('Error granting permission:', err);
+    }
+  });
+
+  // Revoke editing permission from specific student
+  socket.on('revoke-student-permission', async ({ roomId, studentId }) => {
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        { $pull: { allowedStudents: studentId } }
+      );
+
+      // Notify specific student
+      const roomUsersList = roomUsers.get(roomId);
+      if (roomUsersList) {
+        const student = roomUsersList.get(studentId);
+        if (student) {
+          io.to(student.socketId).emit('editing-permission-changed', false);
+        }
+      }
+    } catch (err) {
+      console.error('Error revoking permission:', err);
+    }
+  });
+
+  // Toggle student editing permission
+  socket.on('toggle-student-editing', async ({ roomId, allowEditing }) => {
+    // Broadcast to all users in room
+    socket.to(roomId).emit('student-editing-changed', allowEditing);
+
+    // Update database
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        { $set: { allowStudentEditing: allowEditing } }
+      );
+    } catch (err) {
+      console.error('Error updating student editing permission:', err);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+
+    // Remove user from all rooms
+    roomUsers.forEach((users, roomId) => {
+      for (const [userId, userData] of users.entries()) {
+        if (userData.socketId === socket.id) {
+          users.delete(userId);
+          // Broadcast updated user list
+          io.to(roomId).emit('room-users-updated', Array.from(users.values()));
+          break;
+        }
+      }
+    });
   });
 });
 
