@@ -44,6 +44,7 @@ const Whiteboard = () => {
     const [scale, setScale] = useState(1);
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isSpacePressed, setIsSpacePressed] = useState(false);
+    const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders for remote strokes
 
     const [currentElement, setCurrentElement] = useState(null);
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
@@ -52,6 +53,7 @@ const Whiteboard = () => {
     const textAreaRef = useRef(null);
     const draggedElementRef = useRef(null); // Fix for stale state in history
     const currentStrokeRef = useRef(null); // Optimization: Mutable ref for drawing to bypass React Render Cycle
+    const lastEmitTimeRef = useRef(0); // Throttle socket emissions
 
     const navigate = useNavigate();
     const { roomId } = useParams();
@@ -82,14 +84,23 @@ const Whiteboard = () => {
                     return [...prev, element];
                 }
             });
+
+            // Clean up remote stroke when it's finalized
+            if (window.remoteStrokes && element.userId) {
+                delete window.remoteStrokes[element.userId];
+            }
         });
 
         // Real-time stroke updates (while drawing)
         socket.on('drawing-stroke', (strokeData) => {
-            // Update currentStrokeRef for other users to see live drawing
+            // Store the remote user's current stroke for rendering
+            // We use a separate ref to avoid state updates during rapid drawing
             if (strokeData.userId !== user?.id) {
-                currentStrokeRef.current = strokeData.stroke;
-                renderCanvas();
+                // Store in a map by userId so multiple users can draw simultaneously
+                if (!window.remoteStrokes) window.remoteStrokes = {};
+                window.remoteStrokes[strokeData.userId] = strokeData.stroke;
+                // Force re-render without modifying elements
+                setRenderTrigger(prev => prev + 1);
             }
         });
 
@@ -112,12 +123,22 @@ const Whiteboard = () => {
             setCursors(prev => ({ ...prev, [data.userId]: data }));
         });
 
+        // Viewport sync - students follow teacher's view
+        socket.on('viewport-change', (viewportData) => {
+            // Only students should follow teacher's viewport
+            if (isStudent && viewportData.userId !== user?.id) {
+                setScale(viewportData.scale);
+                setPanOffset(viewportData.panOffset);
+            }
+        });
+
         return () => {
             socket.off('draw-element');
+            socket.off('drawing-stroke');
             socket.off('load-board');
             socket.off('clear-canvas');
-            socket.off('clear-canvas');
             socket.off('cursor-move');
+            socket.off('viewport-change');
         };
     }, [socket]);
 
@@ -133,6 +154,7 @@ const Whiteboard = () => {
             if (type === 'eraser') {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.strokeStyle = 'rgba(0,0,0,1)';
+                ctx.globalAlpha = 1.0; // Full opacity to completely erase
             } else {
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = color;
@@ -174,6 +196,8 @@ const Whiteboard = () => {
                     }
                 }
                 ctx.stroke();
+                // Reset globalAlpha and globalCompositeOperation after highlighter
+                ctx.globalAlpha = 1.0;
                 ctx.globalCompositeOperation = 'source-over';
             }
         } else if (type === 'rect') {
@@ -280,6 +304,9 @@ const Whiteboard = () => {
                 };
             }
         }
+        // CRITICAL: Reset all canvas state before restore to prevent contamination
+        ctx.globalAlpha = 1.0;
+        ctx.globalCompositeOperation = 'source-over';
         ctx.restore();
     };
 
@@ -299,14 +326,36 @@ const Whiteboard = () => {
         ctx.scale(scale, scale);
         ctx.translate(panOffset.x, panOffset.y);
 
-        elements.forEach((element, index) => {
+        // Sort elements by timestamp for consistent z-ordering across clients
+        // Elements without timestamp (from old deployed version) get timestamp 0 (render first/bottom)
+        const sortedElements = [...elements].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        // Integrate remote users' in-progress strokes into sorted elements for proper z-ordering
+        // This maintains real-time drawing while respecting timestamp-based layering
+        if (window.remoteStrokes) {
+            Object.values(window.remoteStrokes).forEach(stroke => {
+                if (stroke && stroke.points && stroke.points.length > 0) {
+                    sortedElements.push(stroke);
+                }
+            });
+            // Re-sort to include remote strokes in correct z-order
+            sortedElements.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        }
+
+        // Debug: Log rendering order (remove after testing)
+        console.log('Rendering elements in order:', sortedElements.map(e => `${e.type}(${e.timestamp})`).join(' → '));
+
+        sortedElements.forEach((element) => {
+            // Find original index for selection/editing checks
+            const originalIndex = elements.findIndex(el => el.id === element.id);
+
             // Skip rendering if currently being edited (prevents double text defect)
-            if (editingElement && editingElement.index === index) {
+            if (editingElement && editingElement.index === originalIndex) {
                 if (element.type === 'sticky') return;
             }
             drawElement(ctx, element);
 
-            if (selectedElement && selectedElement.index === index) {
+            if (selectedElement && selectedElement.index === originalIndex) {
                 ctx.save();
                 ctx.strokeStyle = '#3b82f6'; // Blue
                 ctx.lineWidth = 2 / scale; // Keep border thin
@@ -335,6 +384,7 @@ const Whiteboard = () => {
             drawElement(ctx, currentElement);
         }
 
+
         ctx.restore();
     };
 
@@ -355,7 +405,19 @@ const Whiteboard = () => {
 
     useEffect(() => {
         renderCanvas();
-    }, [elements, darkMode, editingElement, scale, panOffset, currentElement]);
+    }, [elements, darkMode, editingElement, scale, panOffset, currentElement, renderTrigger]);
+
+    // Emit viewport changes for students to follow (teachers only)
+    useEffect(() => {
+        if (socket && !isStudent && user?.id) {
+            socket.emit('viewport-change', {
+                roomId,
+                userId: user.id,
+                scale,
+                panOffset
+            });
+        }
+    }, [scale, panOffset, socket, isStudent]);
 
 
 
@@ -559,6 +621,17 @@ const Whiteboard = () => {
         // SINGLE RENDER PER FRAME
         if (hasUpdates && action === 'drawing' && currentStrokeRef.current) {
             renderCanvas();
+
+            // Emit real-time stroke updates to other users (throttled to ~60fps)
+            const now = Date.now();
+            if (socket && currentStrokeRef.current.points.length > 0 && (now - lastEmitTimeRef.current) > 16) {
+                socket.emit('drawing-stroke', {
+                    roomId,
+                    userId: user?.id,
+                    stroke: currentStrokeRef.current
+                });
+                lastEmitTimeRef.current = now;
+            }
         }
     };
 
@@ -701,7 +774,8 @@ const Whiteboard = () => {
                 y: offsetY - (100 / scale),
                 width: 200 / scale,  // Scale-independent width
                 height: 200 / scale, // Scale-independent height
-                text: "Double click to edit..."
+                text: "Double click to edit...",
+                timestamp: Date.now() // For consistent z-ordering across clients
             };
 
             setElements(prev => [...prev, newElement]);
@@ -725,7 +799,8 @@ const Whiteboard = () => {
                 type: tool,
                 color,
                 size: brushSize / scale,
-                points: [{ x: offsetX, y: offsetY }]
+                points: [{ x: offsetX, y: offsetY }],
+                timestamp: Date.now() // For consistent z-ordering across clients
             };
             // Do NOT setCurrentElement here to avoid render. 
             // We consciously trigger renderCanvas in loop manually or let requestAnimationFrame handle it?
@@ -739,7 +814,8 @@ const Whiteboard = () => {
                 x: offsetX,
                 y: offsetY,
                 width: 0,
-                height: 0
+                height: 0,
+                timestamp: Date.now() // For consistent z-ordering across clients
             });
         }
     };
@@ -1225,7 +1301,8 @@ const Whiteboard = () => {
                     width: w,
                     height: h,
                     dataURL: url, // Cloudinary URL
-                    aspectRatio: img.width / img.height // Store aspect ratio for resize
+                    aspectRatio: img.width / img.height, // Store aspect ratio for resize
+                    timestamp: Date.now() // For consistent z-ordering across clients
                 };
 
                 const newIndex = elements.length;
