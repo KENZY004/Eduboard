@@ -327,6 +327,10 @@ io.on('connection', (socket) => {
     socket.to(data.roomId).emit('cursor-move', data);
   });
 
+  socket.on('viewport-change', (data) => {
+    socket.to(data.roomId).emit('viewport-change', data);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
