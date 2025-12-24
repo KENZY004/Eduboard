@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const User = require('../models/User');
 const TeacherVerification = require('../models/TeacherVerification');
+const Board = require('../models/Board');
+const SavedBoard = require('../models/SavedBoard');
 
 /**
  * GET /api/admin/pending-teachers
@@ -78,6 +80,55 @@ router.delete('/teacher/:userId', async (req, res) => {
     } catch (err) {
         console.error('Error removing teacher:', err);
         res.status(500).json({ message: 'Failed to remove teacher', error: err.message });
+    }
+});
+
+/**
+ * DELETE /api/admin/user/:userId
+ * Comprehensive user deletion with cleanup of all related data
+ * Use this for complete user removal (students, teachers, or any user)
+ */
+router.delete('/user/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the user first
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log(`[ADMIN] Deleting user: ${user.username} (${user.email})`);
+
+        // Clean up all related data
+        await TeacherVerification.deleteMany({ userId });
+        await SavedBoard.deleteMany({ userId });
+
+        // Update boards created by this user (set creator to null instead of deleting boards)
+        await Board.updateMany(
+            { createdBy: userId },
+            { $set: { createdBy: null } }
+        );
+
+        // Delete the user
+        await User.findByIdAndDelete(userId);
+
+        console.log(`[ADMIN] Successfully deleted user and cleaned up related data`);
+
+        res.json({
+            message: 'User deleted successfully',
+            deletedUser: {
+                username: user.username,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (err) {
+        console.error('Error deleting user:', err);
+        res.status(500).json({
+            message: 'Failed to delete user',
+            error: err.message
+        });
     }
 });
 
