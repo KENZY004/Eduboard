@@ -6,8 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * Send email notification to admin when a teacher registers
  */
 const sendTeacherRegistrationNotification = async (teacherData, documents) => {
-    // Use SMTP_USER (Resend verified email) for testing mode
-    const adminEmail = process.env.SMTP_USER || process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL;
 
     const documentList = documents.map(doc => {
         const docType = doc.type.replace('_', ' ').toUpperCase();
