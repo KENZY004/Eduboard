@@ -84,6 +84,23 @@ router.delete('/teacher/:userId', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/all-students
+ * Get all students with their registration details
+ */
+router.get('/all-students', async (req, res) => {
+    try {
+        const students = await User.find({ role: 'student' })
+            .select('username email createdAt')
+            .sort({ createdAt: -1 });
+
+        res.json(students);
+    } catch (err) {
+        console.error('Error fetching students:', err);
+        res.status(500).json({ message: 'Failed to fetch students', error: err.message });
+    }
+});
+
+/**
  * DELETE /api/admin/user/:userId
  * Comprehensive user deletion with cleanup of all related data
  * Use this for complete user removal (students, teachers, or any user)

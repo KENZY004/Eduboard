@@ -7,6 +7,7 @@ import { FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaEnvelope, FaCalendar, 
 const AdminPanel = () => {
     const [pendingTeachers, setPendingTeachers] = useState([]);
     const [allTeachers, setAllTeachers] = useState([]);
+    const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('pending');
     const [processingId, setProcessingId] = useState(null);
@@ -18,19 +19,23 @@ const AdminPanel = () => {
     const fetchTeachers = async () => {
         setLoading(true);
         try {
-            console.log('🔍 Fetching teachers from API...');
-            const [pendingRes, allRes] = await Promise.all([
+            console.log('🔍 Fetching teachers and students from API...');
+            const [pendingRes, allRes, studentsRes] = await Promise.all([
                 axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/pending-teachers`),
-                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-teachers`)
+                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-teachers`),
+                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-students`)
             ]);
             console.log('✅ Pending teachers response:', pendingRes.data);
             console.log('✅ All teachers response:', allRes.data);
+            console.log('✅ All students response:', studentsRes.data);
             setPendingTeachers(pendingRes.data);
             setAllTeachers(allRes.data);
+            setAllStudents(studentsRes.data);
             console.log(`📊 Set ${pendingRes.data.length} pending teachers`);
             console.log(`📊 Set ${allRes.data.length} total teachers`);
+            console.log(`📊 Set ${studentsRes.data.length} total students`);
         } catch (err) {
-            console.error('❌ Failed to fetch teachers:', err);
+            console.error('❌ Failed to fetch data:', err);
             console.error('Error details:', err.response?.data || err.message);
         } finally {
             setLoading(false);
@@ -86,6 +91,23 @@ const AdminPanel = () => {
             fetchTeachers();
         } catch (err) {
             alert('Failed to remove teacher: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleRemoveStudent = async (userId, username) => {
+        if (!confirm(`Are you sure you want to permanently remove ${username} from the platform? This action cannot be undone.`)) {
+            return;
+        }
+
+        setProcessingId(userId);
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/user/${userId}`);
+            alert(`${username} has been removed from the platform.`);
+            fetchTeachers(); // Refresh all data
+        } catch (err) {
+            alert('Failed to remove student: ' + (err.response?.data?.message || err.message));
         } finally {
             setProcessingId(null);
         }
@@ -214,6 +236,20 @@ const AdminPanel = () => {
                     <span className="flex items-center gap-2">
                         <FaUser />
                         All Teachers ({allTeachers.length})
+                    </span>
+                </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveTab('students')}
+                    className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'students'
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
+                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        }`}
+                >
+                    <span className="flex items-center gap-2">
+                        <FaUser />
+                        Students ({allStudents.length})
                     </span>
                 </motion.button>
             </div>
@@ -415,6 +451,74 @@ const AdminPanel = () => {
                                         </td>
                                     </motion.tr>
                                 ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* All Students */}
+            {activeTab === 'students' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-slate-700 rounded-3xl overflow-hidden shadow-2xl"
+                >
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-950/50 border-b border-slate-700">
+                                <tr>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Student</th>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Registered</th>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                                {allStudents.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4" className="px-8 py-12 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <FaUser className="text-4xl text-slate-600" />
+                                                <p className="text-slate-400">No students registered yet</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    allStudents.map((student, index) => (
+                                        <motion.tr
+                                            key={student._id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="hover:bg-slate-800/30 transition-colors"
+                                        >
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                                                        <FaUser className="text-white" />
+                                                    </div>
+                                                    <span className="text-white font-semibold">{student.username}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-slate-300">{student.email}</td>
+                                            <td className="px-8 py-5 text-slate-400 text-sm">
+                                                {new Date(student.createdAt).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <button
+                                                    onClick={() => handleRemoveStudent(student._id, student.username)}
+                                                    disabled={processingId === student._id}
+                                                    className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold"
+                                                    title="Remove student from platform"
+                                                >
+                                                    <FaTrash className="text-xs" />
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </motion.tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
