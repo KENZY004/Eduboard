@@ -40,7 +40,7 @@ const Dashboard = () => {
                 // Teachers: fetch boards they created
                 res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/user/${user.id}`);
             } else {
-                // Students: fetch boards they saved
+                // Students: fetch their saved boards (independent copies)
                 res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${user.id}`);
             }
             setSavedBoards(res.data);
@@ -81,25 +81,43 @@ const Dashboard = () => {
     };
 
     const handleDeleteBoard = async (roomId, boardName, boardId, e) => {
-        e.stopPropagation(); // Prevent opening the board when clicking delete
+        e.stopPropagation();
 
-        if (!window.confirm(`Are you sure you want to delete "${boardName}"? This action cannot be undone.`)) {
+        if (!window.confirm(`Are you sure you want to delete "${boardName}"?`)) {
             return;
         }
 
         try {
+            console.log('[DELETE] isTeacher:', isTeacher, 'roomId:', roomId, 'boardId:', boardId, 'userId:', user.id);
+
             if (isTeacher) {
                 // Teachers: delete the actual board
-                await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}?userId=${user.id}`);
+                try {
+                    const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}?userId=${user.id}`;
+                    console.log('[DELETE] Teacher URL (by roomId):', url);
+                    await axios.delete(url);
+                } catch (err) {
+                    // If delete by roomId fails, try by _id (for orphaned boards)
+                    if (err.response?.status === 404) {
+                        console.log('[DELETE] Trying by-id endpoint for orphaned board');
+                        const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/by-id/${boardId}?userId=${user.id}&force=true`;
+                        console.log('[DELETE] Teacher URL (by _id with force):', url);
+                        await axios.delete(url);
+                    } else {
+                        throw err;
+                    }
+                }
             } else {
-                // Students: unsave the board (doesn't delete it)
-                await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/boards/unsave/${boardId}?userId=${user.id}`);
+                // Students: delete their saved copy
+                const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${boardId}?userId=${user.id}`;
+                console.log('[DELETE] Student URL:', url);
+                await axios.delete(url);
             }
-            // Refresh the boards list
             fetchSavedBoards();
         } catch (err) {
             console.error('Error deleting board:', err);
-            alert('Failed to delete board. Please try again.');
+            console.error('Error response:', err.response?.data);
+            alert(`Failed to delete board: ${err.response?.data?.message || err.message}`);
         }
     };
 
@@ -232,7 +250,7 @@ const Dashboard = () => {
                                 <FaFolder className="text-indigo-400 text-base sm:text-lg" /> Saved Boards
                             </h3>
                             <p className="text-slate-500 text-xs">
-                                {isTeacher ? 'Your recent whiteboards' : 'Boards you\'ve saved for revision'}
+                                {isTeacher ? 'Your recent whiteboards' : 'Boards from classes you attended'}
                             </p>
                         </div>
                     </div>
@@ -248,7 +266,7 @@ const Dashboard = () => {
                                 <FaFolder className="text-slate-600 text-3xl mb-2" />
                                 <p className="text-slate-500 text-sm">No saved boards yet</p>
                                 <p className="text-slate-600 text-xs mt-1">
-                                    {isTeacher ? 'Create your first board to get started' : 'Join a board and save it for later'}
+                                    {isTeacher ? 'Create your first board to get started' : 'Join a class to see boards here'}
                                 </p>
                             </div>
                         ) : (
@@ -262,18 +280,26 @@ const Dashboard = () => {
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-white font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
-                                                {board.name}
+                                                {isTeacher
+                                                    ? (board.name || 'Untitled Board')
+                                                    : (board.boardName || 'Untitled Board')}
                                             </h4>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <FaClock className="text-slate-500 text-xs" />
-                                                <p className="text-slate-500 text-xs">{formatDate(board.updatedAt)}</p>
-                                            </div>
+                                            {!isTeacher && board.teacherName && (
+                                                <p className="text-slate-500 text-xs mt-1">
+                                                    Teacher: {board.teacherName}
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={(e) => handleDeleteBoard(board.roomId, board.name, board._id, e)}
+                                                onClick={(e) => handleDeleteBoard(
+                                                    board.roomId,
+                                                    isTeacher ? (board.name || 'Untitled Board') : (board.boardName || 'Untitled Board'),
+                                                    board._id,
+                                                    e
+                                                )}
                                                 className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
-                                                title={isTeacher ? "Delete board" : "Unsave board"}
+                                                title={isTeacher ? "Delete board" : "Remove from saved"}
                                             >
                                                 <FaTrash className="text-xs" />
                                             </button>

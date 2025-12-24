@@ -192,8 +192,8 @@ const AdminPanel = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveTab('pending')}
-                    className={`px-8 py-4 rounded-2xl font-bold transition-all text-lg ${activeTab === 'pending'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-2xl shadow-indigo-500/30 border border-indigo-400/30'
+                    className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'pending'
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
                         : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
                         }`}
                 >
@@ -206,8 +206,8 @@ const AdminPanel = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveTab('all')}
-                    className={`px-8 py-4 rounded-2xl font-bold transition-all text-lg ${activeTab === 'all'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-2xl shadow-indigo-500/30 border border-indigo-400/30'
+                    className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'all'
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
                         : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
                         }`}
                 >
@@ -230,8 +230,8 @@ const AdminPanel = () => {
                             <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <FaCheckCircle className="text-6xl text-green-400" />
                             </div>
-                            <h3 className="text-3xl font-bold text-white mb-3">All Caught Up!</h3>
-                            <p className="text-slate-400 text-lg">No pending teacher verifications at the moment</p>
+                            <h3 className="text-2xl font-semibold text-white mb-2">All Caught Up!</h3>
+                            <p className="text-slate-400">No pending teacher verifications at the moment</p>
                         </motion.div>
                     ) : (
                         pendingTeachers.map((teacher, index) => (

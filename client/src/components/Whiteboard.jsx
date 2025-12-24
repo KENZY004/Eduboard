@@ -138,12 +138,24 @@ const Whiteboard = () => {
 
         // Clear canvas (when teacher clicks Clear All button)
         socket.on('clear-canvas', () => {
-            console.log('[CLEAR-CANVAS] Clearing all elements');
+            console.log('[CLEAR-CANVAS] Received clear-canvas event');
             setElements([]);
             setHistory([]);
+            setRedoStack([]);
+
+            // Use requestAnimationFrame to ensure canvas clears after state update
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        console.log('[CLEAR-CANVAS] Canvas cleared');
+                    }
+                });
+            });
         });
 
-        socket.on('load-board', (boardData) => {
+        socket.on('load-board', async (boardData) => {
             // Handle both old format (array) and new format (object)
             const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
             const allowedStudentsList = boardData.allowedStudents || [];
@@ -160,6 +172,23 @@ const Whiteboard = () => {
             if (user?.role === 'student') {
                 const hasPermission = allowedStudentsList.some(s => s._id === user.id);
                 setHasEditPermission(hasPermission);
+
+                // Auto-save board for student (independent copy)
+                try {
+                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/boards/save`, {
+                        userId: user.id,
+                        roomId: roomId,
+                        boardName: boardData.boardName || 'Untitled Board',
+                        teacherName: boardData.teacherName || 'Unknown Teacher',
+                        elements: loadedElements
+                    });
+                    console.log('[AUTO-SAVE] Board saved to student dashboard');
+                } catch (err) {
+                    // Silently fail if already saved or error occurs
+                    if (err.response?.status !== 400) {
+                        console.error('[AUTO-SAVE] Error:', err);
+                    }
+                }
             }
         });
 
@@ -205,6 +234,80 @@ const Whiteboard = () => {
             }
         });
 
+        // Delete element (for undo synchronization)
+        socket.on('delete-element', (elementId) => {
+            console.log('[DELETE-ELEMENT] Received delete for element ID:', elementId);
+            setElements(prev => {
+                const filtered = prev.filter(el => el.id !== elementId);
+                console.log('[DELETE-ELEMENT] Before filter:', prev.length, 'After filter:', filtered.length);
+
+                // Force canvas re-render after state update
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        filtered.forEach(el => drawElement(ctx, el));
+                    }
+                });
+
+                return filtered;
+            });
+        });
+
+        // Update element (for eraser redo synchronization and live sticky note editing)
+        socket.on('update-element', ({ elementId, updates }) => {
+            console.log('[UPDATE-ELEMENT] Received update for element ID:', elementId, 'updates:', updates);
+            setElements(prev => {
+                const updated = prev.map(el =>
+                    el.id === elementId ? { ...el, ...updates } : el
+                );
+
+                // Force canvas re-render to show live text changes
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        updated.forEach(el => drawElement(ctx, el));
+                    }
+                });
+
+                return updated;
+            });
+        });
+
+        // Sync state (for redo to maintain exact element order)
+        socket.on('sync-state', (elements) => {
+            console.log('[SYNC-STATE] Received full state sync with', elements.length, 'elements');
+            setElements(elements);
+
+            // Force canvas re-render to ensure visual consistency
+            requestAnimationFrame(() => {
+                if (canvasRef.current) {
+                    const ctx = canvasRef.current.getContext('2d');
+                    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    elements.forEach(el => drawElement(ctx, el));
+                }
+            });
+        });
+
+        // Draw element (receive new elements from other users)
+        socket.on('draw-element', (element) => {
+            console.log('[DRAW-ELEMENT] Received new element:', element.type, element.id);
+            setElements(prev => {
+                // Check if element already exists (by ID)
+                const existingIndex = prev.findIndex(el => el.id === element.id);
+                if (existingIndex !== -1) {
+                    // Update existing element
+                    const updated = [...prev];
+                    updated[existingIndex] = element;
+                    return updated;
+                } else {
+                    // Add new element
+                    return [...prev, element];
+                }
+            });
+        });
+
         return () => {
             socket.off('draw-element');
             socket.off('drawing-stroke');
@@ -215,6 +318,9 @@ const Whiteboard = () => {
             socket.off('room-users-updated');
             socket.off('editing-permission-changed');
             socket.off('theme-changed');
+            socket.off('delete-element');
+            socket.off('update-element');
+            socket.off('sync-state');
         };
     }, [socket]);
 
@@ -297,7 +403,8 @@ const Whiteboard = () => {
             const paddingX = width * 0.05;
             const paddingY = height * 0.15; // Start text lower to avoid overlap
             const lineHeight = fontSize * 1.2;
-            wrapText(ctx, text || "", x + paddingX, y + paddingY, width - paddingX * 2, lineHeight);
+            const maxTextHeight = height - paddingY * 2; // Available height for text
+            wrapText(ctx, text || "", x + paddingX, y + paddingY, width - paddingX * 2, lineHeight, maxTextHeight);
         } else if (type === 'circle') {
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
@@ -418,9 +525,6 @@ const Whiteboard = () => {
             sortedElements.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
         }
 
-        // Debug: Log rendering order (remove after testing)
-        console.log('Rendering elements in order:', sortedElements.map(e => `${e.type}(${e.timestamp})`).join(' → '));
-
         sortedElements.forEach((element) => {
             // Find original index for selection/editing checks
             const originalIndex = elements.findIndex(el => el.id === element.id);
@@ -497,7 +601,7 @@ const Whiteboard = () => {
 
 
 
-    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+    const wrapText = (ctx, text, x, y, maxWidth, lineHeight, maxHeight) => {
         const paragraphs = text.split('\n');
         let currentY = y;
 
@@ -506,18 +610,62 @@ const Whiteboard = () => {
             let line = '';
 
             for (let n = 0; n < words.length; n++) {
-                let testLine = line + words[n] + ' ';
+                // Check if we've exceeded the height boundary
+                if (maxHeight && currentY + lineHeight > y + maxHeight) {
+                    return; // Stop rendering if we exceed the note's height
+                }
+
+                let word = words[n];
+
+                // Check if the word itself is too long to fit on one line
+                if (ctx.measureText(word).width > maxWidth) {
+                    // Render current line if it has content
+                    if (line.trim()) {
+                        ctx.fillText(line, x, currentY);
+                        currentY += lineHeight;
+                        line = '';
+                    }
+
+                    // Break the long word into chunks that fit
+                    let remainingWord = word;
+                    while (remainingWord.length > 0) {
+                        if (maxHeight && currentY + lineHeight > y + maxHeight) {
+                            return; // Stop if we exceed height
+                        }
+
+                        let chunk = '';
+                        for (let i = 0; i < remainingWord.length; i++) {
+                            let testChunk = chunk + remainingWord[i];
+                            if (ctx.measureText(testChunk).width > maxWidth) {
+                                break;
+                            }
+                            chunk = testChunk;
+                        }
+
+                        if (chunk.length === 0) chunk = remainingWord[0]; // At least one character
+                        ctx.fillText(chunk, x, currentY);
+                        currentY += lineHeight;
+                        remainingWord = remainingWord.substring(chunk.length);
+                    }
+                    continue;
+                }
+
+                let testLine = line + word + ' ';
                 let metrics = ctx.measureText(testLine);
                 if (metrics.width > maxWidth && n > 0) {
                     ctx.fillText(line, x, currentY);
-                    line = words[n] + ' ';
+                    line = word + ' ';
                     currentY += lineHeight;
                 } else {
                     line = testLine;
                 }
             }
-            ctx.fillText(line, x, currentY);
-            currentY += lineHeight;
+
+            // Check again before rendering the last line
+            if (!maxHeight || currentY + lineHeight <= y + maxHeight) {
+                ctx.fillText(line, x, currentY);
+                currentY += lineHeight;
+            }
         });
         return currentY; // Return bottom Y for height check
     }
@@ -610,13 +758,24 @@ const Whiteboard = () => {
 
         updateElement(index, newProps);
 
-        setHistory(prev => [...prev, {
-            type: 'UPDATE',
-            id: elements[index].id,
-            index: index,
-            oldProps,
-            newProps
-        }]);
+        // Ensure students receive the final state for sticky notes
+        if (editingElement.type === 'sticky' && socket && user?.role === 'teacher') {
+            socket.emit('update-element', {
+                roomId,
+                elementId: elements[index].id,
+                updates: newProps
+            });
+        }
+
+        if (user?.role === 'teacher') {
+            setHistory(prev => [...prev, {
+                type: 'UPDATE',
+                id: elements[index].id,
+                index: index,
+                oldProps,
+                newProps
+            }]);
+        }
         setRedoStack([]);
         setEditingElement(null);
 
@@ -857,7 +1016,9 @@ const Whiteboard = () => {
             };
 
             setElements(prev => [...prev, newElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            }
 
             // Emit immediately so students see note appear
             if (socket) {
@@ -1057,13 +1218,15 @@ const Whiteboard = () => {
                 // But for this specific task (Optimizing DRAWING), we focus on strokes.
                 // Optimization for drag/resize: Leave as is (React state) for now unless requested.
 
-                setHistory(prev => [...prev, {
-                    type: 'UPDATE',
-                    id: finalElement.id,
-                    index: index,
-                    oldProps: undoSnapshot,
-                    newProps: finalElement // this includes full object but that's fine
-                }]);
+                if (user?.role === 'teacher') {
+                    setHistory(prev => [...prev, {
+                        type: 'UPDATE',
+                        id: finalElement.id,
+                        index: index,
+                        oldProps: undoSnapshot,
+                        newProps: finalElement // this includes full object but that's fine
+                    }]);
+                }
                 setRedoStack([]);
                 setUndoSnapshot(null);
             }
@@ -1081,7 +1244,9 @@ const Whiteboard = () => {
         if (currentStrokeRef.current) {
             const newElement = currentStrokeRef.current;
             setElements(prev => [...prev, newElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            }
 
             // Emit to socket
             if (socket) {
@@ -1100,7 +1265,9 @@ const Whiteboard = () => {
             }
 
             setElements(prev => [...prev, currentElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
+            }
             if (socket) {
                 socket.emit('draw-element', { roomId, ...currentElement });
             }
@@ -1143,18 +1310,39 @@ const Whiteboard = () => {
         const newRedoStack = [...redoStack];
         const action = newRedoStack.pop();
         setRedoStack(newRedoStack);
-        setHistory(prev => [...prev, action]);
+
+        if (user?.role === 'teacher') {
+            setHistory(prev => [...prev, action]);
+        }
 
         if (action.type === 'ADD') {
-            setElements(prev => [...prev, action.element]);
-            if (socket) socket.emit('draw-element', { roomId, ...action.element });
+            setElements(prev => {
+                const newElements = [...prev, action.element];
+                // Sync full state to students after redo to maintain order
+                if (socket && user?.role === 'teacher') {
+                    console.log('[REDO] Emitting sync-state with', newElements.length, 'elements');
+                    socket.emit('sync-state', { roomId, elements: newElements });
+                }
+                return newElements;
+            });
         } else if (action.type === 'UPDATE') {
-            const targetIndex = elements.findIndex(el => el.id === action.id);
-            if (targetIndex !== -1) {
-                updateElement(targetIndex, action.newProps);
-            } else {
-                console.error("[HandleRedo] Element not found for UPDATE:", action.id);
-            }
+            setElements(prev => {
+                const targetIndex = prev.findIndex(el => el.id === action.id);
+                if (targetIndex !== -1) {
+                    const updatedElements = prev.map((el, idx) =>
+                        idx === targetIndex ? { ...el, ...action.newProps } : el
+                    );
+                    // Sync full state after update
+                    if (socket && user?.role === 'teacher') {
+                        console.log('[REDO UPDATE] Emitting sync-state with', updatedElements.length, 'elements');
+                        socket.emit('sync-state', { roomId, elements: updatedElements });
+                    }
+                    return updatedElements;
+                } else {
+                    console.error("[HandleRedo] Element not found for UPDATE:", action.id);
+                    return prev;
+                }
+            });
         }
     };
 
@@ -1341,77 +1529,110 @@ const Whiteboard = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('image', file);
+        // Create local preview URL for immediate display
+        const localURL = URL.createObjectURL(file);
 
-        try {
-            // Upload to Cloudinary via our API
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/images/upload`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+        // Create a temporary image element to get dimensions
+        const tempImg = new Image();
+        tempImg.onload = async () => {
+            let w = tempImg.width;
+            let h = tempImg.height;
+
+            // Scale-independent sizing
+            const targetScreenSize = 300;
+            const scaleFactor = 1 / scale;
+
+            if (w > h) {
+                w = targetScreenSize * scaleFactor;
+                h = w / (tempImg.width / tempImg.height);
+            } else {
+                h = targetScreenSize * scaleFactor;
+                w = h * (tempImg.width / tempImg.height);
+            }
+
+            // Create element with local preview immediately
+            const newElement = {
+                id: crypto.randomUUID(),
+                type: 'image',
+                x: -panOffset.x + 100 / scale,
+                y: -panOffset.y + 100 / scale,
+                width: w,
+                height: h,
+                dataURL: localURL, // Use local URL for immediate display
+                aspectRatio: tempImg.width / tempImg.height,
+                timestamp: Date.now(),
+                uploading: true // Flag to indicate upload in progress
+            };
+
+            const newIndex = elements.length;
+            setElements(prev => [...prev, newElement]);
+
+            // Auto-switch to select mode
+            setTool('select');
+            setSelectedElement({
+                index: newIndex,
+                offsetX: 0,
+                offsetY: 0
             });
 
-            const { url } = res.data;
+            // Convert to base64 for immediate sharing with students
+            const canvas = document.createElement('canvas');
+            canvas.width = tempImg.width;
+            canvas.height = tempImg.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(tempImg, 0, 0);
+            const base64URL = canvas.toDataURL('image/jpeg', 0.7); // Compressed for faster transmission
 
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => {
-                let w = img.width;
-                let h = img.height;
+            // Update element with base64 for immediate display
+            const previewElement = { ...newElement, dataURL: base64URL };
+            setElements(prev => prev.map((el, idx) => idx === newIndex ? previewElement : el));
 
-                // Scale-independent sizing: Images maintain visual size regardless of zoom
-                // Target visual size: 300px on screen
-                const targetScreenSize = 300;
-                const scaleFactor = 1 / scale; // Inverse of current zoom
+            // Emit base64 preview to students immediately
+            if (socket && user?.role === 'teacher') {
+                socket.emit('draw-element', { roomId, ...previewElement });
+            }
 
-                // Calculate size in world coordinates
-                if (w > h) {
-                    w = targetScreenSize * scaleFactor;
-                    h = w / (img.width / img.height);
-                } else {
-                    h = targetScreenSize * scaleFactor;
-                    w = h * (img.width / img.height);
+            // Upload to Cloudinary in background
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/images/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                const { url } = res.data;
+
+                // Update element with Cloudinary URL
+                const updatedElement = { ...newElement, dataURL: url, uploading: false };
+                setElements(prev => prev.map((el, idx) => idx === newIndex ? updatedElement : el));
+
+                if (user?.role === 'teacher') {
+                    setHistory(prev => [...prev, { type: 'ADD', element: updatedElement }]);
                 }
-
-                const newElement = {
-                    id: crypto.randomUUID(),
-                    type: 'image',
-                    x: -panOffset.x + 100 / scale, // Place relative to viewport
-                    y: -panOffset.y + 100 / scale,
-                    width: w,
-                    height: h,
-                    dataURL: url, // Cloudinary URL
-                    aspectRatio: img.width / img.height, // Store aspect ratio for resize
-                    timestamp: Date.now() // For consistent z-ordering across clients
-                };
-
-                const newIndex = elements.length;
-                setElements(prev => [...prev, newElement]);
-                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
                 setRedoStack([]);
-                if (socket) socket.emit('draw-element', { roomId, ...newElement });
 
-                // Auto-switch to select mode and select the newly added image
-                console.log('Image uploaded, switching to select mode, index:', newIndex);
-                setTool('select');
-                setTimeout(() => {
-                    setSelectedElement({
-                        index: newIndex,
-                        offsetX: 0,
-                        offsetY: 0
-                    });
-                    console.log('Image selected:', newIndex);
-                }, 100);
-            };
-            img.src = url;
+                // Emit to other users with Cloudinary URL
+                if (socket) socket.emit('draw-element', { roomId, ...updatedElement });
 
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Image upload failed");
-        }
+                // Clean up local URL
+                URL.revokeObjectURL(localURL);
+
+            } catch (error) {
+                console.error("Upload failed", error);
+                alert("Image upload failed");
+                // Remove the failed element
+                setElements(prev => prev.filter((_, idx) => idx !== newIndex));
+                URL.revokeObjectURL(localURL);
+            }
+        };
+
+        tempImg.src = localURL;
         e.target.value = null;
     };
 
     const addStickyNote = () => {
+        // Select sticky note tool - user will click on canvas to place it
         setTool('sticky');
     }
 
@@ -1640,23 +1861,52 @@ const Whiteboard = () => {
                     defaultValue={editingElement.text}
                     onBlur={saveNote}
                     onInput={(e) => {
-                        // Skip auto-resize for sticky notes - they have fixed dimensions
+                        const index = editingElement.index;
+                        const newText = e.target.value;
+
+                        // Update local state immediately
+                        const updated = [...elements];
+                        updated[index] = { ...updated[index], text: newText };
+
+                        // For sticky notes: maintain width, but allow height to grow
                         if (editingElement.type === 'sticky') {
-                            // Emit text updates in real-time so students see typing
-                            const index = editingElement.index;
-                            const newText = e.target.value;
+                            // Get textarea dimensions to calculate new height
+                            e.target.style.height = '0px';
+                            const newHeight = Math.max(e.target.scrollHeight, 200 * scale) / scale;
+                            updated[index] = { ...updated[index], height: newHeight };
+                            e.target.style.height = newHeight * scale + 'px';
+                        }
 
-                            // Update local state
-                            const updated = [...elements];
-                            updated[index] = { ...updated[index], text: newText };
-                            setElements(updated);
+                        setElements(updated);
 
-                            // Emit to other users
-                            if (socket) {
-                                socket.emit('draw-element', { roomId, ...updated[index] });
+                        // Emit updates to students (throttled for sticky notes)
+                        if (editingElement.type === 'sticky') {
+                            const now = Date.now();
+                            if (!window.lastStickyNoteUpdate || now - window.lastStickyNoteUpdate >= 30) {
+                                window.lastStickyNoteUpdate = now;
+                                if (socket) {
+                                    socket.emit('update-element', {
+                                        roomId,
+                                        elementId: updated[index].id,
+                                        updates: { text: newText, height: updated[index].height }
+                                    });
+                                }
+                            } else {
+                                if (window.stickyNoteUpdateTimeout) {
+                                    clearTimeout(window.stickyNoteUpdateTimeout);
+                                }
+                                window.stickyNoteUpdateTimeout = setTimeout(() => {
+                                    window.lastStickyNoteUpdate = Date.now();
+                                    if (socket) {
+                                        socket.emit('update-element', {
+                                            roomId,
+                                            elementId: updated[index].id,
+                                            updates: { text: newText, height: updated[index].height }
+                                        });
+                                    }
+                                }, 30 - (now - window.lastStickyNoteUpdate));
                             }
-
-                            return; // Don't modify dimensions for sticky notes
+                            return; // Skip the text element auto-resize logic below
                         }
 
                         const isFixed = elements[editingElement.index]?.isFixedWidth;
@@ -1883,11 +2133,16 @@ const Whiteboard = () => {
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
-                        <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
-                        <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
-                        <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                        {/* Undo/Redo - Teacher Only */}
                         {user?.role === 'teacher' && (
                             <>
+                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
+                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                            </>
+                        )}
+                        {user?.role === 'teacher' && (
+                            <>
+                                <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
                                 <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
                                 <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
                                 <button
@@ -1975,8 +2230,6 @@ const Whiteboard = () => {
                             </div>
                         </div>
 
-                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
-
                         {/* Quick Insert */}
                         <div className="flex items-center gap-0.5 sm:gap-1">
                             <button onClick={addStickyNote} className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
@@ -1986,8 +2239,6 @@ const Whiteboard = () => {
                                 <FaImage className="text-sm sm:text-base" />
                             </button>
                         </div>
-
-                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
 
                         {/* Properties */}
                         <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2">

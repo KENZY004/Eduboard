@@ -8,6 +8,7 @@ const path = require('path');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const Board = require('./models/Board');
+const SavedBoard = require('./models/SavedBoard');
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +92,11 @@ app.post('/api/boards/create', async (req, res) => {
       name,
       createdBy: userId,
       elements: [],
+      participants: [{
+        userId: userId,
+        role: 'teacher', // Creator is assumed to be teacher
+        joinedAt: new Date()
+      }],
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -107,12 +113,16 @@ app.post('/api/boards/create', async (req, res) => {
   }
 });
 
-// Get all boards for a specific user
+// Get all boards for a specific user (teachers: boards they created)
 app.get('/api/boards/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const boards = await Board.find({ createdBy: userId })
-      .select('roomId name createdAt updatedAt')
+    // Find boards created by this user (for teachers)
+    const boards = await Board.find({
+      createdBy: userId
+    })
+      .populate('createdBy', 'username email')
+      .select('roomId name createdBy createdAt updatedAt')
       .sort({ updatedAt: -1 }); // Most recently updated first
 
     res.json(boards);
@@ -168,84 +178,97 @@ app.delete('/api/boards/:roomId', async (req, res) => {
   }
 });
 
-// Get saved boards for a student
-app.get('/api/boards/saved/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Find user and populate saved boards
-    const user = await User.findById(userId).populate({
-      path: 'savedBoards',
-      select: 'name roomId createdBy updatedAt',
-      populate: {
-        path: 'createdBy',
-        select: 'username'
-      }
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json(user.savedBoards || []);
-  } catch (err) {
-    console.error('Error fetching saved boards:', err);
-    res.status(500).json({ message: 'Failed to fetch saved boards' });
-  }
-});
-
-// Save a board to student's saved list
-app.post('/api/boards/save/:boardId', async (req, res) => {
+// Delete a board by MongoDB _id (for orphaned boards)
+app.delete('/api/boards/by-id/:boardId', async (req, res) => {
   try {
     const { boardId } = req.params;
-    const { userId } = req.body;
+    const { userId, force } = req.query;
 
-    // Check if board exists
-    const board = await Board.findById(boardId);
-    if (!board) {
+    let query = { _id: boardId };
+
+    // If not force delete, check ownership
+    if (force !== 'true') {
+      query.createdBy = userId;
+    }
+
+    const result = await Board.findOneAndDelete(query);
+
+    if (!result) {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Add board to user's saved boards if not already saved
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'Board deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting board by ID:', err);
+    res.status(500).json({ message: 'Failed to delete board' });
+  }
+});
+
+// Saved Boards Endpoints (for students)
+
+// Save a board (creates independent copy for student)
+app.post('/api/boards/save', async (req, res) => {
+  try {
+    const { userId, roomId, boardName, teacherName, elements } = req.body;
+
+    // Check if already saved
+    const existing = await SavedBoard.findOne({ userId, roomId });
+    if (existing) {
+      return res.status(400).json({ message: 'Board already saved' });
     }
 
-    if (!user.savedBoards.includes(boardId)) {
-      user.savedBoards.push(boardId);
-      await user.save();
-    }
+    const savedBoard = new SavedBoard({
+      userId,
+      roomId,
+      boardName,
+      teacherName,
+      elements,
+      savedAt: new Date()
+    });
 
-    res.json({ message: 'Board saved successfully' });
+    await savedBoard.save();
+    res.status(201).json({ message: 'Board saved successfully', savedBoard });
   } catch (err) {
     console.error('Error saving board:', err);
     res.status(500).json({ message: 'Failed to save board' });
   }
 });
 
-// Unsave a board from student's saved list
-app.delete('/api/boards/unsave/:boardId', async (req, res) => {
+// Get all saved boards for a student
+app.get('/api/boards/saved/:userId', async (req, res) => {
   try {
-    const { boardId } = req.params;
-    const { userId } = req.query;
+    const { userId } = req.params;
+    const savedBoards = await SavedBoard.find({ userId })
+      .sort({ savedAt: -1 });
 
-    // Remove board from user's saved boards
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    user.savedBoards = user.savedBoards.filter(id => id.toString() !== boardId);
-    await user.save();
-
-    res.json({ message: 'Board unsaved successfully' });
+    res.json(savedBoards);
   } catch (err) {
-    console.error('Error unsaving board:', err);
-    res.status(500).json({ message: 'Failed to unsave board' });
+    console.error('Error fetching saved boards:', err);
+    res.status(500).json({ message: 'Failed to fetch saved boards' });
   }
 });
 
+// Delete a saved board (student removes from their dashboard)
+app.delete('/api/boards/saved/:savedBoardId', async (req, res) => {
+  try {
+    const { savedBoardId } = req.params;
+    const { userId } = req.query;
+
+    const result = await SavedBoard.findOneAndDelete({
+      _id: savedBoardId,
+      userId // Ensure user can only delete their own saved boards
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Saved board not found' });
+    }
+
+    res.json({ message: 'Saved board deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting saved board:', err);
+    res.status(500).json({ message: 'Failed to delete saved board' });
+  }
+});
 
 
 // Track connected users per room
@@ -274,20 +297,47 @@ io.on('connection', (socket) => {
       // Broadcast updated user list to all users in room
       const users = Array.from(roomUsers.get(roomId).values());
       io.to(roomId).emit('room-users-updated', users);
+
+      // Add user as participant in board (so it appears in their dashboard)
+      try {
+        await Board.findOneAndUpdate(
+          { roomId },
+          {
+            $addToSet: {
+              participants: {
+                userId: userData.userId,
+                role: userData.role,
+                joinedAt: new Date()
+              }
+            }
+          },
+          { upsert: false } // Don't create board if it doesn't exist
+        );
+        console.log(`[PARTICIPANT] Added ${userData.username} (${userData.role}) to board ${roomId}`);
+      } catch (err) {
+        console.error('Error adding participant:', err);
+      }
     }
 
     // Load Board History with allowed students
     try {
-      let board = await Board.findOne({ roomId }).populate('allowedStudents', 'username email');
+      let board = await Board.findOne({ roomId })
+        .populate('allowedStudents', 'username email')
+        .populate('createdBy', 'username');
+
       if (board) {
         socket.emit('load-board', {
           elements: board.elements,
-          allowedStudents: board.allowedStudents || []
+          allowedStudents: board.allowedStudents || [],
+          boardName: board.name,
+          teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
       } else {
         socket.emit('load-board', {
           elements: [],
-          allowedStudents: []
+          allowedStudents: [],
+          boardName: 'Untitled Board',
+          teacherName: 'Unknown Teacher'
         });
       }
     } catch (err) {
@@ -337,8 +387,10 @@ io.on('connection', (socket) => {
 
   // Delete element (for undo synchronization)
   socket.on('delete-element', async ({ roomId, elementId }) => {
+    console.log(`[DELETE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
     // Broadcast deletion to room
     socket.to(roomId).emit('delete-element', elementId);
+    console.log(`[DELETE-ELEMENT] Broadcasted to room ${roomId}`);
 
     // Remove from DB
     try {
@@ -349,8 +401,78 @@ io.on('connection', (socket) => {
           $set: { updatedAt: new Date() }
         }
       );
+      console.log(`[DELETE-ELEMENT] Removed from DB: ${elementId}`);
     } catch (err) {
       console.error('Error deleting element:', err);
+    }
+  });
+
+  // Update element (for eraser redo synchronization)
+  socket.on('update-element', async ({ roomId, elementId, updates }) => {
+    console.log(`[UPDATE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
+    // Broadcast update to room
+    socket.to(roomId).emit('update-element', { elementId, updates });
+    console.log(`[UPDATE-ELEMENT] Broadcasted to room ${roomId}`);
+
+    // Update in DB
+    try {
+      await Board.findOneAndUpdate(
+        { roomId, 'elements.id': elementId },
+        {
+          $set: {
+            'elements.$': updates,
+            updatedAt: new Date()
+          }
+        }
+      );
+      console.log(`[UPDATE-ELEMENT] Updated in DB: ${elementId}`);
+    } catch (err) {
+      console.error('Error updating element:', err);
+    }
+  });
+
+  // Sync elements (for redo to maintain correct order)
+  socket.on('sync-elements', async ({ roomId, elements }) => {
+    console.log(`[SYNC-ELEMENTS] Received from ${socket.id}, syncing ${elements.length} elements`);
+    // Broadcast full element array to all other users
+    socket.to(roomId).emit('sync-elements', elements);
+
+    // Update database with full element array
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        {
+          $set: {
+            elements: elements,
+            updatedAt: new Date()
+          }
+        }
+      );
+      console.log(`[SYNC-ELEMENTS] Updated DB with ${elements.length} elements`);
+    } catch (err) {
+      console.error('Error syncing elements:', err);
+    }
+  });
+
+  // Sync state (for redo to maintain exact element order)
+  socket.on('sync-state', async ({ roomId, elements }) => {
+    console.log(`[SYNC-STATE] Broadcasting ${elements.length} elements to room ${roomId}`);
+    // Broadcast to all other users
+    socket.to(roomId).emit('sync-state', elements);
+
+    // Update database
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        {
+          $set: {
+            elements: elements,
+            updatedAt: new Date()
+          }
+        }
+      );
+    } catch (err) {
+      console.error('Error syncing state:', err);
     }
   });
 
