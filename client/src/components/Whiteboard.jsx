@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
     FaEraser, FaPen, FaTrash, FaSignOutAlt, FaShareAlt, FaCopy,
     FaSlash, FaUndo, FaRedo, FaSave, FaMoon, FaSun, FaDownload, FaFilePdf, FaFont,
-    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon
+    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes
 } from 'react-icons/fa';
 import {
     BsSquare, BsCircle, BsTriangle, BsPentagon, BsHexagon, BsOctagon, BsStar,
@@ -30,7 +30,16 @@ const Whiteboard = () => {
     // Debug: Expose elements -> Removed
     // useEffect(() => { window.elements = elements; }, [elements]);
 
-    const user = JSON.parse(localStorage.getItem('user'));
+    let user = null;
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            user = JSON.parse(userStr);
+        }
+    } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+        user = null;
+    }
     const isStudent = user?.role === 'student';
 
     const [isDrawing, setIsDrawing] = useState(false);
@@ -44,6 +53,13 @@ const Whiteboard = () => {
     const [scale, setScale] = useState(1);
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isSpacePressed, setIsSpacePressed] = useState(false);
+    const [renderTrigger, setRenderTrigger] = useState(0); // Force re-renders for remote strokes
+
+    // Per-student permission states
+    const [connectedUsers, setConnectedUsers] = useState([]); // All users in room
+    const [allowedStudents, setAllowedStudents] = useState([]); // Students with permission
+    const [hasEditPermission, setHasEditPermission] = useState(false); // Current student's permission
+    const [showStudentPanel, setShowStudentPanel] = useState(false); // Panel visibility
 
     const [currentElement, setCurrentElement] = useState(null);
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
@@ -52,6 +68,7 @@ const Whiteboard = () => {
     const textAreaRef = useRef(null);
     const draggedElementRef = useRef(null); // Fix for stale state in history
     const currentStrokeRef = useRef(null); // Optimization: Mutable ref for drawing to bypass React Render Cycle
+    const lastEmitTimeRef = useRef(0); // Throttle socket emissions
 
     const navigate = useNavigate();
     const { roomId } = useParams();
@@ -60,7 +77,13 @@ const Whiteboard = () => {
     useEffect(() => {
         const newSocket = io(import.meta.env.VITE_API_BASE_URL);
         setSocket(newSocket);
-        newSocket.emit('join-room', roomId);
+
+        // Send user data when joining room
+        newSocket.emit('join-room', roomId, {
+            userId: user?.id,
+            username: user?.username || user?.email?.split('@')[0] || 'Anonymous',
+            role: user?.role || 'student'
+        });
 
         return () => newSocket.close();
     }, [roomId]);
@@ -82,24 +105,91 @@ const Whiteboard = () => {
                     return [...prev, element];
                 }
             });
+
+            // Clean up remote stroke when it's finalized
+            if (window.remoteStrokes && element.userId) {
+                delete window.remoteStrokes[element.userId];
+            }
         });
 
         // Real-time stroke updates (while drawing)
         socket.on('drawing-stroke', (strokeData) => {
-            // Update currentStrokeRef for other users to see live drawing
+            // Store the remote user's current stroke for rendering
+            // We use a separate ref to avoid state updates during rapid drawing
             if (strokeData.userId !== user?.id) {
-                currentStrokeRef.current = strokeData.stroke;
-                renderCanvas();
+                // Store in a map by userId so multiple users can draw simultaneously
+                if (!window.remoteStrokes) window.remoteStrokes = {};
+                window.remoteStrokes[strokeData.userId] = strokeData.stroke;
+                // Force re-render without modifying elements
+                setRenderTrigger(prev => prev + 1);
             }
         });
 
-        socket.on('load-board', (loadedElements) => {
+        // Delete element (for undo synchronization)
+        socket.on('delete-element', (elementId) => {
+            console.log('[DELETE-ELEMENT] Received delete for ID:', elementId);
+            setElements(prev => {
+                console.log('[DELETE-ELEMENT] Current elements:', prev.length);
+                const filtered = prev.filter(el => el.id !== elementId);
+                console.log('[DELETE-ELEMENT] After filter:', filtered.length);
+                return filtered;
+            });
+        });
+
+        // Clear canvas (when teacher clicks Clear All button)
+        socket.on('clear-canvas', () => {
+            console.log('[CLEAR-CANVAS] Received clear-canvas event');
+            setElements([]);
+            setHistory([]);
+            setRedoStack([]);
+
+            // Use requestAnimationFrame to ensure canvas clears after state update
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        console.log('[CLEAR-CANVAS] Canvas cleared');
+                    }
+                });
+            });
+        });
+
+        socket.on('load-board', async (boardData) => {
+            // Handle both old format (array) and new format (object)
+            const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
+            const allowedStudentsList = boardData.allowedStudents || [];
+
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
             loadedElements.forEach(el => {
                 uniqueMap.set(el.id, el); // Latest wins
             });
             setElements(Array.from(uniqueMap.values()));
+            setAllowedStudents(allowedStudentsList);
+
+            // Check if current student has permission
+            if (user?.role === 'student') {
+                const hasPermission = allowedStudentsList.some(s => s._id === user.id);
+                setHasEditPermission(hasPermission);
+
+                // Auto-save board for student (independent copy)
+                try {
+                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/boards/save`, {
+                        userId: user.id,
+                        roomId: roomId,
+                        boardName: boardData.boardName || 'Untitled Board',
+                        teacherName: boardData.teacherName || 'Unknown Teacher',
+                        elements: loadedElements
+                    });
+                    console.log('[AUTO-SAVE] Board saved to student dashboard');
+                } catch (err) {
+                    // Silently fail if already saved or error occurs
+                    if (err.response?.status !== 400) {
+                        console.error('[AUTO-SAVE] Error:', err);
+                    }
+                }
+            }
         });
 
         socket.on('clear-canvas', () => {
@@ -112,12 +202,125 @@ const Whiteboard = () => {
             setCursors(prev => ({ ...prev, [data.userId]: data }));
         });
 
+        // Viewport sync - students follow teacher's view
+        socket.on('viewport-change', (viewportData) => {
+            // Only students should follow teacher's viewport
+            if (isStudent && viewportData.userId !== user?.id) {
+                setScale(viewportData.scale);
+                setPanOffset(viewportData.panOffset);
+            }
+        });
+
+        // Room users updated (for teacher's student panel)
+        socket.on('room-users-updated', (users) => {
+            setConnectedUsers(users);
+        });
+
+        // Student editing permission changed (for individual students)
+        socket.on('editing-permission-changed', (hasPermission) => {
+            if (user?.role === 'student') {
+                setHasEditPermission(hasPermission);
+            }
+        });
+
+        // Theme synchronization (students follow teacher's theme)
+        socket.on('theme-changed', (isDark) => {
+            console.log('[THEME-SYNC] Received theme-changed event, isDark:', isDark, 'Current role:', user?.role);
+            if (user?.role === 'student') {
+                console.log('[THEME-SYNC] Applying theme change for student');
+                setDarkMode(isDark);
+            } else {
+                console.log('[THEME-SYNC] Ignoring theme change (not a student)');
+            }
+        });
+
+        // Delete element (for undo synchronization)
+        socket.on('delete-element', (elementId) => {
+            console.log('[DELETE-ELEMENT] Received delete for element ID:', elementId);
+            setElements(prev => {
+                const filtered = prev.filter(el => el.id !== elementId);
+                console.log('[DELETE-ELEMENT] Before filter:', prev.length, 'After filter:', filtered.length);
+
+                // Force canvas re-render after state update
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        filtered.forEach(el => drawElement(ctx, el));
+                    }
+                });
+
+                return filtered;
+            });
+        });
+
+        // Update element (for eraser redo synchronization and live sticky note editing)
+        socket.on('update-element', ({ elementId, updates }) => {
+            console.log('[UPDATE-ELEMENT] Received update for element ID:', elementId, 'updates:', updates);
+            setElements(prev => {
+                const updated = prev.map(el =>
+                    el.id === elementId ? { ...el, ...updates } : el
+                );
+
+                // Force canvas re-render to show live text changes
+                requestAnimationFrame(() => {
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        updated.forEach(el => drawElement(ctx, el));
+                    }
+                });
+
+                return updated;
+            });
+        });
+
+        // Sync state (for redo to maintain exact element order)
+        socket.on('sync-state', (elements) => {
+            console.log('[SYNC-STATE] Received full state sync with', elements.length, 'elements');
+            setElements(elements);
+
+            // Force canvas re-render to ensure visual consistency
+            requestAnimationFrame(() => {
+                if (canvasRef.current) {
+                    const ctx = canvasRef.current.getContext('2d');
+                    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    elements.forEach(el => drawElement(ctx, el));
+                }
+            });
+        });
+
+        // Draw element (receive new elements from other users)
+        socket.on('draw-element', (element) => {
+            console.log('[DRAW-ELEMENT] Received new element:', element.type, element.id);
+            setElements(prev => {
+                // Check if element already exists (by ID)
+                const existingIndex = prev.findIndex(el => el.id === element.id);
+                if (existingIndex !== -1) {
+                    // Update existing element
+                    const updated = [...prev];
+                    updated[existingIndex] = element;
+                    return updated;
+                } else {
+                    // Add new element
+                    return [...prev, element];
+                }
+            });
+        });
+
         return () => {
             socket.off('draw-element');
+            socket.off('drawing-stroke');
             socket.off('load-board');
             socket.off('clear-canvas');
-            socket.off('clear-canvas');
             socket.off('cursor-move');
+            socket.off('viewport-change');
+            socket.off('room-users-updated');
+            socket.off('editing-permission-changed');
+            socket.off('theme-changed');
+            socket.off('delete-element');
+            socket.off('update-element');
+            socket.off('sync-state');
         };
     }, [socket]);
 
@@ -133,6 +336,7 @@ const Whiteboard = () => {
             if (type === 'eraser') {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.strokeStyle = 'rgba(0,0,0,1)';
+                ctx.globalAlpha = 1.0; // Full opacity to completely erase
             } else {
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = color;
@@ -174,6 +378,8 @@ const Whiteboard = () => {
                     }
                 }
                 ctx.stroke();
+                // Reset globalAlpha and globalCompositeOperation after highlighter
+                ctx.globalAlpha = 1.0;
                 ctx.globalCompositeOperation = 'source-over';
             }
         } else if (type === 'rect') {
@@ -189,8 +395,16 @@ const Whiteboard = () => {
             ctx.fillRect(x, y, width, height);
             ctx.shadowBlur = 0;
             ctx.fillStyle = '#000';
-            ctx.font = '16px sans-serif';
-            wrapText(ctx, text || "", x + 10, y + 30, width - 20, 20);
+            // Font size proportional to note size (10% of note width)
+            // This ensures text scales with the note and always fits inside
+            const fontSize = width * 0.10;
+            ctx.font = `${fontSize}px sans-serif`;
+            // Use fixed padding in world coordinates that scales with note
+            const paddingX = width * 0.05;
+            const paddingY = height * 0.15; // Start text lower to avoid overlap
+            const lineHeight = fontSize * 1.2;
+            const maxTextHeight = height - paddingY * 2; // Available height for text
+            wrapText(ctx, text || "", x + paddingX, y + paddingY, width - paddingX * 2, lineHeight, maxTextHeight);
         } else if (type === 'circle') {
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
@@ -205,12 +419,6 @@ const Whiteboard = () => {
             ctx.moveTo(x, y);
             ctx.lineTo(endX, endY);
             ctx.stroke();
-        } else if (type === 'text') {
-            ctx.fillStyle = color;
-            ctx.font = `${size * 5}px sans-serif`;
-            ctx.textBaseline = 'top';
-            // Use wrapText for text rendering
-            wrapText(ctx, text || "", x, y, width || 200, size * 5 * 1.2); // 1.2 line height
         } else if (['triangle', 'pentagon', 'hexagon', 'octagon'].includes(type)) {
             ctx.strokeStyle = color;
             ctx.lineWidth = size;
@@ -279,6 +487,9 @@ const Whiteboard = () => {
                 };
             }
         }
+        // CRITICAL: Reset all canvas state before restore to prevent contamination
+        ctx.globalAlpha = 1.0;
+        ctx.globalCompositeOperation = 'source-over';
         ctx.restore();
     };
 
@@ -298,21 +509,40 @@ const Whiteboard = () => {
         ctx.scale(scale, scale);
         ctx.translate(panOffset.x, panOffset.y);
 
-        elements.forEach((element, index) => {
+        // Sort elements by timestamp for consistent z-ordering across clients
+        // Elements without timestamp (from old deployed version) get timestamp 0 (render first/bottom)
+        const sortedElements = [...elements].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        // Integrate remote users' in-progress strokes into sorted elements for proper z-ordering
+        // This maintains real-time drawing while respecting timestamp-based layering
+        if (window.remoteStrokes) {
+            Object.values(window.remoteStrokes).forEach(stroke => {
+                if (stroke && stroke.points && stroke.points.length > 0) {
+                    sortedElements.push(stroke);
+                }
+            });
+            // Re-sort to include remote strokes in correct z-order
+            sortedElements.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        }
+
+        sortedElements.forEach((element) => {
+            // Find original index for selection/editing checks
+            const originalIndex = elements.findIndex(el => el.id === element.id);
+
             // Skip rendering if currently being edited (prevents double text defect)
-            if (editingElement && editingElement.index === index) {
-                if (element.type === 'text') return;
+            if (editingElement && editingElement.index === originalIndex) {
+                if (element.type === 'sticky') return;
             }
             drawElement(ctx, element);
 
-            if (selectedElement && selectedElement.index === index) {
+            if (selectedElement && selectedElement.index === originalIndex) {
                 ctx.save();
                 ctx.strokeStyle = '#3b82f6'; // Blue
                 ctx.lineWidth = 2 / scale; // Keep border thin
                 // Draw border
                 const { x, y, width, height } = element;
                 // Handle different shapes? For now rect/image/sticky
-                if (['rect', 'image', 'sticky', 'text', 'triangle', 'pentagon', 'hexagon', 'octagon', 'star'].includes(element.type)) {
+                if (['rect', 'image', 'sticky', 'triangle', 'pentagon', 'hexagon', 'octagon', 'star'].includes(element.type)) {
                     ctx.strokeRect(x, y, width, height);
                     // Draw Handle
                     ctx.fillStyle = '#3b82f6';
@@ -334,6 +564,7 @@ const Whiteboard = () => {
             drawElement(ctx, currentElement);
         }
 
+
         ctx.restore();
     };
 
@@ -354,11 +585,23 @@ const Whiteboard = () => {
 
     useEffect(() => {
         renderCanvas();
-    }, [elements, darkMode, editingElement, scale, panOffset, currentElement]);
+    }, [elements, darkMode, editingElement, scale, panOffset, currentElement, renderTrigger]);
+
+    // Emit viewport changes for students to follow (teachers only)
+    useEffect(() => {
+        if (socket && !isStudent && user?.id) {
+            socket.emit('viewport-change', {
+                roomId,
+                userId: user.id,
+                scale,
+                panOffset
+            });
+        }
+    }, [scale, panOffset, socket, isStudent]);
 
 
 
-    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+    const wrapText = (ctx, text, x, y, maxWidth, lineHeight, maxHeight) => {
         const paragraphs = text.split('\n');
         let currentY = y;
 
@@ -367,18 +610,62 @@ const Whiteboard = () => {
             let line = '';
 
             for (let n = 0; n < words.length; n++) {
-                let testLine = line + words[n] + ' ';
+                // Check if we've exceeded the height boundary
+                if (maxHeight && currentY + lineHeight > y + maxHeight) {
+                    return; // Stop rendering if we exceed the note's height
+                }
+
+                let word = words[n];
+
+                // Check if the word itself is too long to fit on one line
+                if (ctx.measureText(word).width > maxWidth) {
+                    // Render current line if it has content
+                    if (line.trim()) {
+                        ctx.fillText(line, x, currentY);
+                        currentY += lineHeight;
+                        line = '';
+                    }
+
+                    // Break the long word into chunks that fit
+                    let remainingWord = word;
+                    while (remainingWord.length > 0) {
+                        if (maxHeight && currentY + lineHeight > y + maxHeight) {
+                            return; // Stop if we exceed height
+                        }
+
+                        let chunk = '';
+                        for (let i = 0; i < remainingWord.length; i++) {
+                            let testChunk = chunk + remainingWord[i];
+                            if (ctx.measureText(testChunk).width > maxWidth) {
+                                break;
+                            }
+                            chunk = testChunk;
+                        }
+
+                        if (chunk.length === 0) chunk = remainingWord[0]; // At least one character
+                        ctx.fillText(chunk, x, currentY);
+                        currentY += lineHeight;
+                        remainingWord = remainingWord.substring(chunk.length);
+                    }
+                    continue;
+                }
+
+                let testLine = line + word + ' ';
                 let metrics = ctx.measureText(testLine);
                 if (metrics.width > maxWidth && n > 0) {
                     ctx.fillText(line, x, currentY);
-                    line = words[n] + ' ';
+                    line = word + ' ';
                     currentY += lineHeight;
                 } else {
                     line = testLine;
                 }
             }
-            ctx.fillText(line, x, currentY);
-            currentY += lineHeight;
+
+            // Check again before rendering the last line
+            if (!maxHeight || currentY + lineHeight <= y + maxHeight) {
+                ctx.fillText(line, x, currentY);
+                currentY += lineHeight;
+            }
         });
         return currentY; // Return bottom Y for height check
     }
@@ -387,20 +674,12 @@ const Whiteboard = () => {
 
     const isWithinElement = (x, y, element) => {
         const { type, x: ex, y: ey, width, height } = element;
-        if (type === 'rect' || type === 'image' || type === 'text') { // Text now has width/height
-            // For text, y is often the baseline or top depending on how we draw.
-            // Let's assume (x,y) is top-left for easy hit detection, but fillText uses baseline.
-            // Adjustment: We'll store x,y as top-left for text too to match other shapes.
-            // Ensure minimum hit area for text and add buffer
-            // HANDLE UNDEFINED WIDTH/HEIGHT safely
+        if (type === 'rect' || type === 'image' || type === 'sticky' ||
+            type === 'triangle' || type === 'pentagon' || type === 'hexagon' || type === 'octagon' || type === 'star') {
+            // For all rectangular elements including images and polygons (using bounding box)
             const w = Math.max(width || 0, 20);
             const h = Math.max(height || 0, 20);
             return x >= ex - 10 && x <= ex + w + 10 && y >= ey - 10 && y <= ey + h + 10;
-        }
-        if (type === 'sticky') {
-            const w = width || 200;
-            const h = height || 200;
-            return x >= ex && x <= ex + w && y >= ey && y <= ey + h;
         }
         return false;
     };
@@ -462,7 +741,8 @@ const Whiteboard = () => {
         const measuredHeight = wrapText(ctx, newText, 0, 0, calculatedWidth, lineHeight); // Returns bottom Y
 
         // Enforce minimum height based on type
-        const minHeight = editingElement.type === 'sticky' ? 200 : fontSize;
+        // For sticky notes, preserve original scale-independent size
+        const minHeight = editingElement.type === 'sticky' ? (elements[index].height || 200 / scale) : fontSize;
 
         const oldProps = {
             text: editingElement.text,
@@ -478,13 +758,24 @@ const Whiteboard = () => {
 
         updateElement(index, newProps);
 
-        setHistory(prev => [...prev, {
-            type: 'UPDATE',
-            id: elements[index].id,
-            index: index,
-            oldProps,
-            newProps
-        }]);
+        // Ensure students receive the final state for sticky notes
+        if (editingElement.type === 'sticky' && socket && user?.role === 'teacher') {
+            socket.emit('update-element', {
+                roomId,
+                elementId: elements[index].id,
+                updates: newProps
+            });
+        }
+
+        if (user?.role === 'teacher') {
+            setHistory(prev => [...prev, {
+                type: 'UPDATE',
+                id: elements[index].id,
+                index: index,
+                oldProps,
+                newProps
+            }]);
+        }
         setRedoStack([]);
         setEditingElement(null);
 
@@ -565,12 +856,25 @@ const Whiteboard = () => {
         // SINGLE RENDER PER FRAME
         if (hasUpdates && action === 'drawing' && currentStrokeRef.current) {
             renderCanvas();
+
+            // Emit real-time stroke updates to other users (throttled to ~60fps)
+            const now = Date.now();
+            if (socket && currentStrokeRef.current.points.length > 0 && (now - lastEmitTimeRef.current) > 16) {
+                socket.emit('drawing-stroke', {
+                    roomId,
+                    userId: user?.id,
+                    stroke: currentStrokeRef.current
+                });
+                lastEmitTimeRef.current = now;
+            }
         }
     };
 
     const startDrawing = (e) => {
-        // View-only mode for students
-        if (isStudent) return;
+        // Check if user can edit (teacher always can, student needs permission)
+        const canEdit = user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission);
+        if (!canEdit) return;
+
         // Spacebar Panning Logic
         if (isSpacePressed) {
             const { clientX, clientY } = e;
@@ -585,18 +889,59 @@ const Whiteboard = () => {
 
         const { x: offsetX, y: offsetY } = getMousePos(e);
 
+        // FIRST: Check resize handle if something is already selected
+        if (selectedElement !== null && tool === 'select') {
+            const el = elements[selectedElement.index];
+            const w = el.width || (el.type === 'text' ? 50 : 0);
+            const h = el.height || (el.type === 'text' ? 20 : 0);
+            // Scale-independent handle size: always 20px on screen, converted to world coords
+            const handleSize = 20 / scale; // Larger hit area that scales with zoom
+            if (offsetX >= el.x + w - handleSize && offsetX <= el.x + w + handleSize &&
+                offsetY >= el.y + h - handleSize && offsetY <= el.y + h + handleSize) {
+                setAction('resizing');
+                setIsDrawing(true); // Enable drawing for resize
+                setUndoSnapshot({ ...el });
+                console.log('Resize handle clicked for element:', selectedElement.index, 'at scale:', scale);
+                return;
+            }
+        }
+
+        // SECOND: Check if clicking on an image or sticky note - always allow selection regardless of current tool
+        let priorityHitIndex = -1;
+        for (let i = elements.length - 1; i >= 0; i--) {
+            if ((elements[i].type === 'image' || elements[i].type === 'sticky') && isWithinElement(offsetX, offsetY, elements[i])) {
+                priorityHitIndex = i;
+                break;
+            }
+        }
+
+        // If clicked on an image or sticky note, select it and allow moving
+        if (priorityHitIndex !== -1) {
+            const el = elements[priorityHitIndex];
+            setTool('select');
+            setSelectedElement({ index: priorityHitIndex, offsetX: offsetX - el.x, offsetY: offsetY - el.y });
+            setUndoSnapshot({ ...el });
+            setAction('moving');
+            setIsDrawing(true); // Enable drawing mode for movement
+            console.log('Element clicked and selected:', priorityHitIndex, 'Type:', el.type);
+            return;
+        }
+
         if (tool === 'select') {
             // ... (select logic)
             // 1. Check Resize Handle (Bottom-Right of selected)
             if (selectedElement !== null) {
                 const el = elements[selectedElement.index];
-                const w = el.width || (el.type === 'text' ? 50 : 0); // fallback for text
+                const w = el.width || (el.type === 'text' ? 50 : 0);
                 const h = el.height || (el.type === 'text' ? 20 : 0);
-                // allow 10px hit area
-                if (offsetX >= el.x + w - 10 && offsetX <= el.x + w + 10 &&
-                    offsetY >= el.y + h - 10 && offsetY <= el.y + h + 10) {
+                // allow 10px hit area (in world coordinates)
+                const handleSize = 10;
+                if (offsetX >= el.x + w - handleSize && offsetX <= el.x + w + handleSize &&
+                    offsetY >= el.y + h - handleSize && offsetY <= el.y + h + handleSize) {
                     setAction('resizing');
+                    setIsDrawing(true); // Enable drawing for resize
                     setUndoSnapshot({ ...elements[selectedElement.index] });
+                    console.log('Resize handle clicked for element:', selectedElement.index);
                     return;
                 }
             }
@@ -637,7 +982,7 @@ const Whiteboard = () => {
             return;
         }
 
-        if (tool === 'text' || tool === 'sticky') {
+        if (tool === 'sticky') {
             // Check for existing element hit first (Smart Tool)
             let hitIndex = -1;
             for (let i = elements.length - 1; i >= 0; i--) {
@@ -648,7 +993,7 @@ const Whiteboard = () => {
             }
 
             if (hitIndex !== -1) {
-                // If we hit something, interact with it instead of creating new text
+                // If we hit something, interact with it instead of creating new sticky
                 setTool('select');
                 setSelectedElement({ index: hitIndex, offsetX: offsetX - elements[hitIndex].x, offsetY: offsetY - elements[hitIndex].y });
                 setUndoSnapshot({ ...elements[hitIndex] }); // Capture state for undo
@@ -656,51 +1001,32 @@ const Whiteboard = () => {
                 return;
             }
 
-            // Create new element (Text or Sticky)
+            // Create new sticky note
             const id = crypto.randomUUID();
-            const newElement = tool === 'text' ? {
-                id,
-                type: 'text',
-                x: offsetX, y: offsetY,
-                text: '',
-                color: color,
-                size: brushSize,
-                width: 100,
-                height: brushSize * 5,
-                isFixedWidth: false // Default to Auto-Width
-            } : {
+            const newElement = {
                 id,
                 type: 'sticky',
-                x: offsetX - 100, // Center on click
-                y: offsetY - 100,
-                width: 200,
-                height: 200,
-                text: "Double click to edit..."
+                // Scale-independent sizing: Always 200px on screen
+                x: offsetX - (100 / scale), // Center on click
+                y: offsetY - (100 / scale),
+                width: 200 / scale,  // Scale-independent width
+                height: 200 / scale, // Scale-independent height
+                text: "Double click to edit...",
+                timestamp: Date.now() // For consistent z-ordering across clients
             };
 
             setElements(prev => [...prev, newElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]); // FIX: Normalize history format
-
-            // For text, enter edit mode immediately. For sticky, just place it?
-            // User habits: Text -> Type immediately. Sticky -> Click to place, double click to edit.
-            // But let's follow text pattern? 
-            // Actually, for sticky, let's just place it. If user wants to edit they double click.
-            // But if we want to mimic text tool "smartness", we just place it and switch to select.
-
-            if (tool === 'text') {
-                setEditingElement({
-                    index: elements.length,
-                    type: 'text',
-                    text: '',
-                    x: offsetX,
-                    y: offsetY,
-                    width: 100,
-                    height: brushSize * 5
-                });
-            } else {
-                // For sticky, switch to select immediately
-                setTool('select');
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
+
+            // Emit immediately so students see note appear
+            if (socket) {
+                socket.emit('draw-element', { roomId, ...newElement });
+            }
+
+            // For sticky, switch to select immediately
+            setTool('select');
             return;
         }
 
@@ -717,7 +1043,8 @@ const Whiteboard = () => {
                 type: tool,
                 color,
                 size: brushSize / scale,
-                points: [{ x: offsetX, y: offsetY }]
+                points: [{ x: offsetX, y: offsetY }],
+                timestamp: Date.now() // For consistent z-ordering across clients
             };
             // Do NOT setCurrentElement here to avoid render. 
             // We consciously trigger renderCanvas in loop manually or let requestAnimationFrame handle it?
@@ -731,7 +1058,8 @@ const Whiteboard = () => {
                 x: offsetX,
                 y: offsetY,
                 width: 0,
-                height: 0
+                height: 0,
+                timestamp: Date.now() // For consistent z-ordering across clients
             });
         }
     };
@@ -798,7 +1126,14 @@ const Whiteboard = () => {
             let newWidth = offsetX - el.x;
             let newHeight = offsetY - el.y;
 
-            if (el.type === 'text') {
+            if (el.type === 'image') {
+                // Maintain aspect ratio for images
+                const aspectRatio = el.aspectRatio || (el.width / el.height);
+                newHeight = newWidth / aspectRatio;
+                const props = { width: newWidth, height: newHeight };
+                draggedElementRef.current = props;
+                updateElement(index, props);
+            } else if (el.type === 'text') {
                 // Calculate height based on wrapping with newWidth
                 const ctx = canvasRef.current.getContext('2d');
                 const fontSize = (el.size || 5) * 5;
@@ -883,13 +1218,15 @@ const Whiteboard = () => {
                 // But for this specific task (Optimizing DRAWING), we focus on strokes.
                 // Optimization for drag/resize: Leave as is (React state) for now unless requested.
 
-                setHistory(prev => [...prev, {
-                    type: 'UPDATE',
-                    id: finalElement.id,
-                    index: index,
-                    oldProps: undoSnapshot,
-                    newProps: finalElement // this includes full object but that's fine
-                }]);
+                if (user?.role === 'teacher') {
+                    setHistory(prev => [...prev, {
+                        type: 'UPDATE',
+                        id: finalElement.id,
+                        index: index,
+                        oldProps: undoSnapshot,
+                        newProps: finalElement // this includes full object but that's fine
+                    }]);
+                }
                 setRedoStack([]);
                 setUndoSnapshot(null);
             }
@@ -907,7 +1244,9 @@ const Whiteboard = () => {
         if (currentStrokeRef.current) {
             const newElement = currentStrokeRef.current;
             setElements(prev => [...prev, newElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
+            }
 
             // Emit to socket
             if (socket) {
@@ -926,7 +1265,9 @@ const Whiteboard = () => {
             }
 
             setElements(prev => [...prev, currentElement]);
-            setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
+            if (user?.role === 'teacher') {
+                setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
+            }
             if (socket) {
                 socket.emit('draw-element', { roomId, ...currentElement });
             }
@@ -944,16 +1285,12 @@ const Whiteboard = () => {
 
         if (lastAction.type === 'ADD') {
             // Remove the added element
-            // Assuming simplified model where ADDs are appended.
-            // Safe approach: Filter by ID if IDs are reliable, or just pop if local-only linear.
-            // MVP: Pop last element (might be risky if collab inserted stuff? No, 'elements' mixes everyone).
-            // We should remove by ID.
+            console.log('[UNDO] Removing element ID:', lastAction.element.id);
             setElements(prev => prev.filter(el => el.id !== lastAction.element.id));
+            // Emit delete to other users for undo synchronization
             if (socket) {
-                // How to undo ADD in collab? We don't have a 'delete' event yet other than clear?
-                // Actually, we do not have a specific 'delete-element' yet.
-                // But user didn't ask for remote undo yet. Local undo is priority.
-                // MVP: Just local remove.
+                console.log('[UNDO] Emitting delete-element for ID:', lastAction.element.id);
+                socket.emit('delete-element', { roomId, elementId: lastAction.element.id });
             }
         } else if (lastAction.type === 'UPDATE') {
             // Revert changes - FIND INDEX BY ID for stability
@@ -973,18 +1310,39 @@ const Whiteboard = () => {
         const newRedoStack = [...redoStack];
         const action = newRedoStack.pop();
         setRedoStack(newRedoStack);
-        setHistory(prev => [...prev, action]);
+
+        if (user?.role === 'teacher') {
+            setHistory(prev => [...prev, action]);
+        }
 
         if (action.type === 'ADD') {
-            setElements(prev => [...prev, action.element]);
-            if (socket) socket.emit('draw-element', { roomId, ...action.element });
+            setElements(prev => {
+                const newElements = [...prev, action.element];
+                // Sync full state to students after redo to maintain order
+                if (socket && user?.role === 'teacher') {
+                    console.log('[REDO] Emitting sync-state with', newElements.length, 'elements');
+                    socket.emit('sync-state', { roomId, elements: newElements });
+                }
+                return newElements;
+            });
         } else if (action.type === 'UPDATE') {
-            const targetIndex = elements.findIndex(el => el.id === action.id);
-            if (targetIndex !== -1) {
-                updateElement(targetIndex, action.newProps);
-            } else {
-                console.error("[HandleRedo] Element not found for UPDATE:", action.id);
-            }
+            setElements(prev => {
+                const targetIndex = prev.findIndex(el => el.id === action.id);
+                if (targetIndex !== -1) {
+                    const updatedElements = prev.map((el, idx) =>
+                        idx === targetIndex ? { ...el, ...action.newProps } : el
+                    );
+                    // Sync full state after update
+                    if (socket && user?.role === 'teacher') {
+                        console.log('[REDO UPDATE] Emitting sync-state with', updatedElements.length, 'elements');
+                        socket.emit('sync-state', { roomId, elements: updatedElements });
+                    }
+                    return updatedElements;
+                } else {
+                    console.error("[HandleRedo] Element not found for UPDATE:", action.id);
+                    return prev;
+                }
+            });
         }
     };
 
@@ -1171,51 +1529,110 @@ const Whiteboard = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('image', file);
+        // Create local preview URL for immediate display
+        const localURL = URL.createObjectURL(file);
 
-        try {
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+        // Create a temporary image element to get dimensions
+        const tempImg = new Image();
+        tempImg.onload = async () => {
+            let w = tempImg.width;
+            let h = tempImg.height;
+
+            // Scale-independent sizing
+            const targetScreenSize = 300;
+            const scaleFactor = 1 / scale;
+
+            if (w > h) {
+                w = targetScreenSize * scaleFactor;
+                h = w / (tempImg.width / tempImg.height);
+            } else {
+                h = targetScreenSize * scaleFactor;
+                w = h * (tempImg.width / tempImg.height);
+            }
+
+            // Create element with local preview immediately
+            const newElement = {
+                id: crypto.randomUUID(),
+                type: 'image',
+                x: -panOffset.x + 100 / scale,
+                y: -panOffset.y + 100 / scale,
+                width: w,
+                height: h,
+                dataURL: localURL, // Use local URL for immediate display
+                aspectRatio: tempImg.width / tempImg.height,
+                timestamp: Date.now(),
+                uploading: true // Flag to indicate upload in progress
+            };
+
+            const newIndex = elements.length;
+            setElements(prev => [...prev, newElement]);
+
+            // Auto-switch to select mode
+            setTool('select');
+            setSelectedElement({
+                index: newIndex,
+                offsetX: 0,
+                offsetY: 0
             });
 
-            const { imageUrl } = res.data;
+            // Convert to base64 for immediate sharing with students
+            const canvas = document.createElement('canvas');
+            canvas.width = tempImg.width;
+            canvas.height = tempImg.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(tempImg, 0, 0);
+            const base64URL = canvas.toDataURL('image/jpeg', 0.7); // Compressed for faster transmission
 
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => {
-                let w = img.width;
-                let h = img.height;
-                if (w > 500) {
-                    const ratio = 500 / w;
-                    w = 500;
-                    h = h * ratio;
+            // Update element with base64 for immediate display
+            const previewElement = { ...newElement, dataURL: base64URL };
+            setElements(prev => prev.map((el, idx) => idx === newIndex ? previewElement : el));
+
+            // Emit base64 preview to students immediately
+            if (socket && user?.role === 'teacher') {
+                socket.emit('draw-element', { roomId, ...previewElement });
+            }
+
+            // Upload to Cloudinary in background
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/images/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                const { url } = res.data;
+
+                // Update element with Cloudinary URL
+                const updatedElement = { ...newElement, dataURL: url, uploading: false };
+                setElements(prev => prev.map((el, idx) => idx === newIndex ? updatedElement : el));
+
+                if (user?.role === 'teacher') {
+                    setHistory(prev => [...prev, { type: 'ADD', element: updatedElement }]);
                 }
-                const newElement = {
-                    id: crypto.randomUUID(),
-                    type: 'image',
-                    x: 100, y: 100,
-                    width: w, height: h,
-                    dataURL: imageUrl
-                };
-                setElements(prev => [...prev, newElement]);
-                setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
                 setRedoStack([]);
-                if (socket) socket.emit('draw-element', { roomId, ...newElement });
 
-                // Auto-switch to select mode so user can move/resize immediately
-                setTool('select');
-            };
-            img.src = imageUrl;
+                // Emit to other users with Cloudinary URL
+                if (socket) socket.emit('draw-element', { roomId, ...updatedElement });
 
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Image upload failed");
-        }
+                // Clean up local URL
+                URL.revokeObjectURL(localURL);
+
+            } catch (error) {
+                console.error("Upload failed", error);
+                alert("Image upload failed");
+                // Remove the failed element
+                setElements(prev => prev.filter((_, idx) => idx !== newIndex));
+                URL.revokeObjectURL(localURL);
+            }
+        };
+
+        tempImg.src = localURL;
         e.target.value = null;
     };
 
     const addStickyNote = () => {
+        // Select sticky note tool - user will click on canvas to place it
         setTool('sticky');
     }
 
@@ -1413,11 +1830,28 @@ const Whiteboard = () => {
                     </AnimatePresence>
                 </div>
 
-                <div className="flex items-center gap-2 pointer-events-auto">
-                    <button onClick={() => setDarkMode(!darkMode)} className={`p-3 rounded-full shadow-lg transition-all ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-700 hover:bg-gray-50'}`}>
-                        {darkMode ? <FaSun /> : <FaMoon />}
-                    </button>
-                </div>
+                {/* Theme Toggle - Teacher Only */}
+                {user?.role === 'teacher' && (
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={() => {
+                                const newTheme = !darkMode;
+                                console.log('[THEME-SYNC] Teacher toggling theme to:', newTheme);
+                                setDarkMode(newTheme);
+                                // Sync theme to all students
+                                if (socket) {
+                                    console.log('[THEME-SYNC] Emitting change-theme event, roomId:', roomId, 'isDark:', newTheme);
+                                    socket.emit('change-theme', { roomId, isDark: newTheme });
+                                } else {
+                                    console.error('[THEME-SYNC] Socket not available!');
+                                }
+                            }}
+                            className={`p-3 rounded-full shadow-lg transition-all ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-700 hover:bg-gray-50'}`}
+                        >
+                            {darkMode ? <FaSun /> : <FaMoon />}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Note/Text Editing Overlay */}
@@ -1427,7 +1861,55 @@ const Whiteboard = () => {
                     defaultValue={editingElement.text}
                     onBlur={saveNote}
                     onInput={(e) => {
-                        const isFixed = elements[editingElement.index]?.isFixedWidth || editingElement.type === 'sticky';
+                        const index = editingElement.index;
+                        const newText = e.target.value;
+
+                        // Update local state immediately
+                        const updated = [...elements];
+                        updated[index] = { ...updated[index], text: newText };
+
+                        // For sticky notes: maintain width, but allow height to grow
+                        if (editingElement.type === 'sticky') {
+                            // Get textarea dimensions to calculate new height
+                            e.target.style.height = '0px';
+                            const newHeight = Math.max(e.target.scrollHeight, 200 * scale) / scale;
+                            updated[index] = { ...updated[index], height: newHeight };
+                            e.target.style.height = newHeight * scale + 'px';
+                        }
+
+                        setElements(updated);
+
+                        // Emit updates to students (throttled for sticky notes)
+                        if (editingElement.type === 'sticky') {
+                            const now = Date.now();
+                            if (!window.lastStickyNoteUpdate || now - window.lastStickyNoteUpdate >= 30) {
+                                window.lastStickyNoteUpdate = now;
+                                if (socket) {
+                                    socket.emit('update-element', {
+                                        roomId,
+                                        elementId: updated[index].id,
+                                        updates: { text: newText, height: updated[index].height }
+                                    });
+                                }
+                            } else {
+                                if (window.stickyNoteUpdateTimeout) {
+                                    clearTimeout(window.stickyNoteUpdateTimeout);
+                                }
+                                window.stickyNoteUpdateTimeout = setTimeout(() => {
+                                    window.lastStickyNoteUpdate = Date.now();
+                                    if (socket) {
+                                        socket.emit('update-element', {
+                                            roomId,
+                                            elementId: updated[index].id,
+                                            updates: { text: newText, height: updated[index].height }
+                                        });
+                                    }
+                                }, 30 - (now - window.lastStickyNoteUpdate));
+                            }
+                            return; // Skip the text element auto-resize logic below
+                        }
+
+                        const isFixed = elements[editingElement.index]?.isFixedWidth;
                         if (!isFixed) {
                             e.target.style.width = '0px';
                             e.target.style.height = '0px';
@@ -1450,11 +1932,19 @@ const Whiteboard = () => {
                         position: 'absolute',
                         left: (editingElement.x + panOffset.x) * scale,
                         top: (editingElement.y + panOffset.y) * scale,
-                        width: Math.max(100, editingElement.width) * scale,
-                        height: Math.max(50, editingElement.height) * scale,
+                        width: ((elements[editingElement.index]?.width || editingElement.width || 100)) * scale,
+                        height: ((elements[editingElement.index]?.height || editingElement.height || 50)) * scale,
                         backgroundColor: editingElement.type === 'sticky' ? '#fef08a' : 'transparent',
                         color: editingElement.type === 'sticky' ? '#000' : (editingElement.color || color),
-                        fontSize: (editingElement.type === 'sticky' ? 16 : (elements[editingElement.index]?.size || 5) * 5) * scale + 'px',
+                        fontSize: (() => {
+                            if (editingElement.type === 'sticky') {
+                                // Font size proportional to note width (10% of width)
+                                // Multiply by scale to convert to screen pixels
+                                const fontSize = (editingElement.width * 0.10) * scale;
+                                return fontSize + 'px';
+                            }
+                            return ((elements[editingElement.index]?.size || 5) * 5) * scale + 'px';
+                        })(),
                         transformOrigin: 'top left', // Important for reliable scaling
                         fontFamily: 'sans-serif',
                         padding: (editingElement.type === 'sticky' ? 30 : 0) * scale + 'px ' + (10 * scale) + 'px',
@@ -1488,10 +1978,10 @@ const Whiteboard = () => {
                 onTouchEnd={handleTouchEnd}
                 onDoubleClick={(e) => {
                     const { x: offsetX, y: offsetY } = getMousePos(e);
-                    // Check for sticky note OR text
+                    // Check for sticky note only
                     for (let i = elements.length - 1; i >= 0; i--) {
                         const el = elements[i];
-                        if ((el.type === 'sticky' || el.type === 'text') && isWithinElement(offsetX, offsetY, el)) {
+                        if (el.type === 'sticky' && isWithinElement(offsetX, offsetY, el)) {
                             // Enter Edit Mode (React Way)
                             const initialText = el.text === "Double click to edit..." ? "" : el.text;
                             setEditingElement({
@@ -1500,13 +1990,10 @@ const Whiteboard = () => {
                                 text: initialText,
                                 x: el.x,
                                 y: el.y,
-                                width: el.width || (el.type === 'text' ? 100 : 200),
-                                height: el.height || (el.type === 'text' ? 30 : 200),
+                                width: el.width,
+                                height: el.height,
                                 color: el.color
                             });
-                            // Sync Toolbar
-                            if (el.color) setColor(el.color);
-                            if (el.size) setBrushSize(el.size);
                             return;
                         }
                     }
@@ -1517,28 +2004,168 @@ const Whiteboard = () => {
             {/* View Only Badge for Students */}
             {isStudent && (
                 <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="bg-cyan-500/20 border border-cyan-500/30 px-6 py-3 rounded-full backdrop-blur-xl">
+                    <div className={`px-6 py-3 rounded-full backdrop-blur-xl ${hasEditPermission
+                        ? 'bg-green-500/20 border border-green-500/30'
+                        : 'bg-cyan-500/20 border border-cyan-500/30'
+                        }`}>
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
-                            <span className="text-cyan-400 font-medium text-sm">View Only Mode</span>
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${hasEditPermission ? 'bg-green-400' : 'bg-cyan-400'
+                                }`}></div>
+                            <span className={`font-medium text-sm ${hasEditPermission ? 'text-green-400' : 'text-cyan-400'
+                                }`}>
+                                {hasEditPermission ? 'Editing Enabled' : 'View Only Mode'}
+                            </span>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Main Toolbar - Minimal Island - Hidden for Students */}
-            {!isStudent && (
+            {/* Student Management Panel for Teachers */}
+            {user?.role === 'teacher' && (
+                <AnimatePresence>
+                    {showStudentPanel && (
+                        <motion.div
+                            initial={{ x: 300, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 300, opacity: 0 }}
+                            className="fixed right-4 top-20 w-80 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 max-h-[70vh] overflow-hidden flex flex-col"
+                        >
+                            {/* Header */}
+                            <div className="p-4 border-b border-white/10">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-white font-semibold flex items-center gap-2">
+                                        <FaUsers className="text-blue-400" />
+                                        Connected Students
+                                    </h3>
+                                    <button onClick={() => setShowStudentPanel(false)} className="text-slate-400 hover:text-white transition-colors">
+                                        <FaTimes />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Student List */}
+                            <div className="flex-1 overflow-y-auto p-2">
+                                {connectedUsers.filter(u => u.role === 'student').length === 0 ? (
+                                    <div className="text-center text-slate-400 py-8">
+                                        No students connected
+                                    </div>
+                                ) : (
+                                    connectedUsers
+                                        .filter(u => u.role === 'student')
+                                        .map(student => {
+                                            const hasPermission = allowedStudents.some(s => s._id === student.userId);
+
+                                            return (
+                                                <div
+                                                    key={student.userId}
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors mb-2"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                                            {student.username.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-white font-medium">{student.username}</div>
+                                                            <div className="text-xs text-slate-400">
+                                                                {hasPermission ? 'Can edit' : 'View only'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            if (hasPermission) {
+                                                                socket.emit('revoke-student-permission', { roomId, studentId: student.userId });
+                                                                setAllowedStudents(prev => prev.filter(s => s._id !== student.userId));
+                                                            } else {
+                                                                socket.emit('grant-student-permission', { roomId, studentId: student.userId });
+                                                                setAllowedStudents(prev => [...prev, { _id: student.userId, username: student.username }]);
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${hasPermission
+                                                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                                            : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                                            }`}
+                                                    >
+                                                        {hasPermission ? 'Revoke' : 'Grant'}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                )}
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="p-3 border-t border-white/10 flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
+                                        studentIds.forEach(id => {
+                                            socket.emit('grant-student-permission', { roomId, studentId: id });
+                                        });
+                                        const students = connectedUsers.filter(u => u.role === 'student').map(s => ({ _id: s.userId, username: s.username }));
+                                        setAllowedStudents(students);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+                                >
+                                    Grant All
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
+                                        studentIds.forEach(id => {
+                                            socket.emit('revoke-student-permission', { roomId, studentId: id });
+                                        });
+                                        setAllowedStudents([]);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
+                                >
+                                    Revoke All
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
+
+            {/* Main Toolbar - Hidden for Students unless editing is enabled */}
+            {(user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission)) && (
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
-                        <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
-                        <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
-                        <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
-                        <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
+                        {/* Undo/Redo - Teacher Only */}
+                        {user?.role === 'teacher' && (
+                            <>
+                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
+                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                            </>
+                        )}
+                        {user?.role === 'teacher' && (
+                            <>
+                                <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                                <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
+                                <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                                <button
+                                    onClick={() => setShowStudentPanel(!showStudentPanel)}
+                                    className={`p-2 sm:p-2.5 rounded-full transition-colors relative ${showStudentPanel
+                                        ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    title="Manage Student Permissions"
+                                >
+                                    <FaUsers className="text-sm sm:text-base" />
+                                    {connectedUsers.filter(u => u.role === 'student').length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                                            {connectedUsers.filter(u => u.role === 'student').length}
+                                        </span>
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Primary Tools Dock */}
-                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-x-auto max-w-full">
+                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full">
 
                         {/* Tools */}
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
@@ -1547,7 +2174,6 @@ const Whiteboard = () => {
                                 { id: 'highlighter', icon: FaHighlighter },
                                 { id: 'eraser', icon: FaEraser },
                                 { id: 'line', icon: FaSlash },
-                                { id: 'text', icon: FaFont },
                             ].map((t) => (
                                 <button
                                     key={t.id}
@@ -1561,13 +2187,16 @@ const Whiteboard = () => {
                             ))}
                             <div className="relative">
                                 <button
-                                    onClick={() => setShowShapeMenu(!showShapeMenu)}
-                                    className={`p-3 rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
+                                    onClick={() => {
+                                        console.log('Shape menu clicked, current state:', showShapeMenu);
+                                        setShowShapeMenu(!showShapeMenu);
+                                    }}
+                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                     title="Shapes"
                                 >
-                                    <FaDrawPolygon />
+                                    <FaDrawPolygon className="text-sm sm:text-base" />
                                 </button>
                                 <AnimatePresence>
                                     {showShapeMenu && (
@@ -1575,7 +2204,7 @@ const Whiteboard = () => {
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl"
+                                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl z-50"
                                         >
                                             {[
                                                 { id: 'rect', icon: BsSquare, label: 'Square' },
@@ -1601,8 +2230,6 @@ const Whiteboard = () => {
                             </div>
                         </div>
 
-                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
-
                         {/* Quick Insert */}
                         <div className="flex items-center gap-0.5 sm:gap-1">
                             <button onClick={addStickyNote} className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
@@ -1612,8 +2239,6 @@ const Whiteboard = () => {
                                 <FaImage className="text-sm sm:text-base" />
                             </button>
                         </div>
-
-                        <div className="w-px h-6 sm:h-8 bg-white/10 mx-0.5 sm:mx-1"></div>
 
                         {/* Properties */}
                         <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2">

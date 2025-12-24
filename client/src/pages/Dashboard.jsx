@@ -17,18 +17,32 @@ const Dashboard = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const isTeacher = user?.role === 'teacher';
 
-    // Fetch saved boards for teachers - refetch when location changes
+    // Redirect admin to admin panel if they somehow reach this page
     useEffect(() => {
-        if (isTeacher && user?.id) {
+        if (user?.role === 'admin') {
+            navigate('/admin', { replace: true });
+        }
+    }, [user, navigate]);
+
+    // Fetch saved boards for both teachers and students
+    useEffect(() => {
+        if (user?.id) {
             fetchSavedBoards();
         } else {
             setLoading(false);
         }
-    }, [isTeacher, user?.id, location.pathname]); // Added location.pathname
+    }, [user?.id, location.pathname]);
 
     const fetchSavedBoards = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/user/${user.id}`);
+            let res;
+            if (isTeacher) {
+                // Teachers: fetch boards they created
+                res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/user/${user.id}`);
+            } else {
+                // Students: fetch their saved boards (independent copies)
+                res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${user.id}`);
+            }
             setSavedBoards(res.data);
         } catch (err) {
             console.error('Error fetching boards:', err);
@@ -66,20 +80,44 @@ const Dashboard = () => {
         navigate(`/board/${roomId}`);
     };
 
-    const handleDeleteBoard = async (roomId, boardName, e) => {
-        e.stopPropagation(); // Prevent opening the board when clicking delete
+    const handleDeleteBoard = async (roomId, boardName, boardId, e) => {
+        e.stopPropagation();
 
-        if (!window.confirm(`Are you sure you want to delete "${boardName}"? This action cannot be undone.`)) {
+        if (!window.confirm(`Are you sure you want to delete "${boardName}"?`)) {
             return;
         }
 
         try {
-            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}?userId=${user.id}`);
-            // Refresh the boards list
+            console.log('[DELETE] isTeacher:', isTeacher, 'roomId:', roomId, 'boardId:', boardId, 'userId:', user.id);
+
+            if (isTeacher) {
+                // Teachers: delete the actual board
+                try {
+                    const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}?userId=${user.id}`;
+                    console.log('[DELETE] Teacher URL (by roomId):', url);
+                    await axios.delete(url);
+                } catch (err) {
+                    // If delete by roomId fails, try by _id (for orphaned boards)
+                    if (err.response?.status === 404) {
+                        console.log('[DELETE] Trying by-id endpoint for orphaned board');
+                        const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/by-id/${boardId}?userId=${user.id}&force=true`;
+                        console.log('[DELETE] Teacher URL (by _id with force):', url);
+                        await axios.delete(url);
+                    } else {
+                        throw err;
+                    }
+                }
+            } else {
+                // Students: delete their saved copy
+                const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${boardId}?userId=${user.id}`;
+                console.log('[DELETE] Student URL:', url);
+                await axios.delete(url);
+            }
             fetchSavedBoards();
         } catch (err) {
             console.error('Error deleting board:', err);
-            alert('Failed to delete board. Please try again.');
+            console.error('Error response:', err.response?.data);
+            alert(`Failed to delete board: ${err.response?.data?.message || err.message}`);
         }
     };
 
@@ -204,67 +242,78 @@ const Dashboard = () => {
                     </div>
                 )}
 
-                {/* Saved Boards List - Teachers Only */}
-                {isTeacher && (
-                    <div className="lg:row-span-2 surface-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col relative overflow-hidden min-h-[300px] sm:min-h-[400px]">
-                        <div className="flex justify-between items-start mb-3 sm:mb-4">
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
-                                    <FaFolder className="text-indigo-400 text-base sm:text-lg" /> Saved Boards
-                                </h3>
-                                <p className="text-slate-500 text-xs">Your recent whiteboards</p>
-                            </div>
-                        </div>
-
-                        {/* Boards List */}
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            {loading ? (
-                                <div className="flex items-center justify-center h-32">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                                </div>
-                            ) : savedBoards.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-32 text-center">
-                                    <FaFolder className="text-slate-600 text-3xl mb-2" />
-                                    <p className="text-slate-500 text-sm">No saved boards yet</p>
-                                    <p className="text-slate-600 text-xs mt-1">Create your first board to get started</p>
-                                </div>
-                            ) : (
-                                savedBoards.map((board) => (
-                                    <motion.div
-                                        key={board.roomId}
-                                        whileHover={{ scale: 1.02, x: 4 }}
-                                        onClick={() => openBoard(board.roomId)}
-                                        className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all group"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-white font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
-                                                    {board.name}
-                                                </h4>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <FaClock className="text-slate-500 text-xs" />
-                                                    <p className="text-slate-500 text-xs">{formatDate(board.updatedAt)}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => handleDeleteBoard(board.roomId, board.name, e)}
-                                                    className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
-                                                    title="Delete board"
-                                                >
-                                                    <FaTrash className="text-xs" />
-                                                </button>
-                                                <div className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    →
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))
-                            )}
+                {/* Saved Boards List - Both Teachers and Students */}
+                <div className="lg:row-span-2 surface-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col relative overflow-hidden min-h-[300px] sm:min-h-[400px]">
+                    <div className="flex justify-between items-start mb-3 sm:mb-4">
+                        <div>
+                            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
+                                <FaFolder className="text-indigo-400 text-base sm:text-lg" /> Saved Boards
+                            </h3>
+                            <p className="text-slate-500 text-xs">
+                                {isTeacher ? 'Your recent whiteboards' : 'Boards from classes you attended'}
+                            </p>
                         </div>
                     </div>
-                )}
+
+                    {/* Boards List */}
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                        {loading ? (
+                            <div className="flex items-center justify-center h-32">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                            </div>
+                        ) : savedBoards.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-32 text-center">
+                                <FaFolder className="text-slate-600 text-3xl mb-2" />
+                                <p className="text-slate-500 text-sm">No saved boards yet</p>
+                                <p className="text-slate-600 text-xs mt-1">
+                                    {isTeacher ? 'Create your first board to get started' : 'Join a class to see boards here'}
+                                </p>
+                            </div>
+                        ) : (
+                            savedBoards.map((board) => (
+                                <motion.div
+                                    key={board.roomId}
+                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    onClick={() => openBoard(board.roomId)}
+                                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all group"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-white font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
+                                                {isTeacher
+                                                    ? (board.name || 'Untitled Board')
+                                                    : (board.boardName || 'Untitled Board')}
+                                            </h4>
+                                            {!isTeacher && board.teacherName && (
+                                                <p className="text-slate-500 text-xs mt-1">
+                                                    Teacher: {board.teacherName}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => handleDeleteBoard(
+                                                    board.roomId,
+                                                    isTeacher ? (board.name || 'Untitled Board') : (board.boardName || 'Untitled Board'),
+                                                    board._id,
+                                                    e
+                                                )}
+                                                className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                                                title={isTeacher ? "Delete board" : "Remove from saved"}
+                                            >
+                                                <FaTrash className="text-xs" />
+                                            </button>
+                                            <div className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                →
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
 
             </motion.div>
 
