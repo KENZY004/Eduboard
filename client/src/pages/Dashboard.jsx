@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import { FaPlus, FaSignInAlt, FaSignOutAlt, FaRocket, FaFolder, FaClock, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaSignInAlt, FaSignOutAlt, FaRocket, FaFolder, FaClock, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { motion } from 'framer-motion';
 import CreateBoardModal from '../components/CreateBoardModal';
@@ -12,6 +12,7 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [savedBoards, setSavedBoards] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [copiedBoardId, setCopiedBoardId] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
     const user = JSON.parse(localStorage.getItem('user'));
@@ -132,6 +133,17 @@ const Dashboard = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/login');
+    };
+
+    const handleCopyLink = (roomId, e) => {
+        e.stopPropagation();
+        const boardUrl = `${window.location.origin}/whiteboard/${roomId}`;
+        navigator.clipboard.writeText(boardUrl).then(() => {
+            setCopiedBoardId(roomId);
+            setTimeout(() => setCopiedBoardId(null), 2000);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
     };
 
     const formatDate = (dateString) => {
@@ -291,6 +303,28 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            {isTeacher && (
+                                                <button
+                                                    onClick={(e) => handleCopyLink(board.roomId, e)}
+                                                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all ${copiedBoardId === board.roomId
+                                                            ? 'bg-green-500/20 text-green-400'
+                                                            : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400'
+                                                        }`}
+                                                    title="Copy board link"
+                                                >
+                                                    {copiedBoardId === board.roomId ? (
+                                                        <>
+                                                            <FaCheck className="text-xs sm:text-sm" />
+                                                            <span className="hidden sm:inline text-xs font-medium">Copied!</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaCopy className="text-xs sm:text-sm" />
+                                                            <span className="hidden sm:inline text-xs font-medium">Copy Link</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={(e) => handleDeleteBoard(
                                                     board.roomId,
