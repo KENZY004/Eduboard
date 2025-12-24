@@ -309,6 +309,25 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Delete element (for undo synchronization)
+  socket.on('delete-element', async ({ roomId, elementId }) => {
+    // Broadcast deletion to room
+    socket.to(roomId).emit('delete-element', elementId);
+
+    // Remove from DB
+    try {
+      await Board.findOneAndUpdate(
+        { roomId },
+        {
+          $pull: { elements: { id: elementId } },
+          $set: { updatedAt: new Date() }
+        }
+      );
+    } catch (err) {
+      console.error('Error deleting element:', err);
+    }
+  });
+
   socket.on('clear-canvas', async (roomId) => {
     socket.to(roomId).emit('clear-canvas');
     // Clear DB
