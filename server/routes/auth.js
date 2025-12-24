@@ -26,11 +26,32 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // Check if user exists
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        // Check if user exists (case-insensitive)
+        const existingUser = await User.findOne({
+            $or: [
+                { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+                { username: { $regex: new RegExp(`^${username}$`, 'i') } }
+            ]
+        });
+
         if (existingUser) {
+            // Determine which field is duplicate
+            const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
+            const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
+
+            let message = 'User already exists';
+            if (isDuplicateEmail && isDuplicateUsername) {
+                message = 'A user with that email and username already exists';
+            } else if (isDuplicateEmail) {
+                message = 'A user with that email already exists';
+            } else if (isDuplicateUsername) {
+                message = 'A user with that username already exists';
+            }
+
+            console.log(`[REGISTRATION] Duplicate user attempt - Email: ${email}, Username: ${username}, Existing: ${existingUser.email}, ${existingUser.username}`);
+
             return res.status(400).json({
-                message: 'User with that email or username already exists',
+                message,
                 error: 'USER_EXISTS'
             });
         }
@@ -75,6 +96,26 @@ router.post('/register', async (req, res) => {
         });
     } catch (err) {
         console.error('Registration error:', err);
+
+        // Handle MongoDB duplicate key error (code 11000)
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0];
+            return res.status(400).json({
+                message: `A user with that ${field} already exists`,
+                error: 'DUPLICATE_KEY',
+                field: field
+            });
+        }
+
+        // Handle Mongoose validation errors
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Validation failed',
+                error: 'VALIDATION_ERROR',
+                details: Object.values(err.errors).map(e => e.message)
+            });
+        }
+
         res.status(500).json({
             error: 'Internal server error',
             message: err.message,
