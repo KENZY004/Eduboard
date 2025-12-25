@@ -28,7 +28,7 @@ const AboutPage = () => {
     }, [selectedMember]);
 
     const timeline = [
-        { year: "2024", title: "Project Launch", desc: "EduBoard goes live" },
+        { year: "2025", title: "Project Launch", desc: "EduBoard goes live" },
         { year: "Q1", title: "1K Users", desc: "Reached first milestone" },
         { year: "Q2", title: "Feature Expansion", desc: "Added advanced tools" },
         { year: "Future", title: "Global Scale", desc: "Expanding worldwide" },
@@ -38,31 +38,31 @@ const AboutPage = () => {
         {
             id: 1,
             name: 'Vanshika Babral',
-            role: 'Developer',
-            bio: 'Dedicated to building seamless user experiences and scalable architecture.',
+            role: 'Full Stack Developer',
+            bio: 'Building seamless user experiences with modern web technologies.',
             image: '/team/vanshika.png',
-            skills: ['React', 'Node.js', 'System Design', 'WebSockets'],
-            projects: ['Real-time Sync Engine', 'Whiteboard Core'],
+            skills: ['React', 'Node.js', 'UI Design', 'MongoDB'],
+            projects: ['Whiteboard Interface', 'Real-time Features'],
             gradient: 'from-blue-600 to-violet-600'
         },
         {
             id: 2,
             name: 'Minha Kenzy OM',
             role: 'Full Stack Developer',
-            bio: 'Passionate about creating innovative educational tools and beautiful interfaces.',
+            bio: 'Focused on backend systems, authentication, and email services.',
             image: '/team/kenzy.jpeg',
-            skills: ['MERN Stack', 'UI/UX', 'MongoDB', 'Authentication'],
-            projects: ['Admin Dashboard', 'User Management System'],
+            skills: ['Node.js', 'MongoDB', 'Authentication', 'React'],
+            projects: ['Auth System', 'Email Service', 'Admin Panel', 'Database'],
             gradient: 'from-fuchsia-600 to-pink-500'
         },
         {
             id: 3,
             name: 'Mansi Singh',
-            role: 'Developer',
-            bio: 'Focused on real-time collaboration technology and database optimization.',
+            role: 'Full Stack Developer',
+            bio: 'Creating responsive interfaces and implementing backend features.',
             image: '/team/mansi.jpeg',
-            skills: ['MongoDB', 'Express', 'Socket.io', 'Data Modeling'],
-            projects: ['Real-time Collaboration', 'Database Architecture'],
+            skills: ['React', 'Express', 'UI Components', 'MongoDB'],
+            projects: ['Component Library', 'API Integration'],
             gradient: 'from-emerald-600 to-teal-500'
         },
     ];

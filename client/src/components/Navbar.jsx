@@ -41,16 +41,10 @@ const Navbar = () => {
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
                             <svg
                                 className="w-5 h-5 text-white"
-                                fill="none"
-                                stroke="currentColor"
+                                fill="currentColor"
                                 viewBox="0 0 24 24"
                             >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
+                                <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
                             </svg>
                         </div>
                         <span className="text-xl font-bold text-white">EduBoard</span>
