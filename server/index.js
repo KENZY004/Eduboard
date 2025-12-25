@@ -171,6 +171,12 @@ app.delete('/api/boards/:roomId', async (req, res) => {
       return res.status(404).json({ message: 'Board not found or unauthorized' });
     }
 
+    // Notify all users in the room that the board was deleted
+    io.to(roomId).emit('board-deleted', {
+      roomId: roomId,
+      message: 'This board has been deleted'
+    });
+
     res.json({ message: 'Board deleted successfully' });
   } catch (err) {
     console.error('Error deleting board:', err);
@@ -195,6 +201,14 @@ app.delete('/api/boards/by-id/:boardId', async (req, res) => {
 
     if (!result) {
       return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Notify all users in the room that the board was deleted
+    if (result.roomId) {
+      io.to(result.roomId).emit('board-deleted', {
+        roomId: result.roomId,
+        message: 'This board has been deleted'
+      });
     }
 
     res.json({ message: 'Board deleted successfully' });

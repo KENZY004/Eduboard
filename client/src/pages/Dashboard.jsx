@@ -54,20 +54,13 @@ const Dashboard = () => {
 
     const handleCreateBoard = async (boardName) => {
         try {
-            console.log('User object:', user);
-            console.log('User ID:', user.id);
-
             const roomId = uuidv4();
             const payload = {
                 name: boardName,
                 userId: user.id,
                 roomId
             };
-            console.log('Creating board with payload:', payload);
-
             const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/boards/create`, payload);
-            console.log('Board created successfully:', response.data);
-
             setIsModalOpen(false);
             navigate(`/board/${roomId}`);
         } catch (err) {
@@ -89,8 +82,6 @@ const Dashboard = () => {
         }
 
         try {
-            console.log('[DELETE] isTeacher:', isTeacher, 'roomId:', roomId, 'boardId:', boardId, 'userId:', user.id);
-
             if (isTeacher) {
                 // Teachers: delete the actual board
                 try {
@@ -100,7 +91,6 @@ const Dashboard = () => {
                 } catch (err) {
                     // If delete by roomId fails, try by _id (for orphaned boards)
                     if (err.response?.status === 404) {
-                        console.log('[DELETE] Trying by-id endpoint for orphaned board');
                         const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/by-id/${boardId}?userId=${user.id}&force=true`;
                         console.log('[DELETE] Teacher URL (by _id with force):', url);
                         await axios.delete(url);
@@ -111,7 +101,6 @@ const Dashboard = () => {
             } else {
                 // Students: delete their saved copy
                 const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${boardId}?userId=${user.id}`;
-                console.log('[DELETE] Student URL:', url);
                 await axios.delete(url);
             }
             fetchSavedBoards();

@@ -9,6 +9,7 @@ import FeaturesPage from './pages/FeaturesPage';
 import AboutPage from './pages/AboutPage';
 import VerificationPending from './pages/VerificationPending';
 import AdminPanel from './pages/AdminPanel';
+import ScrollToTop from './components/ScrollToTop';
 import { ThemeProvider } from './context/ThemeContext';
 
 const PrivateRoute = ({ children }) => {
@@ -33,11 +34,16 @@ const PublicRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   if (token) {
-    // Redirect based on role
-    if (user.role === 'admin') {
-      return <Navigate to="/admin" />;
+    // If user is verified, redirect to dashboard
+    if (user.isVerified) {
+      // If admin, redirect to admin panel
+      if (user.role === 'admin') {
+        return <Navigate to="/admin" />;
+      }
+      return <Navigate to="/dashboard" />;
     }
-    return <Navigate to="/dashboard" />;
+    // If not verified, redirect to verification pending page
+    return <Navigate to="/verification-pending" />;
   }
 
   return children;
@@ -46,10 +52,9 @@ const PublicRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" state={{ from: location.pathname }} />;
+    return <Navigate to="/login" />;
   }
 
   if (user.role !== 'admin') {
@@ -63,6 +68,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-purple-500/30">
           <Routes>
             {/* Public Routes */}

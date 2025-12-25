@@ -73,7 +73,7 @@ const Whiteboard = () => {
     const navigate = useNavigate();
     const { roomId } = useParams();
 
-    // Socket Init
+    // Socket Init + Board Existence Check
     useEffect(() => {
         const newSocket = io(import.meta.env.VITE_API_BASE_URL);
         setSocket(newSocket);
@@ -84,6 +84,35 @@ const Whiteboard = () => {
             username: user?.username || user?.email?.split('@')[0] || 'Anonymous',
             role: user?.role || 'student'
         });
+
+        // Check if board still exists (prevents ghost drawings from deleted boards)
+        const checkBoardExists = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}`);
+                if (!response.data) {
+                    // Board doesn't exist, clear everything
+                    setElements([]);
+                    setHistory([]);
+                    setRedoStack([]);
+                }
+            } catch (error) {
+                if (error.response?.status === 404) {
+                    // Board was deleted, clear everything
+                    console.log('[BOARD-CHECK] Board was deleted (404), clearing state');
+                    setElements([]);
+                    setHistory([]);
+                    setRedoStack([]);
+
+                    // Clear canvas
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    }
+                }
+            }
+        };
+
+        checkBoardExists();
 
         return () => newSocket.close();
     }, [roomId]);
@@ -127,18 +156,14 @@ const Whiteboard = () => {
 
         // Delete element (for undo synchronization)
         socket.on('delete-element', (elementId) => {
-            console.log('[DELETE-ELEMENT] Received delete for ID:', elementId);
             setElements(prev => {
-                console.log('[DELETE-ELEMENT] Current elements:', prev.length);
                 const filtered = prev.filter(el => el.id !== elementId);
-                console.log('[DELETE-ELEMENT] After filter:', filtered.length);
                 return filtered;
             });
         });
 
         // Clear canvas (when teacher clicks Clear All button)
         socket.on('clear-canvas', () => {
-            console.log('[CLEAR-CANVAS] Received clear-canvas event');
             setElements([]);
             setHistory([]);
             setRedoStack([]);
@@ -149,7 +174,6 @@ const Whiteboard = () => {
                     if (canvasRef.current) {
                         const ctx = canvasRef.current.getContext('2d');
                         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                        console.log('[CLEAR-CANVAS] Canvas cleared');
                     }
                 });
             });
@@ -182,7 +206,6 @@ const Whiteboard = () => {
                         teacherName: boardData.teacherName || 'Unknown Teacher',
                         elements: loadedElements
                     });
-                    console.log('[AUTO-SAVE] Board saved to student dashboard');
                 } catch (err) {
                     // Silently fail if already saved or error occurs
                     if (err.response?.status !== 400) {
@@ -192,10 +215,22 @@ const Whiteboard = () => {
             }
         });
 
-        socket.on('clear-canvas', () => {
+        // Board deleted event - clear everything and redirect
+        socket.on('board-deleted', (data) => {
+            // Clear all state
             setElements([]);
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            setHistory([]);
+            setRedoStack([]);
+
+            // Clear canvas
+            if (canvasRef.current) {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            }
+
+            // Show notification and redirect
+            alert('This board has been deleted');
+            navigate('/dashboard');
         });
 
         socket.on('cursor-move', (data) => {
@@ -225,9 +260,7 @@ const Whiteboard = () => {
 
         // Theme synchronization (students follow teacher's theme)
         socket.on('theme-changed', (isDark) => {
-            console.log('[THEME-SYNC] Received theme-changed event, isDark:', isDark, 'Current role:', user?.role);
             if (user?.role === 'student') {
-                console.log('[THEME-SYNC] Applying theme change for student');
                 setDarkMode(isDark);
             } else {
                 console.log('[THEME-SYNC] Ignoring theme change (not a student)');
@@ -236,11 +269,8 @@ const Whiteboard = () => {
 
         // Delete element (for undo synchronization)
         socket.on('delete-element', (elementId) => {
-            console.log('[DELETE-ELEMENT] Received delete for element ID:', elementId);
             setElements(prev => {
                 const filtered = prev.filter(el => el.id !== elementId);
-                console.log('[DELETE-ELEMENT] Before filter:', prev.length, 'After filter:', filtered.length);
-
                 // Force canvas re-render after state update
                 requestAnimationFrame(() => {
                     if (canvasRef.current) {
@@ -256,7 +286,6 @@ const Whiteboard = () => {
 
         // Update element (for eraser redo synchronization and live sticky note editing)
         socket.on('update-element', ({ elementId, updates }) => {
-            console.log('[UPDATE-ELEMENT] Received update for element ID:', elementId, 'updates:', updates);
             setElements(prev => {
                 const updated = prev.map(el =>
                     el.id === elementId ? { ...el, ...updates } : el
@@ -277,7 +306,6 @@ const Whiteboard = () => {
 
         // Sync state (for redo to maintain exact element order)
         socket.on('sync-state', (elements) => {
-            console.log('[SYNC-STATE] Received full state sync with', elements.length, 'elements');
             setElements(elements);
 
             // Force canvas re-render to ensure visual consistency
@@ -292,7 +320,6 @@ const Whiteboard = () => {
 
         // Draw element (receive new elements from other users)
         socket.on('draw-element', (element) => {
-            console.log('[DRAW-ELEMENT] Received new element:', element.type, element.id);
             setElements(prev => {
                 // Check if element already exists (by ID)
                 const existingIndex = prev.findIndex(el => el.id === element.id);
@@ -586,6 +613,35 @@ const Whiteboard = () => {
     useEffect(() => {
         renderCanvas();
     }, [elements, darkMode, editingElement, scale, panOffset, currentElement, renderTrigger]);
+
+    // Verify board exists when theme changes (prevents ghost drawings from deleted boards)
+    useEffect(() => {
+        const verifyBoardOnThemeChange = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}`);
+                if (!response.data) {
+                    setElements([]);
+                    setHistory([]);
+                    setRedoStack([]);
+                }
+            } catch (error) {
+                if (error.response?.status === 404) {
+                    console.log('[THEME-CHANGE] Board was deleted (404), clearing ghost drawings');
+                    setElements([]);
+                    setHistory([]);
+                    setRedoStack([]);
+
+                    // Force clear canvas
+                    if (canvasRef.current) {
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    }
+                }
+            }
+        };
+
+        verifyBoardOnThemeChange();
+    }, [darkMode]);
 
     // Emit viewport changes for students to follow (teachers only)
     useEffect(() => {
@@ -901,7 +957,6 @@ const Whiteboard = () => {
                 setAction('resizing');
                 setIsDrawing(true); // Enable drawing for resize
                 setUndoSnapshot({ ...el });
-                console.log('Resize handle clicked for element:', selectedElement.index, 'at scale:', scale);
                 return;
             }
         }
@@ -923,7 +978,6 @@ const Whiteboard = () => {
             setUndoSnapshot({ ...el });
             setAction('moving');
             setIsDrawing(true); // Enable drawing mode for movement
-            console.log('Element clicked and selected:', priorityHitIndex, 'Type:', el.type);
             return;
         }
 
@@ -941,7 +995,6 @@ const Whiteboard = () => {
                     setAction('resizing');
                     setIsDrawing(true); // Enable drawing for resize
                     setUndoSnapshot({ ...elements[selectedElement.index] });
-                    console.log('Resize handle clicked for element:', selectedElement.index);
                     return;
                 }
             }
@@ -1285,11 +1338,9 @@ const Whiteboard = () => {
 
         if (lastAction.type === 'ADD') {
             // Remove the added element
-            console.log('[UNDO] Removing element ID:', lastAction.element.id);
             setElements(prev => prev.filter(el => el.id !== lastAction.element.id));
             // Emit delete to other users for undo synchronization
             if (socket) {
-                console.log('[UNDO] Emitting delete-element for ID:', lastAction.element.id);
                 socket.emit('delete-element', { roomId, elementId: lastAction.element.id });
             }
         } else if (lastAction.type === 'UPDATE') {
@@ -1320,7 +1371,6 @@ const Whiteboard = () => {
                 const newElements = [...prev, action.element];
                 // Sync full state to students after redo to maintain order
                 if (socket && user?.role === 'teacher') {
-                    console.log('[REDO] Emitting sync-state with', newElements.length, 'elements');
                     socket.emit('sync-state', { roomId, elements: newElements });
                 }
                 return newElements;
@@ -1334,7 +1384,6 @@ const Whiteboard = () => {
                     );
                     // Sync full state after update
                     if (socket && user?.role === 'teacher') {
-                        console.log('[REDO UPDATE] Emitting sync-state with', updatedElements.length, 'elements');
                         socket.emit('sync-state', { roomId, elements: updatedElements });
                     }
                     return updatedElements;
@@ -1358,8 +1407,6 @@ const Whiteboard = () => {
             const date = new Date().toISOString().slice(0, 10);
             fileName = `Whiteboard-${date}`;
         }
-
-        console.log("Exporting Image with Name:", fileName);
         const canvas = canvasRef.current;
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width;
@@ -1836,11 +1883,9 @@ const Whiteboard = () => {
                         <button
                             onClick={() => {
                                 const newTheme = !darkMode;
-                                console.log('[THEME-SYNC] Teacher toggling theme to:', newTheme);
                                 setDarkMode(newTheme);
                                 // Sync theme to all students
                                 if (socket) {
-                                    console.log('[THEME-SYNC] Emitting change-theme event, roomId:', roomId, 'isDark:', newTheme);
                                     socket.emit('change-theme', { roomId, isDark: newTheme });
                                 } else {
                                     console.error('[THEME-SYNC] Socket not available!');
@@ -2188,7 +2233,6 @@ const Whiteboard = () => {
                             <div className="relative">
                                 <button
                                     onClick={() => {
-                                        console.log('Shape menu clicked, current state:', showShapeMenu);
                                         setShowShapeMenu(!showShapeMenu);
                                     }}
                                     className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')

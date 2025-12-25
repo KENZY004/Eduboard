@@ -47,9 +47,6 @@ router.post('/register', async (req, res) => {
             } else if (isDuplicateUsername) {
                 message = 'A user with that username already exists';
             }
-
-            console.log(`[REGISTRATION] Duplicate user attempt - Email: ${email}, Username: ${username}, Existing: ${existingUser.email}, ${existingUser.username}`);
-
             return res.status(400).json({
                 message,
                 error: 'USER_EXISTS'

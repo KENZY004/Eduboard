@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -7,7 +8,7 @@ const LandingPage = () => {
     const heroRef = useRef(null);
 
     useEffect(() => {
-        // Smooth scroll behavior
+        // Smooth scroll behavior for in-page scrolling
         document.documentElement.style.scrollBehavior = 'smooth';
 
         // Intersection Observer for scroll animations
@@ -129,6 +130,10 @@ const LandingPage = () => {
                 'Manage multiple classrooms and boards',
                 'Control student permissions and access',
                 'Save and reuse lesson templates',
+                'Access comprehensive admin panel',
+                'Monitor student activity and participation',
+                'Export and share board content',
+                'Organize boards by class or subject',
             ],
             gradient: 'from-indigo-600 to-purple-600',
         },
@@ -136,9 +141,13 @@ const LandingPage = () => {
             role: 'For Students',
             benefits: [
                 'Join classes with simple room codes',
-                'Collaborate on group projects',
+                'Collaborate on group projects in real-time',
                 'Take visual notes and brainstorm ideas',
                 'Access boards from any device',
+                'View and revisit saved boards anytime',
+                'Participate in interactive lessons',
+                'Work with unlimited drawing tools',
+                'Learn through visual collaboration',
             ],
             gradient: 'from-purple-600 to-pink-600',
         },
@@ -146,23 +155,34 @@ const LandingPage = () => {
 
     const teamMembers = [
         {
-
+            id: 1,
             name: 'Vanshika Babral',
             role: 'Developer',
-            bio: 'Dedicated to building seamless user experiences.',
+            bio: 'Dedicated to building seamless user experiences and scalable architecture.',
             image: '/team/vanshika.png',
+            skills: ['React', 'Node.js', 'System Design', 'WebSockets'],
+            projects: ['Real-time Sync Engine', 'Whiteboard Core'],
+            gradient: 'from-blue-600 to-violet-600'
         },
         {
+            id: 2,
             name: 'Minha Kenzy OM',
             role: 'Full Stack Developer',
-            bio: 'Passionate about creating innovative educational tools.',
+            bio: 'Passionate about creating innovative educational tools and beautiful interfaces.',
             image: '/team/kenzy.jpeg',
+            skills: ['MERN Stack', 'UI/UX', 'MongoDB', 'Authentication'],
+            projects: ['Admin Dashboard', 'User Management System'],
+            gradient: 'from-fuchsia-600 to-pink-500'
         },
         {
+            id: 3,
             name: 'Mansi Singh',
             role: 'Developer',
-            bio: 'Focused on real-time collaboration technology.',
+            bio: 'Focused on real-time collaboration technology and database optimization.',
             image: '/team/mansi.jpeg',
+            skills: ['MongoDB', 'Express', 'Socket.io', 'Data Modeling'],
+            projects: ['Real-time Collaboration', 'Database Architecture'],
+            gradient: 'from-emerald-600 to-teal-500'
         },
     ];
 
@@ -172,21 +192,69 @@ const LandingPage = () => {
 
             {/* Hero Section */}
             <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+                {/* Grid Background */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+
                 {/* Animated Background Elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-                </div>
+                <motion.div
+                    animate={{
+                        x: [0, 100, 0],
+                        y: [0, -100, 0],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -100, 0],
+                        y: [0, 100, 0],
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -50, 0],
+                        y: [0, 50, 0],
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, 80, 0],
+                        y: [0, -80, 0],
+                        scale: [1, 0.8, 1],
+                    }}
+                    transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-10 right-10 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl"
+                />
 
                 <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent leading-tight">
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent leading-tight"
+                    >
                         Collaborate. Create. Learn.
-                    </h1>
-                    <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto">
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto"
+                    >
                         EduBoard is the ultimate collaborative whiteboard platform for modern education.
                         Bring your classroom to life with real-time interaction and infinite possibilities.
-                    </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    </motion.p>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                        className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                    >
                         <Link
                             to="/signup"
                             className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
@@ -199,22 +267,34 @@ const LandingPage = () => {
                         >
                             Explore Features
                         </Link>
-                    </div>
+                    </motion.div>
 
                     {/* Floating Stats */}
                     <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-                        <div className="scroll-animate opacity-0">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.6 }}
+                        >
                             <div className="text-4xl font-bold text-indigo-400">∞</div>
                             <div className="text-sm text-slate-400 mt-2">Infinite Canvas</div>
-                        </div>
-                        <div className="scroll-animate opacity-0">
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.7 }}
+                        >
                             <div className="text-4xl font-bold text-purple-400">⚡</div>
                             <div className="text-sm text-slate-400 mt-2">Real-time Sync</div>
-                        </div>
-                        <div className="scroll-animate opacity-0">
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.8 }}
+                        >
                             <div className="text-4xl font-bold text-pink-400">🎨</div>
                             <div className="text-sm text-slate-400 mt-2">Creative Tools</div>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -222,24 +302,33 @@ const LandingPage = () => {
             {/* Features Grid */}
             <section className="py-24 px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 scroll-animate opacity-0">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">Powerful Features</h2>
                         <p className="text-xl text-slate-400">Everything you need for collaborative learning</p>
-                    </div>
+                    </motion.div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {features.map((feature, index) => (
-                            <div
+                            <motion.div
                                 key={index}
-                                className="scroll-animate opacity-0 surface-card p-8 rounded-2xl group hover:scale-105 transition-all duration-300"
-                                style={{ animationDelay: `${index * 100}ms` }}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 }}
+                                whileHover={{ y: -10, scale: 1.02 }}
+                                className="surface-card p-8 rounded-2xl group"
                             >
                                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                     {feature.icon}
                                 </div>
                                 <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
                                 <p className="text-slate-400">{feature.description}</p>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
@@ -248,14 +337,26 @@ const LandingPage = () => {
             {/* How It Works */}
             <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 scroll-animate opacity-0">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">How It Works</h2>
                         <p className="text-xl text-slate-400">Get started in three simple steps</p>
-                    </div>
+                    </motion.div>
 
                     <div className="grid md:grid-cols-3 gap-12">
                         {steps.map((step, index) => (
-                            <div key={index} className="scroll-animate opacity-0 text-center" style={{ animationDelay: `${index * 150}ms` }}>
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.15 }}
+                                className="text-center"
+                            >
                                 <div className="relative mb-8">
                                     <div className="w-24 h-24 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white transform hover:scale-110 transition-transform">
                                         {step.icon}
@@ -266,7 +367,7 @@ const LandingPage = () => {
                                 </div>
                                 <h3 className="text-2xl font-semibold mb-3">{step.title}</h3>
                                 <p className="text-slate-400">{step.description}</p>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
@@ -275,17 +376,25 @@ const LandingPage = () => {
             {/* Use Cases */}
             <section className="py-24 px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 scroll-animate opacity-0">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">Built for Everyone</h2>
                         <p className="text-xl text-slate-400">Tailored experiences for teachers and students</p>
-                    </div>
+                    </motion.div>
 
                     <div className="grid md:grid-cols-2 gap-8">
                         {useCases.map((useCase, index) => (
-                            <div
+                            <motion.div
                                 key={index}
-                                className="scroll-animate opacity-0 surface-card p-10 rounded-2xl"
-                                style={{ animationDelay: `${index * 100}ms` }}
+                                initial={{ opacity: 0, x: index === 0 ? -20 : 20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 }}
+                                className="surface-card p-10 rounded-2xl"
                             >
                                 <div className={`inline-block px-6 py-2 bg-gradient-to-r ${useCase.gradient} rounded-full text-white font-semibold mb-6`}>
                                     {useCase.role}
@@ -305,43 +414,7 @@ const LandingPage = () => {
                                         </li>
                                     ))}
                                 </ul>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Meet the Team */}
-            <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 scroll-animate opacity-0">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Meet the Team</h2>
-                        <p className="text-xl text-slate-400">The creators behind EduBoard</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {teamMembers.map((member, index) => (
-                            <div
-                                key={index}
-                                className="scroll-animate opacity-0 surface-card p-8 rounded-2xl text-center group hover:scale-105 transition-all duration-300"
-                                style={{ animationDelay: `${index * 100}ms` }}
-                            >
-                                {/* Team member photo */}
-                                {member.image ? (
-                                    <img
-                                        src={member.image}
-                                        alt={member.name}
-                                        className="w-32 h-32 mx-auto mb-6 rounded-full object-cover border-4 border-indigo-500/30 group-hover:scale-110 group-hover:border-indigo-500/50 transition-all duration-300"
-                                    />
-                                ) : (
-                                    <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-4xl font-bold text-white group-hover:scale-110 transition-transform">
-                                        {member.name.charAt(0)}
-                                    </div>
-                                )}
-                                <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
-                                <p className="text-indigo-400 font-medium mb-3">{member.role}</p>
-                                <p className="text-slate-400 text-sm">{member.bio}</p>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </div>

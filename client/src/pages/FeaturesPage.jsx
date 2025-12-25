@@ -1,208 +1,287 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const FeaturesPage = () => {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.style.scrollBehavior = 'smooth';
+    const { theme } = useTheme();
+    const [stats, setStats] = useState({ users: 0, boards: 0, drawings: 0 });
 
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px',
+    useEffect(() => {
+
+        // Animated counter for stats
+        const duration = 2000;
+        const targetStats = { users: 1000, boards: 5000, drawings: 50000 };
+        const startTime = Date.now();
+
+        const animateStats = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            setStats({
+                users: Math.floor(targetStats.users * progress),
+                boards: Math.floor(targetStats.boards * progress),
+                drawings: Math.floor(targetStats.drawings * progress),
+            });
+
+            if (progress < 1) {
+                requestAnimationFrame(animateStats);
+            }
         };
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-fade-in-up');
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.scroll-animate').forEach((el) => {
-            observer.observe(el);
-        });
-
-        return () => observer.disconnect();
+        const timer = setTimeout(() => animateStats(), 500);
+        return () => clearTimeout(timer);
     }, []);
 
-    const featureCategories = [
+    const bentoFeatures = [
         {
-            title: 'Collaboration Tools',
-            description: 'Work together seamlessly with powerful real-time features',
-            features: [
-                {
-                    name: 'Real-time Synchronization',
-                    description: 'See changes instantly as multiple users draw, write, and create together. No lag, no delays.',
-                    icon: '⚡',
-                },
-                {
-                    name: 'Multi-user Support',
-                    description: 'Unlimited participants can join the same board and collaborate simultaneously.',
-                    icon: '👥',
-                },
-                {
-                    name: 'Live Cursors',
-                    description: 'See where other users are working with live cursor tracking and user presence indicators.',
-                    icon: '🎯',
-                },
-            ],
+            title: "Real-time Collaboration",
+            description: "See changes instantly as multiple users draw together",
+            icon: "⚡",
+            size: "large",
+            gradient: "from-blue-600 to-indigo-600"
         },
         {
-            title: 'Drawing & Design',
-            description: 'Professional-grade tools for creative expression',
-            features: [
-                {
-                    name: 'Freehand Drawing',
-                    description: 'Smooth, responsive pen tool with pressure sensitivity and multiple brush sizes.',
-                    icon: '✏️',
-                },
-                {
-                    name: 'Shape Tools',
-                    description: 'Create perfect circles, rectangles, triangles, pentagons, and more geometric shapes.',
-                    icon: '⬡',
-                },
-                {
-                    name: 'Text & Annotations',
-                    description: 'Add text boxes with custom fonts, sizes, and colors. Perfect for labels and notes.',
-                    icon: '📝',
-                },
-                {
-                    name: 'Sticky Notes',
-                    description: 'Colorful sticky notes for brainstorming, organizing ideas, and quick annotations.',
-                    icon: '📌',
-                },
-            ],
+            title: "Infinite Canvas",
+            description: "Never run out of space for your ideas",
+            icon: "∞",
+            size: "medium",
+            gradient: "from-slate-600 to-slate-700"
         },
         {
-            title: 'Organization',
-            description: 'Keep your work organized and accessible',
-            features: [
-                {
-                    name: 'Infinite Canvas',
-                    description: 'Never run out of space. Pan and zoom across an unlimited workspace.',
-                    icon: '∞',
-                },
-                {
-                    name: 'Board Management',
-                    description: 'Create, organize, and manage multiple boards for different classes or projects.',
-                    icon: '📋',
-                },
-                {
-                    name: 'Room Codes',
-                    description: 'Simple room codes make it easy for students to join the right board instantly.',
-                    icon: '🔑',
-                },
-            ],
+            title: "Drawing Tools",
+            description: "Professional-grade pen, shapes, and more",
+            icon: "✏️",
+            size: "medium",
+            gradient: "from-indigo-600 to-blue-700"
         },
         {
-            title: 'Access Control',
-            description: 'Secure and flexible permission management',
-            features: [
-                {
-                    name: 'Role-Based Permissions',
-                    description: 'Teachers have full control while students can be given appropriate access levels.',
-                    icon: '🔒',
-                },
-                {
-                    name: 'Teacher Controls',
-                    description: 'Create boards, manage participants, and control what students can do.',
-                    icon: '👨‍🏫',
-                },
-                {
-                    name: 'Student Access',
-                    description: 'Students can join boards, collaborate, and contribute within defined boundaries.',
-                    icon: '👨‍🎓',
-                },
-            ],
+            title: "Live Cursors",
+            description: "See where everyone is working in real-time",
+            icon: "🎯",
+            size: "small",
+            gradient: "from-teal-600 to-cyan-600"
+        },
+        {
+            title: "Sticky Notes",
+            description: "Colorful notes for brainstorming",
+            icon: "📌",
+            size: "small",
+            gradient: "from-cyan-600 to-blue-600"
+        },
+        {
+            title: "Role-Based Access",
+            description: "Teachers control, students collaborate",
+            icon: "🔒",
+            size: "medium",
+            gradient: "from-blue-700 to-indigo-700"
+        },
+    ];
+
+    const features = [
+        {
+            category: "Collaboration",
+            items: [
+                { icon: "👥", title: "Multi-user Support", desc: "Unlimited participants" },
+                { icon: "🔄", title: "Real-time Sync", desc: "Instant updates" },
+                { icon: "💬", title: "Live Presence", desc: "See who's online" },
+            ]
+        },
+        {
+            category: "Tools",
+            items: [
+                { icon: "🖊️", title: "Freehand Drawing", desc: "Smooth pen tool" },
+                { icon: "⬡", title: "Shape Tools", desc: "Perfect geometry" },
+                { icon: "📝", title: "Text & Annotations", desc: "Rich formatting" },
+            ]
+        },
+        {
+            category: "Management",
+            items: [
+                { icon: "📋", title: "Board Management", desc: "Organize classes" },
+                { icon: "🔑", title: "Room Codes", desc: "Easy joining" },
+                { icon: "👨‍🏫", title: "Teacher Controls", desc: "Full control" },
+            ]
         },
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
             <Navbar />
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 px-6 lg:px-8 overflow-hidden">
-                <div className="absolute inset-0">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
+            {/* Hero Section with Animated Background */}
+            <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+                {/* Animated gradient orbs */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <motion.div
+                        animate={{
+                            x: [0, 100, 0],
+                            y: [0, -100, 0],
+                        }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl ${theme === 'dark' ? 'bg-indigo-500/20' : 'bg-indigo-300/30'
+                            }`}
+                    />
+                    <motion.div
+                        animate={{
+                            x: [0, -100, 0],
+                            y: [0, 100, 0],
+                        }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                        className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl ${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-300/30'
+                            }`}
+                    />
                 </div>
 
-                <div className="relative max-w-4xl mx-auto text-center">
-                    <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent">
-                        Features That Empower
-                    </h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        Discover all the powerful tools and capabilities that make EduBoard the perfect platform for collaborative learning.
-                    </p>
+                <div className="relative max-w-6xl mx-auto text-center">
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="text-6xl md:text-7xl font-extrabold mb-6"
+                    >
+                        <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                            Powerful Features
+                        </span>
+                        <br />
+                        <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                            Built for Education
+                        </span>
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
+                        Everything you need for interactive, collaborative learning in one powerful platform
+                    </motion.p>
+
+                    {/* Animated Stats */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                        className="grid grid-cols-3 gap-8 max-w-3xl mx-auto mt-16"
+                    >
+                        {[
+                            { label: "Active Users", value: stats.users.toLocaleString() + "+" },
+                            { label: "Boards Created", value: stats.boards.toLocaleString() + "+" },
+                            { label: "Drawings Made", value: stats.drawings.toLocaleString() + "+" },
+                        ].map((stat, i) => (
+                            <div key={i} className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-900/50 border border-gray-800' : 'bg-gray-50 border border-gray-200'
+                                }`}>
+                                <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                                    {stat.value}
+                                </div>
+                                <div className={`text-sm mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {stat.label}
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
             </section>
 
-            {/* Feature Categories */}
-            <section className="py-12 px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto space-y-24">
-                    {featureCategories.map((category, categoryIndex) => (
-                        <div key={categoryIndex} className="scroll-animate opacity-0">
-                            <div className="text-center mb-12">
-                                <h2 className="text-3xl md:text-4xl font-bold mb-4">{category.title}</h2>
-                                <p className="text-lg text-slate-400">{category.description}</p>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {category.features.map((feature, featureIndex) => (
-                                    <div
-                                        key={featureIndex}
-                                        className="surface-card p-8 rounded-2xl hover:scale-105 transition-all duration-300"
-                                    >
-                                        <div className="text-5xl mb-4">{feature.icon}</div>
-                                        <h3 className="text-xl font-semibold mb-3">{feature.name}</h3>
-                                        <p className="text-slate-400">{feature.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Technology Stack */}
-            <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
+            {/* Bento Grid Feature Showcase */}
+            <section className="py-24 px-6">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 scroll-animate opacity-0">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Built with Modern Technology</h2>
-                        <p className="text-xl text-slate-400">Powered by cutting-edge tools and frameworks</p>
-                    </div>
+                    <motion.h2
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-4xl md:text-5xl font-bold text-center mb-16"
+                    >
+                        Everything You Need
+                    </motion.h2>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <div className="scroll-animate opacity-0 surface-card p-8 rounded-2xl text-center">
-                            <div className="text-5xl mb-4">⚛️</div>
-                            <h3 className="text-xl font-semibold mb-3">React</h3>
-                            <p className="text-slate-400">Modern, component-based UI framework for smooth interactions</p>
-                        </div>
-                        <div className="scroll-animate opacity-0 surface-card p-8 rounded-2xl text-center">
-                            <div className="text-5xl mb-4">🟢</div>
-                            <h3 className="text-xl font-semibold mb-3">Node.js</h3>
-                            <p className="text-slate-400">Fast, scalable backend for real-time communication</p>
-                        </div>
-                        <div className="scroll-animate opacity-0 surface-card p-8 rounded-2xl text-center">
-                            <div className="text-5xl mb-4">🍃</div>
-                            <h3 className="text-xl font-semibold mb-3">MongoDB</h3>
-                            <p className="text-slate-400">Flexible database for storing boards and user data</p>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {bentoFeatures.map((feature, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.1 }}
+                                whileHover={{ scale: 1.02, y: -5 }}
+                                className={`
+                                    relative overflow-hidden rounded-3xl p-8
+                                    ${feature.size === 'large' ? 'md:col-span-2 md:row-span-2' : ''}
+                                    ${feature.size === 'medium' ? 'md:col-span-2' : ''}
+                                    ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-gray-50 border border-gray-200'}
+                                    cursor-pointer transition-all duration-300
+                                `}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 hover:opacity-10 transition-opacity duration-300`} />
+
+                                <div className="relative z-10">
+                                    <div className="text-5xl mb-4">{feature.icon}</div>
+                                    <h3 className="text-2xl font-bold mb-2">{feature.title}</h3>
+                                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                                        {feature.description}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Feature Categories with Icons */}
+            <section className={`py-24 px-6 ${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid md:grid-cols-3 gap-12">
+                        {features.map((category, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.2 }}
+                            >
+                                <h3 className="text-2xl font-bold mb-8 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                                    {category.category}
+                                </h3>
+                                <div className="space-y-6">
+                                    {category.items.map((item, j) => (
+                                        <motion.div
+                                            key={j}
+                                            whileHover={{ x: 10 }}
+                                            className="flex items-start gap-4"
+                                        >
+                                            <div className="text-3xl flex-shrink-0">{item.icon}</div>
+                                            <div>
+                                                <h4 className="font-semibold mb-1">{item.title}</h4>
+                                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </section>
 
             {/* CTA Section */}
-            <section className="py-24 px-6 lg:px-8">
-                <div className="max-w-4xl mx-auto text-center scroll-animate opacity-0">
-                    <div className="surface-card p-12 rounded-3xl">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6">Experience All Features Today</h2>
-                        <p className="text-xl text-slate-300 mb-8">
-                            Start using EduBoard for free and unlock the full potential of collaborative learning.
+            <section className="py-32 px-6">
+                <div className="max-w-4xl mx-auto text-center">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className={`p-12 rounded-3xl ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-gray-700' : 'bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200'
+                            }`}
+                    >
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                            Ready to Transform Your Classroom?
+                        </h2>
+                        <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                            Join thousands of educators using EduBoard
                         </p>
                         <Link
                             to="/signup"
@@ -210,7 +289,7 @@ const FeaturesPage = () => {
                         >
                             Get Started Free
                         </Link>
-                    </div>
+                    </motion.div>
                 </div>
             </section>
 

@@ -19,21 +19,14 @@ const AdminPanel = () => {
     const fetchTeachers = async () => {
         setLoading(true);
         try {
-            console.log('🔍 Fetching teachers and students from API...');
             const [pendingRes, allRes, studentsRes] = await Promise.all([
                 axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/pending-teachers`),
                 axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-teachers`),
                 axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-students`)
             ]);
-            console.log('✅ Pending teachers response:', pendingRes.data);
-            console.log('✅ All teachers response:', allRes.data);
-            console.log('✅ All students response:', studentsRes.data);
             setPendingTeachers(pendingRes.data);
             setAllTeachers(allRes.data);
             setAllStudents(studentsRes.data);
-            console.log(`📊 Set ${pendingRes.data.length} pending teachers`);
-            console.log(`📊 Set ${allRes.data.length} total teachers`);
-            console.log(`📊 Set ${studentsRes.data.length} total students`);
         } catch (err) {
             console.error('❌ Failed to fetch data:', err);
             console.error('Error details:', err.response?.data || err.message);
@@ -277,27 +270,27 @@ const AdminPanel = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ y: -4 }}
-                                className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl border border-slate-700 hover:border-indigo-500/50 rounded-3xl p-8 shadow-2xl transition-all duration-300 group"
+                                className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl border border-slate-700 hover:border-indigo-500/50 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 group"
                             >
-                                <div className="flex items-start justify-between gap-6">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="relative">
+                                <div className="flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-6">
+                                    <div className="flex-1 w-full">
+                                        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                                            <div className="relative flex-shrink-0">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                                                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                                                    <FaUser className="text-white text-2xl" />
+                                                <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                                                    <FaUser className="text-white text-lg sm:text-2xl" />
                                                 </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-2xl font-bold text-white mb-1">{teacher.username}</h3>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 truncate">{teacher.username}</h3>
                                                 <div className="flex items-center gap-2 text-slate-400">
-                                                    <FaEnvelope className="text-sm" />
-                                                    <span className="text-sm">{teacher.email}</span>
+                                                    <FaEnvelope className="text-xs sm:text-sm flex-shrink-0" />
+                                                    <span className="text-xs sm:text-sm truncate">{teacher.email}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
                                             <div className="flex items-center gap-3 text-slate-300 bg-slate-900/50 rounded-xl p-4">
                                                 <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                                                     <FaCalendar className="text-indigo-400" />
@@ -350,15 +343,15 @@ const AdminPanel = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-3 w-full lg:w-auto lg:min-w-[200px]">
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => handleApprove(teacher.id, teacher.username)}
                                             disabled={processingId === teacher.id}
-                                            className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-2xl shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 border border-green-400/30"
+                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-2xl shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-green-400/30 text-sm sm:text-base"
                                         >
-                                            <FaCheckCircle className="text-xl" />
+                                            <FaCheckCircle className="text-lg sm:text-xl" />
                                             <span>{processingId === teacher.id ? 'Processing...' : 'Approve'}</span>
                                         </motion.button>
                                         <motion.button
@@ -366,9 +359,9 @@ const AdminPanel = () => {
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => handleReject(teacher.id, teacher.username)}
                                             disabled={processingId === teacher.id}
-                                            className="px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-2xl shadow-2xl shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 border border-red-400/30"
+                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-2xl shadow-2xl shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-red-400/30 text-sm sm:text-base"
                                         >
-                                            <FaTimesCircle className="text-xl" />
+                                            <FaTimesCircle className="text-lg sm:text-xl" />
                                             <span>Reject</span>
                                         </motion.button>
                                     </div>

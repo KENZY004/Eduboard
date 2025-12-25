@@ -129,9 +129,6 @@ router.delete('/user/:userId', async (req, res) => {
 
         // Delete the user
         await User.findByIdAndDelete(userId);
-
-        console.log(`[ADMIN] Successfully deleted user and cleaned up related data`);
-
         res.json({
             message: 'User deleted successfully',
             deletedUser: {
