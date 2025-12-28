@@ -52,3 +52,7 @@ cd ../client
 npm install
 npm run dev
 
+---
+
+## 🌐 Live Demo
+🔗 https://eduboard01.vercel.app/
