@@ -39,6 +39,8 @@ eduboard/
 
 ```
 
+---
+
 ## ⚙️ Running Locally
 ```bash
 git clone https://github.com/KENZY004/eduboard.git
