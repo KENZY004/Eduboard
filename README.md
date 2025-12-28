@@ -12,7 +12,7 @@ The project focuses on real-time synchronization, role-based access control, and
 - Role-based access (Student / Teacher / Admin)
 - Teacher approval workflow via email verification
 - Image uploads stored securely using Cloudinary
-- Responsive UI with dark/light mode support
+- Responsive dark-themed UI with light/dark toggle available on the whiteboard
 
 ---
 
