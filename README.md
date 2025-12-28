@@ -37,19 +37,18 @@ eduboard/
 ├── client/   # React frontend
 └── server/   # Node.js backend
 
-## ⚙️ Running Locally
+```
 
+## ⚙️ Running Locally
 ```bash
 git clone https://github.com/KENZY004/eduboard.git
 cd eduboard
 
 cd server
 npm install
-npm run dev
+npm run start
 
 cd ../client
 npm install
 npm run dev
 
-🌐 Live Demo
-🔗 https://eduboard01.vercel.app
