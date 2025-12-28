@@ -51,7 +51,7 @@ npm run start
 cd ../client
 npm install
 npm run dev
-
+```
 ---
 
 ## 🌐 Live Demo
