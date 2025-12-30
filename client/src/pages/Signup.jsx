@@ -135,7 +135,7 @@ const Signup = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
-                                placeholder="Student Name"
+                                placeholder={formData.role === 'teacher' ? 'Teacher Name' : 'Student Name'}
                                 required
                             />
                         </div>
@@ -176,8 +176,8 @@ const Signup = () => {
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 ml-1">I am a</label>
                         <div className="grid grid-cols-2 gap-3">
                             <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'student'
-                                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
-                                    : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                                ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
+                                : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
                                 }`}>
                                 <input
                                     type="radio"
@@ -193,8 +193,8 @@ const Signup = () => {
                                 </div>
                             </label>
                             <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
-                                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
-                                    : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                                ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
+                                : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
                                 }`}>
                                 <input
                                     type="radio"
