@@ -3,10 +3,17 @@ const User = require('../models/User');
 const TeacherVerification = require('../models/TeacherVerification');
 const Board = require('../models/Board');
 const SavedBoard = require('../models/SavedBoard');
+const verifyToken = require('../utils/verifyToken');
+const verifyAdmin = require('../utils/verifyAdmin');
+
+// Apply authentication and admin verification to ALL routes in this file
+router.use(verifyToken);
+router.use(verifyAdmin);
 
 /**
  * GET /api/admin/pending-teachers
  * Get all pending teacher verification requests
+ * Requires: Admin authentication
  */
 router.get('/pending-teachers', async (req, res) => {
     try {

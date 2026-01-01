@@ -9,6 +9,8 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const Board = require('./models/Board');
 const SavedBoard = require('./models/SavedBoard');
+const verifyToken = require('./utils/verifyToken');
+const verifyOwnership = require('./utils/verifyOwnership');
 
 const app = express();
 const server = http.createServer(app);
@@ -78,8 +80,8 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 
 // Board Management Endpoints
 
-// Create a new named board
-app.post('/api/boards/create', async (req, res) => {
+// Create a new named board (requires authentication)
+app.post('/api/boards/create', verifyToken, async (req, res) => {
   try {
     const { name, userId, roomId } = req.body;
 
@@ -113,8 +115,8 @@ app.post('/api/boards/create', async (req, res) => {
   }
 });
 
-// Get all boards for a specific user (teachers: boards they created)
-app.get('/api/boards/user/:userId', async (req, res) => {
+// Get all boards for a specific user (teachers: boards they created) - requires authentication and ownership
+app.get('/api/boards/user/:userId', verifyToken, verifyOwnership('userId'), async (req, res) => {
   try {
     const { userId } = req.params;
     // Find boards created by this user (for teachers)
@@ -132,8 +134,8 @@ app.get('/api/boards/user/:userId', async (req, res) => {
   }
 });
 
-// Get specific board details
-app.get('/api/boards/:roomId', async (req, res) => {
+// Get specific board details (requires authentication)
+app.get('/api/boards/:roomId', verifyToken, async (req, res) => {
   try {
     const { roomId } = req.params;
     const board = await Board.findOne({ roomId });
@@ -155,11 +157,11 @@ app.get('/api/boards/:roomId', async (req, res) => {
   }
 });
 
-// Delete a board
-app.delete('/api/boards/:roomId', async (req, res) => {
+// Delete a board (requires authentication and ownership)
+app.delete('/api/boards/:roomId', verifyToken, async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { userId } = req.query; // Get userId from query params for authorization
+    const userId = req.user.id; // Get userId from JWT token, not query params
 
     // Find and delete the board only if it belongs to the user
     const result = await Board.findOneAndDelete({
@@ -184,11 +186,12 @@ app.delete('/api/boards/:roomId', async (req, res) => {
   }
 });
 
-// Delete a board by MongoDB _id (for orphaned boards)
-app.delete('/api/boards/by-id/:boardId', async (req, res) => {
+// Delete a board by MongoDB _id (for orphaned boards) - requires authentication
+app.delete('/api/boards/by-id/:boardId', verifyToken, async (req, res) => {
   try {
     const { boardId } = req.params;
-    const { userId, force } = req.query;
+    const { force } = req.query;
+    const userId = req.user.id; // Get userId from JWT token
 
     let query = { _id: boardId };
 
@@ -220,10 +223,11 @@ app.delete('/api/boards/by-id/:boardId', async (req, res) => {
 
 // Saved Boards Endpoints (for students)
 
-// Save a board (creates independent copy for student)
-app.post('/api/boards/save', async (req, res) => {
+// Save a board (creates independent copy for student) - requires authentication
+app.post('/api/boards/save', verifyToken, async (req, res) => {
   try {
-    const { userId, roomId, boardName, teacherName, elements } = req.body;
+    const userId = req.user.id; // Get userId from JWT token
+    const { roomId, boardName, teacherName, elements } = req.body;
 
     // Check if already saved
     const existing = await SavedBoard.findOne({ userId, roomId });
@@ -248,8 +252,8 @@ app.post('/api/boards/save', async (req, res) => {
   }
 });
 
-// Get all saved boards for a student
-app.get('/api/boards/saved/:userId', async (req, res) => {
+// Get all saved boards for a student (requires authentication and ownership)
+app.get('/api/boards/saved/:userId', verifyToken, verifyOwnership('userId'), async (req, res) => {
   try {
     const { userId } = req.params;
     const savedBoards = await SavedBoard.find({ userId })
@@ -262,11 +266,11 @@ app.get('/api/boards/saved/:userId', async (req, res) => {
   }
 });
 
-// Delete a saved board (student removes from their dashboard)
-app.delete('/api/boards/saved/:savedBoardId', async (req, res) => {
+// Delete a saved board (student removes from their dashboard) - requires authentication and ownership
+app.delete('/api/boards/saved/:savedBoardId', verifyToken, async (req, res) => {
   try {
     const { savedBoardId } = req.params;
-    const { userId } = req.query;
+    const userId = req.user.id; // Get userId from JWT token
 
     const result = await SavedBoard.findOneAndDelete({
       _id: savedBoardId,
@@ -288,9 +292,29 @@ app.delete('/api/boards/saved/:savedBoardId', async (req, res) => {
 // Track connected users per room
 const roomUsers = new Map(); // roomId -> Map of userId -> { username, socketId, role }
 
+// Socket.IO Authentication Middleware
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+
+  if (!token) {
+    return next(new Error('Authentication required'));
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    socket.userId = decoded.id; // Attach user ID to socket
+    next();
+  } catch (err) {
+    return next(new Error('Invalid token'));
+  }
+});
+
 // Socket.io Logic
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('User connected:', socket.id, 'User ID:', socket.userId);
 
   socket.on('join-room', async (roomId, userData) => {
     socket.join(roomId);

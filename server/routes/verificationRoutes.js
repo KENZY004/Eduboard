@@ -5,6 +5,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const TeacherVerification = require('../models/TeacherVerification');
 const User = require('../models/User');
 const { sendTeacherRegistrationNotification, sendApprovalEmail, sendRejectionEmail } = require('../services/emailService');
+const verifyToken = require('../utils/verifyToken');
+const verifyAdmin = require('../utils/verifyAdmin');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -30,8 +32,7 @@ const upload = multer({
     }
 });
 
-// Middleware to verify JWT token
-const verifyToken = require('../utils/verifyToken');
+
 
 /**
  * POST /api/verification/upload-documents
@@ -168,9 +169,10 @@ router.get('/status', verifyToken, async (req, res) => {
 
 /**
  * POST /api/verification/approve/:userId
- * Admin approves a teacher (TODO: Add admin authentication middleware)
+ * Admin approves a teacher
+ * Requires: Admin authentication
  */
-router.post('/approve/:userId', async (req, res) => {
+router.post('/approve/:userId', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { adminNotes } = req.body;
@@ -228,9 +230,10 @@ router.post('/approve/:userId', async (req, res) => {
 
 /**
  * POST /api/verification/reject/:userId
- * Admin rejects a teacher (TODO: Add admin authentication middleware)
+ * Admin rejects a teacher
+ * Requires: Admin authentication
  */
-router.post('/reject/:userId', async (req, res) => {
+router.post('/reject/:userId', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { reason, adminNotes } = req.body;

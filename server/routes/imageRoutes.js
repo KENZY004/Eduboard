@@ -3,6 +3,10 @@ const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('../config/cloudinaryConfig');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const verifyToken = require('../utils/verifyToken');
+
+// Apply authentication to ALL image routes
+router.use(verifyToken);
 
 // Configure multer storage with Cloudinary
 const storage = new CloudinaryStorage({
@@ -16,7 +20,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-// Upload image endpoint
+// Upload image endpoint (requires authentication)
 router.post('/upload', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {

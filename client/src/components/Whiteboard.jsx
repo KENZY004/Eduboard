@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 // import { v4 as uuidv4 } from 'uuid'; // Removed in favor of crypto.randomUUID()
 import io from 'socket.io-client';
-import axios from 'axios';
+import api from '../lib/api';
 import {
     FaEraser, FaPen, FaTrash, FaSignOutAlt, FaShareAlt, FaCopy,
     FaSlash, FaUndo, FaRedo, FaSave, FaMoon, FaSun, FaDownload, FaFilePdf, FaFont,
@@ -75,7 +75,12 @@ const Whiteboard = () => {
 
     // Socket Init + Board Existence Check
     useEffect(() => {
-        const newSocket = io(import.meta.env.VITE_API_BASE_URL);
+        const token = localStorage.getItem('token');
+        const newSocket = io(import.meta.env.VITE_API_BASE_URL, {
+            auth: {
+                token: token // Add JWT token for Socket.IO authentication
+            }
+        });
         setSocket(newSocket);
 
         // Send user data when joining room
@@ -88,7 +93,7 @@ const Whiteboard = () => {
         // Check if board still exists (prevents ghost drawings from deleted boards)
         const checkBoardExists = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}`);
+                const response = await api.get(`/api/boards/${roomId}`);
                 if (!response.data) {
                     // Board doesn't exist, clear everything
                     setElements([]);
@@ -199,8 +204,7 @@ const Whiteboard = () => {
 
                 // Auto-save board for student (independent copy)
                 try {
-                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/boards/save`, {
-                        userId: user.id,
+                    await api.post('/api/boards/save', {
                         roomId: roomId,
                         boardName: boardData.boardName || 'Untitled Board',
                         teacherName: boardData.teacherName || 'Unknown Teacher',
@@ -618,7 +622,7 @@ const Whiteboard = () => {
     useEffect(() => {
         const verifyBoardOnThemeChange = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}`);
+                const response = await api.get(`/api/boards/${roomId}`);
                 if (!response.data) {
                     setElements([]);
                     setHistory([]);
@@ -1644,7 +1648,7 @@ const Whiteboard = () => {
             formData.append('image', file);
 
             try {
-                const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/images/upload`, formData, {
+                const res = await api.post('/api/images/upload', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
 

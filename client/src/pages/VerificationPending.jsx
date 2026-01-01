@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../lib/api';
 import { motion } from 'framer-motion';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
@@ -25,12 +25,7 @@ const VerificationPending = () => {
                 return;
             }
 
-            const res = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/api/verification/status`,
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            const res = await api.get('/api/verification/status');
 
             setVerificationStatus(res.data);
             setLoading(false);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import { motion } from 'framer-motion';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaSync, FaSignOutAlt, FaTrash } from 'react-icons/fa';
@@ -20,9 +20,9 @@ const AdminPanel = () => {
         setLoading(true);
         try {
             const [pendingRes, allRes, studentsRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/pending-teachers`),
-                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-teachers`),
-                axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/all-students`)
+                api.get('/api/admin/pending-teachers'),
+                api.get('/api/admin/all-teachers'),
+                api.get('/api/admin/all-students')
             ]);
             setPendingTeachers(pendingRes.data);
             setAllTeachers(allRes.data);
@@ -40,8 +40,8 @@ const AdminPanel = () => {
 
         setProcessingId(userId);
         try {
-            await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL}/api/verification/approve/${userId}`,
+            await api.post(
+                `/api/verification/approve/${userId}`,
                 { adminNotes: 'Approved via admin panel' }
             );
             alert(`${username} has been approved! They will receive an email notification.`);
@@ -59,8 +59,8 @@ const AdminPanel = () => {
 
         setProcessingId(userId);
         try {
-            await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL}/api/verification/reject/${userId}`,
+            await api.post(
+                `/api/verification/reject/${userId}`,
                 { reason, adminNotes: 'Rejected via admin panel' }
             );
             alert(`${username} has been rejected. They will receive an email notification.`);
@@ -79,7 +79,7 @@ const AdminPanel = () => {
 
         setProcessingId(userId);
         try {
-            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/teacher/${userId}`);
+            await api.delete(`/api/admin/teacher/${userId}`);
             alert(`${username} has been removed from the platform.`);
             fetchTeachers();
         } catch (err) {
@@ -96,7 +96,7 @@ const AdminPanel = () => {
 
         setProcessingId(userId);
         try {
-            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/user/${userId}`);
+            await api.delete(`/api/admin/user/${userId}`);
             alert(`${username} has been removed from the platform.`);
             fetchTeachers(); // Refresh all data
         } catch (err) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+import api from '../lib/api';
 import { FaPlus, FaSignInAlt, FaSignOutAlt, FaRocket, FaFolder, FaClock, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { motion } from 'framer-motion';
@@ -39,10 +39,10 @@ const Dashboard = () => {
             let res;
             if (isTeacher) {
                 // Teachers: fetch boards they created
-                res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/user/${user.id}`);
+                res = await api.get(`/api/boards/user/${user.id}`);
             } else {
                 // Students: fetch their saved boards (independent copies)
-                res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${user.id}`);
+                res = await api.get(`/api/boards/saved/${user.id}`);
             }
             setSavedBoards(res.data);
         } catch (err) {
@@ -60,7 +60,7 @@ const Dashboard = () => {
                 userId: user.id,
                 roomId
             };
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/boards/create`, payload);
+            const response = await api.post('/api/boards/create', payload);
             setIsModalOpen(false);
             navigate(`/board/${roomId}`);
         } catch (err) {
@@ -85,23 +85,20 @@ const Dashboard = () => {
             if (isTeacher) {
                 // Teachers: delete the actual board
                 try {
-                    const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/${roomId}?userId=${user.id}`;
-                    console.log('[DELETE] Teacher URL (by roomId):', url);
-                    await axios.delete(url);
+                    console.log('[DELETE] Teacher deleting board by roomId:', roomId);
+                    await api.delete(`/api/boards/${roomId}`);
                 } catch (err) {
                     // If delete by roomId fails, try by _id (for orphaned boards)
                     if (err.response?.status === 404) {
-                        const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/by-id/${boardId}?userId=${user.id}&force=true`;
-                        console.log('[DELETE] Teacher URL (by _id with force):', url);
-                        await axios.delete(url);
+                        console.log('[DELETE] Teacher deleting board by _id with force:', boardId);
+                        await api.delete(`/api/boards/by-id/${boardId}?force=true`);
                     } else {
                         throw err;
                     }
                 }
             } else {
                 // Students: delete their saved copy
-                const url = `${import.meta.env.VITE_API_BASE_URL}/api/boards/saved/${boardId}?userId=${user.id}`;
-                await axios.delete(url);
+                await api.delete(`/api/boards/saved/${boardId}`);
             }
             fetchSavedBoards();
         } catch (err) {
@@ -296,8 +293,8 @@ const Dashboard = () => {
                                                 <button
                                                     onClick={(e) => handleCopyLink(board.roomId, e)}
                                                     className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all ${copiedBoardId === board.roomId
-                                                            ? 'bg-green-500/20 text-green-400'
-                                                            : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400'
+                                                        ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400'
                                                         }`}
                                                     title="Copy board link"
                                                 >
