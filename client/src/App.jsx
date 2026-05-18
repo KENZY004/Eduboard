@@ -71,7 +71,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
-        <Navbar />  ← ADD THIS LINE
+        <Navbar /> 
           <div className="pt-16">
           <Routes>
             {/* Public Routes */}
