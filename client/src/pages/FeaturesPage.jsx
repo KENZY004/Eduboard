@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'framer-motion';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const FeaturesPage = () => {
@@ -109,10 +108,9 @@ const FeaturesPage = () => {
 
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
-            <Navbar />
 
             {/* Hero Section with Animated Background */}
-            <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+            <section className="relative pt-48 pb-20 px-6 overflow-hidden">
                 {/* Animated gradient orbs */}
                 <div className="absolute inset-0 overflow-hidden">
                     <motion.div

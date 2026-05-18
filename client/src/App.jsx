@@ -1,3 +1,4 @@
+import Navbar from './components/Navbar';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
@@ -69,7 +70,9 @@ function App() {
     <ThemeProvider>
       <Router>
         <ScrollToTop />
-        <div className="min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-purple-500/30">
+        <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+        <Navbar />  ← ADD THIS LINE
+          <div className="pt-16">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
@@ -114,6 +117,7 @@ function App() {
               }
             />
           </Routes>
+        </div>
         </div>
       </Router>
     </ThemeProvider>

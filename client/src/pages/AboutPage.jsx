@@ -4,7 +4,6 @@ import { useTheme } from '../context/ThemeContext';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const AboutPage = () => {
@@ -23,7 +22,7 @@ const AboutPage = () => {
             document.body.style.overflow = 'unset';
         }
         return () => {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
         };
     }, [selectedMember]);
 
@@ -105,7 +104,6 @@ const AboutPage = () => {
 
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
-            <Navbar />
 
             {/* Hero Section */}
             <section className="relative pt-32 pb-20 px-6 overflow-hidden">
