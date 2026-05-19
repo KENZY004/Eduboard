@@ -10,6 +10,9 @@ import FeaturesPage from './pages/FeaturesPage';
 import AboutPage from './pages/AboutPage';
 import VerificationPending from './pages/VerificationPending';
 import AdminPanel from './pages/AdminPanel';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyOTP from './pages/VerifyOTP';
+import ResetPassword from './pages/ResetPassword';
 import ScrollToTop from './components/ScrollToTop';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -82,6 +85,9 @@ function App() {
             {/* Auth Routes */}
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
             {/* Private Routes */}
             <Route

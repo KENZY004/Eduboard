@@ -12,6 +12,7 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from || '/dashboard';
+    const successMessage = location.state?.message || '';
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -97,6 +98,17 @@ const Login = () => {
                     </motion.div>
                 )}
 
+                {successMessage && !error && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm flex items-center gap-2"
+                    >
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        {successMessage}
+                    </motion.div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
@@ -114,7 +126,12 @@ const Login = () => {
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Password</label>
+                            <Link to="/forgot-password" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                Forgot Password?
+                            </Link>
+                        </div>
                         <div className="relative">
                             <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
