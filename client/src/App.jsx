@@ -12,6 +12,7 @@ import VerificationPending from './pages/VerificationPending';
 import AdminPanel from './pages/AdminPanel';
 import ScrollToTop from './components/ScrollToTop';
 import { ThemeProvider } from './context/ThemeContext';
+import FAQPage from './pages/FAQPage';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -78,7 +79,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/about" element={<AboutPage />} />
-
+            <Route path="/faq" element={<FAQPage />} />
             {/* Auth Routes */}
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
