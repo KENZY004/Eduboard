@@ -430,6 +430,78 @@ const sendDirectPasswordResetEmail = async (userEmail, userName, otp) => {
     }
 };
 
+/**
+ * Send email registration verification OTP
+ */
+const sendRegistrationVerificationEmail = async (userEmail, userName, otp) => {
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+            <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">⚡ EduBoard</h1>
+                <p style="color: #e0e7ff; margin: 10px 0 0 0;">Email Verification Request</p>
+            </div>
+            
+            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #1e293b; margin-top: 0;">Verify Your Email Address</h2>
+                
+                <p style="color: #475569; line-height: 1.6;">
+                    Hi <strong>${userName}</strong>,
+                </p>
+                
+                <p style="color: #475569; line-height: 1.6;">
+                    Thank you for signing up for EduBoard! To complete your registration and activate your account, please verify your email address using the One-Time Password (OTP) below.
+                </p>
+                
+                <div style="background-color: #e0e7ff; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; border: 2px dashed #6366f1;">
+                    <p style="margin: 0; color: #4338ca; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Your Verification OTP</p>
+                    <p style="margin: 10px 0 0 0; color: #1e1b4b; font-size: 32px; font-weight: bold; letter-spacing: 4px;">${otp}</p>
+                </div>
+                
+                <p style="color: #475569; line-height: 1.6; font-size: 14px;">
+                    <strong>Note:</strong> This OTP is valid for the next 10 minutes. If you did not sign up for an account, you can safely ignore this email.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+                <p>This is an automated email from EduBoard</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        if (USE_GMAIL) {
+            // Send via Gmail SMTP
+            const info = await transporter.sendMail({
+                from: `"EduBoard" <${process.env.SMTP_USER}>`,
+                to: userEmail,
+                subject: '✉️ Verify Your EduBoard Email Address',
+                html: htmlContent
+            });
+            console.log('✅ Verification email sent via Gmail to:', userEmail);
+            return { success: true, messageId: info.messageId };
+        } else {
+            // Send via Resend
+            const { data, error } = await resend.emails.send({
+                from: 'EduBoard <onboarding@resend.dev>',
+                to: [userEmail],
+                subject: '✉️ Verify Your EduBoard Email Address',
+                html: htmlContent
+            });
+
+            if (error) {
+                console.error('❌ Failed to send verification email:', error);
+                return { success: false, error: error.message };
+            }
+
+            console.log('✅ Verification email sent via Resend to:', userEmail);
+            return { success: true, messageId: data.id };
+        }
+    } catch (error) {
+        console.error('❌ Failed to send verification email:', error.message);
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     sendTeacherRegistrationNotification,
     sendDirectTeacherRegistrationNotification,
@@ -438,5 +510,6 @@ module.exports = {
     sendRejectionEmail,
     sendDirectRejectionEmail,
     sendPasswordResetEmail,
-    sendDirectPasswordResetEmail
+    sendDirectPasswordResetEmail,
+    sendRegistrationVerificationEmail,
 };

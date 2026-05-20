@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -12,6 +12,13 @@ const ForgotPassword = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -22,7 +29,23 @@ const ForgotPassword = () => {
             // Redirect to OTP verification page and pass the email
             navigate('/verify-otp', { state: { email } });
         } catch (err) {
-            setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+            const errorData = err.response?.data;
+            if (errorData?.error === 'EMAIL_NOT_VERIFIED') {
+                setError(
+                    <span>
+                        {errorData.message}{' '}
+                        <button
+                            type="button"
+                            onClick={() => navigate('/verify-email', { state: { email: errorData.email, autoSend: true } })}
+                            className="underline cursor-pointer text-indigo-400 hover:text-indigo-300 font-semibold bg-transparent border-none p-0 inline"
+                        >
+                            Verify Now.
+                        </button>
+                    </span>
+                );
+            } else {
+                setError(errorData?.message || 'Something went wrong. Please try again.');
+            }
         } finally {
             setIsLoading(false);
         }

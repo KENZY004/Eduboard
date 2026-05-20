@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -20,6 +20,13 @@ const Signup = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,8 +53,7 @@ const Signup = () => {
             }
             // Step 1: Register user
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, formData);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            const registrationToken = res.data.token;
 
             // Step 2: If teacher, upload documents
             if (formData.role === 'teacher') {
@@ -70,18 +76,15 @@ const Signup = () => {
                     formDataUpload,
                     {
                         headers: {
-                            'Authorization': `Bearer ${res.data.token}`,
+                            'Authorization': `Bearer ${registrationToken}`,
                             'Content-Type': 'multipart/form-data'
                         }
                     }
                 );
-
-                // Redirect to verification pending page
-                navigate('/verification-pending');
-            } else {
-                // Student - redirect to dashboard
-                navigate('/dashboard');
             }
+
+            // Redirect to registration OTP verification page
+            navigate('/verify-email', { state: { email: formData.email } });
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');
             setLoading(false);

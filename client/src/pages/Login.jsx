@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -13,7 +13,22 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from || '/dashboard';
-    const successMessage = location.state?.message || '';
+    const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -36,8 +51,20 @@ const Login = () => {
         } catch (err) {
             const errorData = err.response?.data;
 
-            // Check if it's an unverified teacher
-            if (errorData?.error === 'ACCOUNT_NOT_VERIFIED') {
+            if (errorData?.error === 'EMAIL_NOT_VERIFIED') {
+                setError(
+                    <span>
+                        {errorData.message}{' '}
+                        <button
+                            type="button"
+                            onClick={() => navigate('/verify-email', { state: { email: errorData.email, autoSend: true } })}
+                            className="underline cursor-pointer text-indigo-400 hover:text-indigo-300 font-semibold bg-transparent border-none p-0 inline"
+                        >
+                            Verify Now.
+                        </button>
+                    </span>
+                );
+            } else if (errorData?.error === 'ACCOUNT_NOT_VERIFIED') {
                 // Store token temporarily for verification page
                 if (err.response?.data?.token) {
                     localStorage.setItem('token', err.response.data.token);
