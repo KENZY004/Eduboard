@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -27,9 +28,16 @@ const Navbar = () => {
         };
     }, [isMobileMenuOpen]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/');
+    const handleLogout = async () => {
+        try {
+            await api.post('/api/auth/logout');
+        } catch (err) {
+            console.error('Error during logout:', err);
+        } finally {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/');
+        }
     };
 
     const navLinks = [

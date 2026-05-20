@@ -1,20 +1,22 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');                          // ← NEW
 const User = require('../models/User');
 const { sendPasswordResetEmail } = require('../services/emailService');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'; // Use env in prod!
+const { blacklistToken } = require('../services/tokenBlacklist'); // ← NEW
+const { verifyToken } = require('../utils/auth');
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const {
   registerValidation,
   validate,
 } = require("../middlewares/auth.validator");
 
 // REGISTER
-router.post('/register',registerValidation, validate, async (req, res) => {
+router.post('/register', registerValidation, validate, async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
 
-        // Validate input
         if (!username || !email || !password) {
             return res.status(400).json({
                 message: 'Username, email, and password are required',
@@ -22,7 +24,6 @@ router.post('/register',registerValidation, validate, async (req, res) => {
             });
         }
 
-        // Validate password length
         if (password.length < 6) {
             return res.status(400).json({
                 message: 'Password must be at least 6 characters long',
@@ -30,7 +31,6 @@ router.post('/register',registerValidation, validate, async (req, res) => {
             });
         }
 
-        // Check if user exists (case-insensitive)
         const existingUser = await User.findOne({
             $or: [
                 { email: { $regex: new RegExp(`^${email}$`, 'i') } },
@@ -39,7 +39,6 @@ router.post('/register',registerValidation, validate, async (req, res) => {
         });
 
         if (existingUser) {
-            // Determine which field is duplicate
             const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
             const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
 
@@ -51,20 +50,13 @@ router.post('/register',registerValidation, validate, async (req, res) => {
             } else if (isDuplicateUsername) {
                 message = 'A user with that username already exists';
             }
-            return res.status(400).json({
-                message,
-                error: 'USER_EXISTS'
-            });
+            return res.status(400).json({ message, error: 'USER_EXISTS' });
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
         const userRole = role || 'student';
-
-        // Only teachers need verification, admins and students are auto-verified
         const needsVerification = userRole === 'teacher';
 
         const newUser = new User({
@@ -72,14 +64,15 @@ router.post('/register',registerValidation, validate, async (req, res) => {
             email,
             password: hashedPassword,
             role: userRole,
-            isVerified: !needsVerification, // true for admin/student, false for teacher
+            isVerified: !needsVerification,
             verificationStatus: needsVerification ? 'pending' : 'approved'
         });
 
         const savedUser = await newUser.save();
 
-        // Create token
-        const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
+        // ── jti added so the blacklist can target individual tokens ──
+        const jti = crypto.randomUUID();
+        const token = jwt.sign({ id: savedUser._id, jti }, JWT_SECRET, { expiresIn: '1d' });
 
         res.status(201).json({
             token,
@@ -98,17 +91,15 @@ router.post('/register',registerValidation, validate, async (req, res) => {
     } catch (err) {
         console.error('Registration error:', err);
 
-        // Handle MongoDB duplicate key error (code 11000)
         if (err.code === 11000) {
             const field = Object.keys(err.keyPattern)[0];
             return res.status(400).json({
                 message: `A user with that ${field} already exists`,
                 error: 'DUPLICATE_KEY',
-                field: field
+                field
             });
         }
 
-        // Handle Mongoose validation errors
         if (err.name === 'ValidationError') {
             return res.status(400).json({
                 message: 'Validation failed',
@@ -130,7 +121,6 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate input
         if (!email || !password) {
             return res.status(400).json({
                 message: 'Email and password are required',
@@ -138,25 +128,16 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Check user
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({
-                message: 'Invalid credentials',
-                error: 'INVALID_CREDENTIALS'
-            });
+            return res.status(400).json({ message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
         }
 
-        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({
-                message: 'Invalid credentials',
-                error: 'INVALID_CREDENTIALS'
-            });
+            return res.status(400).json({ message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
         }
 
-        // Check if teacher is verified
         if (user.role === 'teacher' && !user.isVerified) {
             return res.status(403).json({
                 message: 'Your account is pending verification. Please wait for admin approval.',
@@ -166,8 +147,9 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Create token
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
+        // ── jti added so the blacklist can target individual tokens ──
+        const jti = crypto.randomUUID();
+        const token = jwt.sign({ id: user._id, jti }, JWT_SECRET, { expiresIn: '1d' });
 
         res.json({
             token,
@@ -190,6 +172,34 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// ── NEW: LOGOUT ────────────────────────────────────────────────────────
+// POST /api/auth/logout
+// Requires:  Authorization: Bearer <token>
+// Effect:    Adds the token to the server-side blacklist so it cannot
+//            be reused even before its 1-day expiry.
+//            The client must also delete the token from storage.
+router.post('/logout', verifyToken, (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const rawToken = authHeader && authHeader.startsWith('Bearer ')
+            ? authHeader.slice(7).trim()
+            : null;
+
+        if (!rawToken) {
+            return res.status(400).json({ message: 'No token to invalidate.' });
+        }
+
+        // req.user is the decoded payload set by verifyToken
+        blacklistToken(req.user, rawToken);
+
+        res.json({ message: 'Logged out successfully. Token has been invalidated.' });
+    } catch (err) {
+        console.error('Logout error:', err);
+        res.status(500).json({ message: 'Internal server error during logout.' });
+    }
+});
+// ──────────────────────────────────────────────────────────────────────
+
 // FORGOT PASSWORD
 router.post('/forgot-password', async (req, res) => {
     try {
@@ -203,19 +213,15 @@ router.post('/forgot-password', async (req, res) => {
             return res.status(404).json({ message: 'No account found with this email address.' });
         }
 
-        // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Hash the OTP
         const salt = await bcrypt.genSalt(10);
         const hashedOtp = await bcrypt.hash(otp, salt);
 
-        // Save hashed OTP and expiration (10 minutes)
         user.resetPasswordOTP = hashedOtp;
         user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
         await user.save();
 
-        // Send email
         const emailResult = await sendPasswordResetEmail(user.email, user.username, otp);
 
         if (!emailResult.success) {
@@ -256,17 +262,13 @@ router.post('/verify-otp', async (req, res) => {
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 
-        // Generate a temporary token for resetting password
         const resetToken = jwt.sign(
             { id: user._id, type: 'password_reset' },
             JWT_SECRET,
             { expiresIn: '15m' }
         );
 
-        res.status(200).json({
-            message: 'OTP verified successfully',
-            resetToken
-        });
+        res.status(200).json({ message: 'OTP verified successfully', resetToken });
     } catch (error) {
         console.error('Verify OTP error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -286,7 +288,6 @@ router.put('/reset-password', async (req, res) => {
             return res.status(400).json({ message: 'Password must be at least 6 characters long' });
         }
 
-        // Verify token
         let decoded;
         try {
             decoded = jwt.verify(resetToken, JWT_SECRET);
@@ -303,11 +304,8 @@ router.put('/reset-password', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Hash new password
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
-
-        // Clear OTP fields
         user.resetPasswordOTP = undefined;
         user.resetPasswordExpire = undefined;
 
