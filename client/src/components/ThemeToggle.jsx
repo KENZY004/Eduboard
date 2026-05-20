@@ -1,9 +1,11 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext';
+import React from "react";
+import { motion } from "framer-motion";
+
+import { useTheme } from "../hooks/useTheme";
 
 const ThemeToggle = () => {
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme } =
+        useTheme();
 
     return (
         <motion.button
@@ -15,15 +17,18 @@ const ThemeToggle = () => {
             <motion.div
                 className="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white dark:bg-slate-900 shadow-md flex items-center justify-center"
                 animate={{
-                    x: theme === 'dark' ? 28 : 0,
+                    x:
+                        theme === "dark"
+                            ? 28
+                            : 0,
                 }}
                 transition={{
-                    type: 'spring',
+                    type: "spring",
                     stiffness: 500,
                     damping: 30,
                 }}
             >
-                {theme === 'light' ? (
+                {theme === "light" ? (
                     <svg
                         className="w-4 h-4 text-yellow-500"
                         fill="currentColor"

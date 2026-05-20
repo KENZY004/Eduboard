@@ -4,23 +4,53 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     <title>EduBoard</title>
+<script>
+    (() => {
+        const theme =
+            localStorage.getItem(
+                "app-theme"
+            );
+
+        if (theme) {
+            document.documentElement.classList.add(
+                theme
+            );
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        }
+    })();
+</script>
+
     <style>
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar,
-  #root::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-  }
-  html, body, #root {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-</style>
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar,
+      #root::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+      }
+
+      html,
+      body,
+      #root {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+    </style>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
