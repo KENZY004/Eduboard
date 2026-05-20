@@ -53,6 +53,8 @@ const verificationRoutes = require('./routes/verificationRoutes');
 app.use('/api/verification', verificationRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
+const internalRoutes = require('./routes/internalRoutes');
+app.use('/api/internal', internalRoutes);
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));

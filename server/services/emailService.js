@@ -3,16 +3,21 @@ const { Resend } = require('resend');
 
 // Determine which email service to use based on environment
 const USE_GMAIL = process.env.USE_GMAIL === 'true';
+const SHOULD_RELAY = process.env.RENDER === 'true' || process.env.USE_VERCEL_RELAY === 'true';
+const VERCEL_BACKEND_URL = process.env.VERCEL_BACKEND_URL;
+const INTERNAL_EMAIL_SECRET = process.env.INTERNAL_EMAIL_SECRET;
 
 let transporter = null;
 let resend = null;
 
-if (USE_GMAIL) {
-    // Gmail SMTP for localhost
+if (SHOULD_RELAY) {
+    console.log('📡 Dual-mode emailService: Relaying outgoing emails to Vercel');
+} else if (USE_GMAIL) {
+    // Gmail SMTP for localhost / Vercel relay backend
     transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS
@@ -37,9 +42,56 @@ if (USE_GMAIL) {
 }
 
 /**
+ * Helper to make secure HTTP email relay request to Vercel
+ */
+const relayEmailRequest = async (emailType, payload) => {
+    if (!VERCEL_BACKEND_URL) {
+        console.error('❌ VERCEL_BACKEND_URL is not set. Relay failed.');
+        return { success: false, error: 'VERCEL_BACKEND_URL is not configured' };
+    }
+    if (!INTERNAL_EMAIL_SECRET) {
+        console.error('❌ INTERNAL_EMAIL_SECRET is not set. Relay failed.');
+        return { success: false, error: 'INTERNAL_EMAIL_SECRET is not configured' };
+    }
+
+    try {
+        const url = `${VERCEL_BACKEND_URL.replace(/\/$/, '')}/api/internal/send-email`;
+        console.log(`📡 Relaying ${emailType} email request to Vercel...`);
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-internal-secret': INTERNAL_EMAIL_SECRET
+            },
+            body: JSON.stringify({ emailType, payload })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            console.log(`✅ Email successfully relayed and sent via Vercel: ${data.messageId}`);
+            return data;
+        } else {
+            console.error(`❌ Email relay failed:`, data.error || 'Unknown error');
+            return { success: false, error: data.error || 'Relay server error' };
+        }
+    } catch (error) {
+        console.error('❌ Network error during email relay:', error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
  * Send email notification to admin when a teacher registers
  */
 const sendTeacherRegistrationNotification = async (teacherData, documents) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('teacher-notification', { teacherData, documents });
+    }
+    return await sendDirectTeacherRegistrationNotification(teacherData, documents);
+};
+
+const sendDirectTeacherRegistrationNotification = async (teacherData, documents) => {
     const adminEmail = process.env.ADMIN_EMAIL;
 
     const documentList = documents.map(doc => {
@@ -128,6 +180,13 @@ const sendTeacherRegistrationNotification = async (teacherData, documents) => {
  * Send approval email to teacher
  */
 const sendApprovalEmail = async (teacherEmail, teacherName) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('approval', { teacherEmail, teacherName });
+    }
+    return await sendDirectApprovalEmail(teacherEmail, teacherName);
+};
+
+const sendDirectApprovalEmail = async (teacherEmail, teacherName) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
             <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -208,6 +267,13 @@ const sendApprovalEmail = async (teacherEmail, teacherName) => {
  * Send rejection email to teacher
  */
 const sendRejectionEmail = async (teacherEmail, teacherName, reason) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('rejection', { teacherEmail, teacherName, reason });
+    }
+    return await sendDirectRejectionEmail(teacherEmail, teacherName, reason);
+};
+
+const sendDirectRejectionEmail = async (teacherEmail, teacherName, reason) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
             <div style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -289,6 +355,13 @@ const sendRejectionEmail = async (teacherEmail, teacherName, reason) => {
  * Send password reset OTP email
  */
 const sendPasswordResetEmail = async (userEmail, userName, otp) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('password-reset', { userEmail, userName, otp });
+    }
+    return await sendDirectPasswordResetEmail(userEmail, userName, otp);
+};
+
+const sendDirectPasswordResetEmail = async (userEmail, userName, otp) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
             <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -431,10 +504,12 @@ const sendRegistrationVerificationEmail = async (userEmail, userName, otp) => {
 
 module.exports = {
     sendTeacherRegistrationNotification,
+    sendDirectTeacherRegistrationNotification,
     sendApprovalEmail,
+    sendDirectApprovalEmail,
     sendRejectionEmail,
+    sendDirectRejectionEmail,
     sendPasswordResetEmail,
-    sendRegistrationVerificationEmail
+    sendDirectPasswordResetEmail,
+    sendRegistrationVerificationEmail,
 };
-
-
