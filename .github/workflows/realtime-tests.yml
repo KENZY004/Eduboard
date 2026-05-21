@@ -1,0 +1,44 @@
+# ← NEW
+name: Realtime Integration Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+        
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+          
+    - name: Install Server Dependencies
+      working-directory: ./server
+      run: npm ci || npm install
+      
+    - name: Run Server Tests
+      working-directory: ./server
+      run: npm test
+      
+    - name: Install Client Dependencies
+      working-directory: ./client
+      run: npm ci || npm install
+      
+    - name: Run Client Tests
+      working-directory: ./client
+      run: npm test
