@@ -29,6 +29,9 @@ router.post('/send-email', async (req, res) => {
             case 'password-reset':
                 result = await emailService.sendDirectPasswordResetEmail(payload.userEmail, payload.userName, payload.otp);
                 break;
+            case 'registration-verification':
+                result = await emailService.sendDirectRegistrationVerificationEmail(payload.userEmail, payload.userName, payload.otp);
+                break;
             default:
                 return res.status(400).json({ success: false, error: 'Invalid emailType' });
         }

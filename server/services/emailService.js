@@ -434,6 +434,10 @@ const sendDirectPasswordResetEmail = async (userEmail, userName, otp) => {
  * Send email registration verification OTP
  */
 const sendRegistrationVerificationEmail = async (userEmail, userName, otp) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('registration-verification', { userEmail, userName, otp });
+    }
+
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
             <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -502,6 +506,10 @@ const sendRegistrationVerificationEmail = async (userEmail, userName, otp) => {
     }
 };
 
+const sendDirectRegistrationVerificationEmail = async (userEmail, userName, otp) => {
+    return await sendRegistrationVerificationEmail(userEmail, userName, otp);
+};
+
 module.exports = {
     sendTeacherRegistrationNotification,
     sendDirectTeacherRegistrationNotification,
@@ -512,4 +520,5 @@ module.exports = {
     sendPasswordResetEmail,
     sendDirectPasswordResetEmail,
     sendRegistrationVerificationEmail,
+    sendDirectRegistrationVerificationEmail,
 };
