@@ -1839,7 +1839,7 @@ const Whiteboard = () => {
     };
 
     return (
-        <div className={`relative w-full h-screen overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
+        <div className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
 
             <input
                 type="file"
