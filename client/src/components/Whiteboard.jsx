@@ -25,7 +25,75 @@ const Whiteboard = () => {
     const [history, setHistory] = useState([]); // Array<Action> {type, ...}
     const [redoStack, setRedoStack] = useState([]);
     const [undoSnapshot, setUndoSnapshot] = useState(null); // Snapshot for diffing updates
-    const [cursors, setCursors] = useState({}); // { socketId: { x, y, color, username } }
+    // ← NEW
+    const remoteCursorsRef = useRef({}); 
+    const lastMouseMoveRef = useRef(0);
+
+    const getCursorColor = (userId) => {
+        const colors = ['#EF4444', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899'];
+        let hash = 0;
+        const str = String(userId);
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    const updateCursorDOM = (userId) => {
+        const overlay = document.getElementById('cursor-overlay');
+        if (!overlay) return;
+        const cursorData = remoteCursorsRef.current[userId];
+        if (!cursorData) return;
+
+        let cursorEl = document.getElementById(`cursor-${userId}`);
+        if (!cursorEl) {
+            cursorEl = document.createElement('div');
+            cursorEl.id = `cursor-${userId}`;
+            cursorEl.className = 'absolute pointer-events-none z-[100] flex flex-col items-start';
+            cursorEl.style.transition = 'transform 60ms linear';
+            // Offset logic to place arrow at point
+            cursorEl.style.transformOrigin = 'top left';
+            
+            // Cursor icon
+            const iconEl = document.createElement('div');
+            // Offset SVG so point (3,3) is at (0,0) of the div
+            iconEl.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="${cursorData.color}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3)); transform: translate(-3px, -3px);"><polygon points="3 3 10.42 21 14.17 14.17 21 10.42 3 3"></polygon></svg>`;
+            cursorEl.appendChild(iconEl);
+
+            // Label chip
+            const labelEl = document.createElement('span');
+            labelEl.id = `cursor-label-${userId}`;
+            labelEl.className = 'text-[10px] font-medium px-2 py-0.5 rounded-full text-white shadow-lg whitespace-nowrap transition-opacity duration-300 ml-3 -mt-1';
+            labelEl.style.backgroundColor = cursorData.color;
+            labelEl.innerText = cursorData.username;
+            cursorEl.appendChild(labelEl);
+
+            overlay.appendChild(cursorEl);
+        }
+
+        cursorEl.style.transform = `translate(${cursorData.x}px, ${cursorData.y}px)`;
+        
+        // Handle label fading
+        const labelEl = document.getElementById(`cursor-label-${userId}`);
+        if (labelEl) {
+            labelEl.style.opacity = '1';
+            clearTimeout(cursorData.timeoutId);
+            cursorData.timeoutId = setTimeout(() => {
+                if (document.getElementById(`cursor-label-${userId}`)) {
+                    document.getElementById(`cursor-label-${userId}`).style.opacity = '0';
+                }
+            }, 3000);
+        }
+    };
+
+    const removeCursorDOM = (userId) => {
+        const cursorEl = document.getElementById(`cursor-${userId}`);
+        if (cursorEl) cursorEl.remove();
+        if (remoteCursorsRef.current[userId]?.timeoutId) {
+            clearTimeout(remoteCursorsRef.current[userId].timeoutId);
+        }
+        delete remoteCursorsRef.current[userId];
+    };
 
     // Debug: Expose elements -> Removed
     // useEffect(() => { window.elements = elements; }, [elements]);
@@ -238,8 +306,15 @@ const Whiteboard = () => {
             navigate('/dashboard');
         });
 
-        socket.on('cursor-move', (data) => {
-            setCursors(prev => ({ ...prev, [data.userId]: data }));
+        // ← NEW
+        socket.on('cursor:move', (data) => {
+            remoteCursorsRef.current[data.userId] = { ...data, lastUpdated: Date.now() };
+            updateCursorDOM(data.userId);
+        });
+
+        // ← NEW
+        socket.on('cursor:leave', ({ userId }) => {
+            removeCursorDOM(userId);
         });
 
         // Viewport sync - students follow teacher's view
@@ -345,7 +420,12 @@ const Whiteboard = () => {
             socket.off('drawing-stroke');
             socket.off('load-board');
             socket.off('clear-canvas');
-            socket.off('cursor-move');
+            // ← NEW
+            if (socket && roomId && user) {
+                socket.emit('cursor:leave', { roomId, userId: user.id || socket.id });
+            }
+            socket.off('cursor:move');
+            socket.off('cursor:leave');
             socket.off('viewport-change');
             socket.off('room-users-updated');
             socket.off('editing-permission-changed');
@@ -1126,14 +1206,7 @@ const Whiteboard = () => {
         const { x: offsetX, y: offsetY } = getMousePos(e);
 
         if (socket) {
-            // ... cursor logic
-            socket.emit('cursor-move', {
-                roomId,
-                userId: user?.username || 'Guest',
-                x: offsetX,
-                y: offsetY,
-                color: color
-            });
+            // ... cursor logic removed for generic pointer move ...
         }
 
         if (action === 'panning') {
@@ -1908,11 +1981,34 @@ const Whiteboard = () => {
         return () => window.removeEventListener('keydown', handleKeyDown); // ← NEW
     }, [isDrawing, selectedElement, elements, socket, roomId]); // ← NEW
 
+    // ← NEW
+    const handleGenericPointerMove = (e) => {
+        if (!socket || !roomId || !user) return;
+        const now = Date.now();
+        if (now - lastMouseMoveRef.current > 50) {
+            lastMouseMoveRef.current = now;
+            const container = e.currentTarget;
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            socket.emit('cursor:move', {
+                roomId,
+                userId: user.id || socket.id,
+                username: user.username || 'Guest',
+                x,
+                y,
+                color: getCursorColor(user.id || socket.id)
+            });
+        }
+    };
+
     return (
         <div 
             className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}
             role="application" // ← NEW
             aria-label="Whiteboard Canvas" // ← NEW
+            onMouseMove={handleGenericPointerMove} // ← NEW
         >
 
             <input
@@ -1924,21 +2020,7 @@ const Whiteboard = () => {
             />
 
             {/* Cursors Overlay */}
-            {/* Cursors Overlay */}
-
-            {/* Cursors Overlay */}
-            {Object.entries(cursors).map(([userId, cursor]) => (
-                <div
-                    key={userId}
-                    className="absolute pointer-events-none transition-all duration-75 z-50 flex items-center gap-2"
-                    style={{ left: cursor.x, top: cursor.y }}
-                >
-                    <FaMousePointer className="text-xl" style={{ color: cursor.color || '#f00' }} />
-                    <span className="text-xs px-2 py-1 rounded bg-slate-800/80 text-white backdrop-blur-sm whitespace-nowrap">
-                        {userId}
-                    </span>
-                </div>
-            ))}
+            <div id="cursor-overlay" className="absolute inset-0 pointer-events-none z-50 overflow-hidden"></div>
 
             {/* Header / Room Info */}
             <div className={`absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 pointer-events-none`}>
