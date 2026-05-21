@@ -13,11 +13,13 @@ import {
 } from 'react-icons/bs';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EVENTS } from '../socket/events';
+import { useSocket, connect, disconnect } from '../socket/socketManager'; // ← REFACTORED
 import jsPDF from 'jspdf';
 
 const Whiteboard = () => {
     const canvasRef = useRef(null);
-    const [socket, setSocket] = useState(null);
+    const socket = useSocket(); // ← REFACTORED
     const imageCache = useRef({}); // Cache for loaded images
 
     // State
@@ -75,16 +77,12 @@ const Whiteboard = () => {
 
     // Socket Init + Board Existence Check
     useEffect(() => {
+        // ← REFACTORED
         const token = localStorage.getItem('token');
-        const newSocket = io(import.meta.env.VITE_API_BASE_URL, {
-            auth: {
-                token: token // Add JWT token for Socket.IO authentication
-            }
-        });
-        setSocket(newSocket);
+        const newSocket = connect(token, import.meta.env.VITE_API_BASE_URL);
 
         // Send user data when joining room
-        newSocket.emit('join-room', roomId, {
+        newSocket.emit(EVENTS.BOARD_JOIN, roomId, {
             userId: user?.id,
             username: user?.username || user?.email?.split('@')[0] || 'Anonymous',
             role: user?.role || 'student'
@@ -126,7 +124,7 @@ const Whiteboard = () => {
     useEffect(() => {
         if (!socket) return;
 
-        socket.on('draw-element', (element) => {
+        socket.on(EVENTS.DRAW_ELEMENT, (element) => {
             setElements((prev) => {
                 const index = prev.findIndex((el) => el.id === element.id);
                 if (index !== -1) {
@@ -147,7 +145,7 @@ const Whiteboard = () => {
         });
 
         // Real-time stroke updates (while drawing)
-        socket.on('drawing-stroke', (strokeData) => {
+        socket.on(EVENTS.DRAWING_STROKE, (strokeData) => {
             // Store the remote user's current stroke for rendering
             // We use a separate ref to avoid state updates during rapid drawing
             if (strokeData.userId !== user?.id) {
@@ -160,7 +158,7 @@ const Whiteboard = () => {
         });
 
         // Delete element (for undo synchronization)
-        socket.on('delete-element', (elementId) => {
+        socket.on(EVENTS.DELETE_ELEMENT, (elementId) => {
             setElements(prev => {
                 const filtered = prev.filter(el => el.id !== elementId);
                 return filtered;
@@ -168,7 +166,7 @@ const Whiteboard = () => {
         });
 
         // Clear canvas (when teacher clicks Clear All button)
-        socket.on('clear-canvas', () => {
+        socket.on(EVENTS.CLEAR_CANVAS, () => {
             setElements([]);
             setHistory([]);
             setRedoStack([]);
@@ -184,7 +182,7 @@ const Whiteboard = () => {
             });
         });
 
-        socket.on('load-board', async (boardData) => {
+        socket.on(EVENTS.BOARD_LOAD, async (boardData) => {
             // Handle both old format (array) and new format (object)
             const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
             const allowedStudentsList = boardData.allowedStudents || [];
@@ -220,7 +218,7 @@ const Whiteboard = () => {
         });
 
         // Board deleted event - clear everything and redirect
-        socket.on('board-deleted', (data) => {
+        socket.on(EVENTS.BOARD_DELETED, (data) => {
             // Clear all state
             setElements([]);
             setHistory([]);
@@ -237,12 +235,12 @@ const Whiteboard = () => {
             navigate('/dashboard');
         });
 
-        socket.on('cursor-move', (data) => {
+        socket.on(EVENTS.CURSOR_MOVE, (data) => {
             setCursors(prev => ({ ...prev, [data.userId]: data }));
         });
 
         // Viewport sync - students follow teacher's view
-        socket.on('viewport-change', (viewportData) => {
+        socket.on(EVENTS.VIEWPORT_CHANGE, (viewportData) => {
             // Only students should follow teacher's viewport
             if (isStudent && viewportData.userId !== user?.id) {
                 setScale(viewportData.scale);
@@ -251,19 +249,19 @@ const Whiteboard = () => {
         });
 
         // Room users updated (for teacher's student panel)
-        socket.on('room-users-updated', (users) => {
+        socket.on(EVENTS.ROOM_USERS_UPDATED, (users) => {
             setConnectedUsers(users);
         });
 
         // Student editing permission changed (for individual students)
-        socket.on('editing-permission-changed', (hasPermission) => {
+        socket.on(EVENTS.PERMISSION_CHANGED, (hasPermission) => {
             if (user?.role === 'student') {
                 setHasEditPermission(hasPermission);
             }
         });
 
         // Theme synchronization (students follow teacher's theme)
-        socket.on('theme-changed', (isDark) => {
+        socket.on(EVENTS.THEME_CHANGED, (isDark) => {
             if (user?.role === 'student') {
                 setDarkMode(isDark);
             } else {
@@ -272,7 +270,7 @@ const Whiteboard = () => {
         });
 
         // Delete element (for undo synchronization)
-        socket.on('delete-element', (elementId) => {
+        socket.on(EVENTS.DELETE_ELEMENT, (elementId) => {
             setElements(prev => {
                 const filtered = prev.filter(el => el.id !== elementId);
                 // Force canvas re-render after state update
@@ -289,7 +287,7 @@ const Whiteboard = () => {
         });
 
         // Update element (for eraser redo synchronization and live sticky note editing)
-        socket.on('update-element', ({ elementId, updates }) => {
+        socket.on(EVENTS.UPDATE_ELEMENT, ({ elementId, updates }) => {
             setElements(prev => {
                 const updated = prev.map(el =>
                     el.id === elementId ? { ...el, ...updates } : el
@@ -309,7 +307,7 @@ const Whiteboard = () => {
         });
 
         // Sync state (for redo to maintain exact element order)
-        socket.on('sync-state', (elements) => {
+        socket.on(EVENTS.SYNC_STATE, (elements) => {
             setElements(elements);
 
             // Force canvas re-render to ensure visual consistency
@@ -323,7 +321,7 @@ const Whiteboard = () => {
         });
 
         // Draw element (receive new elements from other users)
-        socket.on('draw-element', (element) => {
+        socket.on(EVENTS.DRAW_ELEMENT, (element) => {
             setElements(prev => {
                 // Check if element already exists (by ID)
                 const existingIndex = prev.findIndex(el => el.id === element.id);
@@ -340,18 +338,18 @@ const Whiteboard = () => {
         });
 
         return () => {
-            socket.off('draw-element');
-            socket.off('drawing-stroke');
-            socket.off('load-board');
-            socket.off('clear-canvas');
-            socket.off('cursor-move');
-            socket.off('viewport-change');
-            socket.off('room-users-updated');
-            socket.off('editing-permission-changed');
-            socket.off('theme-changed');
-            socket.off('delete-element');
-            socket.off('update-element');
-            socket.off('sync-state');
+            socket.off(EVENTS.DRAW_ELEMENT);
+            socket.off(EVENTS.DRAWING_STROKE);
+            socket.off(EVENTS.BOARD_LOAD);
+            socket.off(EVENTS.CLEAR_CANVAS);
+            socket.off(EVENTS.CURSOR_MOVE);
+            socket.off(EVENTS.VIEWPORT_CHANGE);
+            socket.off(EVENTS.ROOM_USERS_UPDATED);
+            socket.off(EVENTS.PERMISSION_CHANGED);
+            socket.off(EVENTS.THEME_CHANGED);
+            socket.off(EVENTS.DELETE_ELEMENT);
+            socket.off(EVENTS.UPDATE_ELEMENT);
+            socket.off(EVENTS.SYNC_STATE);
         };
     }, [socket]);
 
@@ -650,7 +648,7 @@ const Whiteboard = () => {
     // Emit viewport changes for students to follow (teachers only)
     useEffect(() => {
         if (socket && !isStudent && user?.id) {
-            socket.emit('viewport-change', {
+            socket.emit(EVENTS.VIEWPORT_CHANGE, {
                 roomId,
                 userId: user.id,
                 scale,
@@ -761,7 +759,7 @@ const Whiteboard = () => {
         setElements(updated);
         // Note: For real-time sync of resize/move, we need unique IDs. 
         // Current index-based approach is fragile for collaboration but works for local MVP.
-        if (socket) socket.emit('draw-element', { roomId, ...updated[index] });
+        if (socket) socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...updated[index] });
     };
 
     const saveNote = (e) => {
@@ -820,7 +818,7 @@ const Whiteboard = () => {
 
         // Ensure students receive the final state for sticky notes
         if (editingElement.type === 'sticky' && socket && user?.role === 'teacher') {
-            socket.emit('update-element', {
+            socket.emit(EVENTS.UPDATE_ELEMENT, {
                 roomId,
                 elementId: elements[index].id,
                 updates: newProps
@@ -920,7 +918,7 @@ const Whiteboard = () => {
             // Emit real-time stroke updates to other users (throttled to ~60fps)
             const now = Date.now();
             if (socket && currentStrokeRef.current.points.length > 0 && (now - lastEmitTimeRef.current) > 16) {
-                socket.emit('drawing-stroke', {
+                socket.emit(EVENTS.DRAWING_STROKE, {
                     roomId,
                     userId: user?.id,
                     stroke: currentStrokeRef.current
@@ -1079,7 +1077,7 @@ const Whiteboard = () => {
 
             // Emit immediately so students see note appear
             if (socket) {
-                socket.emit('draw-element', { roomId, ...newElement });
+                socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...newElement });
             }
 
             // For sticky, switch to select immediately
@@ -1126,7 +1124,7 @@ const Whiteboard = () => {
 
         if (socket) {
             // ... cursor logic
-            socket.emit('cursor-move', {
+            socket.emit(EVENTS.CURSOR_MOVE, {
                 roomId,
                 userId: user?.username || 'Guest',
                 x: offsetX,
@@ -1225,7 +1223,7 @@ const Whiteboard = () => {
 
                 // Emit real-time stroke updates (throttled to every 3rd point to reduce network load)
                 if (socket && currentStrokeRef.current.points.length % 3 === 0) {
-                    socket.emit('drawing-stroke', {
+                    socket.emit(EVENTS.DRAWING_STROKE, {
                         roomId,
                         userId: user?.id,
                         stroke: currentStrokeRef.current
@@ -1307,7 +1305,7 @@ const Whiteboard = () => {
 
             // Emit to socket
             if (socket) {
-                socket.emit('draw-element', { roomId, ...newElement });
+                socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...newElement });
             }
 
             currentStrokeRef.current = null;
@@ -1326,7 +1324,7 @@ const Whiteboard = () => {
                 setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
             }
             if (socket) {
-                socket.emit('draw-element', { roomId, ...currentElement });
+                socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...currentElement });
             }
             setCurrentElement(null);
         }
@@ -1345,7 +1343,7 @@ const Whiteboard = () => {
             setElements(prev => prev.filter(el => el.id !== lastAction.element.id));
             // Emit delete to other users for undo synchronization
             if (socket) {
-                socket.emit('delete-element', { roomId, elementId: lastAction.element.id });
+                socket.emit(EVENTS.DELETE_ELEMENT, { roomId, elementId: lastAction.element.id });
             }
         } else if (lastAction.type === 'UPDATE') {
             // Revert changes - FIND INDEX BY ID for stability
@@ -1375,7 +1373,7 @@ const Whiteboard = () => {
                 const newElements = [...prev, action.element];
                 // Sync full state to students after redo to maintain order
                 if (socket && user?.role === 'teacher') {
-                    socket.emit('sync-state', { roomId, elements: newElements });
+                    socket.emit(EVENTS.SYNC_STATE, { roomId, elements: newElements });
                 }
                 return newElements;
             });
@@ -1388,7 +1386,7 @@ const Whiteboard = () => {
                     );
                     // Sync full state after update
                     if (socket && user?.role === 'teacher') {
-                        socket.emit('sync-state', { roomId, elements: updatedElements });
+                        socket.emit(EVENTS.SYNC_STATE, { roomId, elements: updatedElements });
                     }
                     return updatedElements;
                 } else {
@@ -1402,7 +1400,7 @@ const Whiteboard = () => {
     const handleClear = () => {
         setElements([]);
         setHistory([]);
-        if (socket) socket.emit('clear-canvas', roomId);
+        if (socket) socket.emit(EVENTS.CLEAR_CANVAS, roomId);
     };
 
     const exportImage = async (fileName) => {
@@ -1640,7 +1638,7 @@ const Whiteboard = () => {
 
             // Emit base64 preview to students immediately
             if (socket && user?.role === 'teacher') {
-                socket.emit('draw-element', { roomId, ...previewElement });
+                socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...previewElement });
             }
 
             // Upload to Cloudinary in background
@@ -1664,7 +1662,7 @@ const Whiteboard = () => {
                 setRedoStack([]);
 
                 // Emit to other users with Cloudinary URL
-                if (socket) socket.emit('draw-element', { roomId, ...updatedElement });
+                if (socket) socket.emit(EVENTS.DRAW_ELEMENT, { roomId, ...updatedElement });
 
                 // Clean up local URL
                 URL.revokeObjectURL(localURL);
@@ -1890,7 +1888,7 @@ const Whiteboard = () => {
                                 setDarkMode(newTheme);
                                 // Sync theme to all students
                                 if (socket) {
-                                    socket.emit('change-theme', { roomId, isDark: newTheme });
+                                    socket.emit(EVENTS.CHANGE_THEME, { roomId, isDark: newTheme });
                                 } else {
                                     console.error('[THEME-SYNC] Socket not available!');
                                 }
@@ -1934,7 +1932,7 @@ const Whiteboard = () => {
                             if (!window.lastStickyNoteUpdate || now - window.lastStickyNoteUpdate >= 30) {
                                 window.lastStickyNoteUpdate = now;
                                 if (socket) {
-                                    socket.emit('update-element', {
+                                    socket.emit(EVENTS.UPDATE_ELEMENT, {
                                         roomId,
                                         elementId: updated[index].id,
                                         updates: { text: newText, height: updated[index].height }
@@ -1947,7 +1945,7 @@ const Whiteboard = () => {
                                 window.stickyNoteUpdateTimeout = setTimeout(() => {
                                     window.lastStickyNoteUpdate = Date.now();
                                     if (socket) {
-                                        socket.emit('update-element', {
+                                        socket.emit(EVENTS.UPDATE_ELEMENT, {
                                             roomId,
                                             elementId: updated[index].id,
                                             updates: { text: newText, height: updated[index].height }
@@ -2124,10 +2122,10 @@ const Whiteboard = () => {
                                                     <button
                                                         onClick={() => {
                                                             if (hasPermission) {
-                                                                socket.emit('revoke-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit(EVENTS.REVOKE_PERMISSION, { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => prev.filter(s => s._id !== student.userId));
                                                             } else {
-                                                                socket.emit('grant-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit(EVENTS.GRANT_PERMISSION, { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => [...prev, { _id: student.userId, username: student.username }]);
                                                             }
                                                         }}
@@ -2150,7 +2148,7 @@ const Whiteboard = () => {
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('grant-student-permission', { roomId, studentId: id });
+                                            socket.emit(EVENTS.GRANT_PERMISSION, { roomId, studentId: id });
                                         });
                                         const students = connectedUsers.filter(u => u.role === 'student').map(s => ({ _id: s.userId, username: s.username }));
                                         setAllowedStudents(students);
@@ -2163,7 +2161,7 @@ const Whiteboard = () => {
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('revoke-student-permission', { roomId, studentId: id });
+                                            socket.emit(EVENTS.REVOKE_PERMISSION, { roomId, studentId: id });
                                         });
                                         setAllowedStudents([]);
                                     }}
