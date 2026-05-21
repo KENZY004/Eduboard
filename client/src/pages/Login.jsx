@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaLock, FaEnvelope } from 'react-icons/fa';
+import { FaArrowRight, FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import TeacherCharacter from '../components/TeacherCharacter';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from || '/dashboard';
+    const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -34,8 +51,20 @@ const Login = () => {
         } catch (err) {
             const errorData = err.response?.data;
 
-            // Check if it's an unverified teacher
-            if (errorData?.error === 'ACCOUNT_NOT_VERIFIED') {
+            if (errorData?.error === 'EMAIL_NOT_VERIFIED') {
+                setError(
+                    <span>
+                        {errorData.message}{' '}
+                        <button
+                            type="button"
+                            onClick={() => navigate('/verify-email', { state: { email: errorData.email, autoSend: true } })}
+                            className="underline cursor-pointer text-indigo-400 hover:text-indigo-300 font-semibold bg-transparent border-none p-0 inline"
+                        >
+                            Verify Now.
+                        </button>
+                    </span>
+                );
+            } else if (errorData?.error === 'ACCOUNT_NOT_VERIFIED') {
                 // Store token temporarily for verification page
                 if (err.response?.data?.token) {
                     localStorage.setItem('token', err.response.data.token);
@@ -97,6 +126,17 @@ const Login = () => {
                     </motion.div>
                 )}
 
+                {successMessage && !error && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm flex items-center gap-2"
+                    >
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        {successMessage}
+                    </motion.div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
@@ -114,18 +154,28 @@ const Login = () => {
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Password</label>
+                            <Link to="/forgot-password" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                Forgot Password?
+                            </Link>
+                        </div>
                         <div className="relative">
                             <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
                                 placeholder="••••••••"
                                 required
                             />
+                            {showPassword ? (
+                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
+                            ) : (
+                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
+                            )}
                         </div>
                     </div>
 

@@ -16,10 +16,26 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isMobileMenuOpen]);
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/');
     };
+
+    const hiddenRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+    if (hiddenRoutes.includes(location.pathname)) {
+        return null;
+    }
 
     const navLinks = [
         { name: 'Home', path: '/' },
@@ -29,13 +45,17 @@ const Navbar = () => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
-                : 'bg-slate-950/70 backdrop-blur-md '
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+                isMobileMenuOpen
+                    ? 'bottom-0 bg-slate-950'
+                    : (isScrolled
+                        ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
+                        : 'bg-slate-950/70 backdrop-blur-md '
+                      )
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-14">
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-2 group">
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
@@ -133,7 +153,7 @@ const Navbar = () => {
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-white/10">
+                    <div className="md:hidden fixed inset-0 top-16 z-40 bg-slate-950 px-6 py-4 border-t border-white/10 overflow-y-auto">
                         <div className="flex flex-col space-y-4">
                             {navLinks.map((link) => (
                                 <Link

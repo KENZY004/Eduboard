@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaArrowRight, FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import StudentCharacter from '../components/StudentCharacter';
 
+const isValidPassword = (p) =>
+  p.length >= 8 && /[0-9]/.test(p) && /[A-Z]/.test(p) && /[^A-Za-z0-9]/.test(p);
+
 const Signup = () => {
     const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'student' });
+    const [showPassword, setShowPassword] = useState(false);
     const [documents, setDocuments] = useState({
         id_proof: null,
         teaching_certificate: null,
@@ -16,6 +20,13 @@ const Signup = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,10 +45,15 @@ const Signup = () => {
         setLoading(true);
 
         try {
+
+            if (!isValidPassword(formData.password)) {
+                setError('Please follow password guidelines.');
+                setLoading(false);
+                return;
+            }
             // Step 1: Register user
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, formData);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            const registrationToken = res.data.token;
 
             // Step 2: If teacher, upload documents
             if (formData.role === 'teacher') {
@@ -60,18 +76,15 @@ const Signup = () => {
                     formDataUpload,
                     {
                         headers: {
-                            'Authorization': `Bearer ${res.data.token}`,
+                            'Authorization': `Bearer ${registrationToken}`,
                             'Content-Type': 'multipart/form-data'
                         }
                     }
                 );
-
-                // Redirect to verification pending page
-                navigate('/verification-pending');
-            } else {
-                // Student - redirect to dashboard
-                navigate('/dashboard');
             }
+
+            // Redirect to registration OTP verification page
+            navigate('/verify-email', { state: { email: formData.email } });
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');
             setLoading(false);
@@ -160,15 +173,24 @@ const Signup = () => {
                         <div className="relative">
                             <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
                                 placeholder="••••••••"
+                                maxLength={64}
                                 required
                             />
+                            {showPassword ? (
+                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
+                            ) : (
+                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
+                            )}
                         </div>
+                        <p className="text-sm text-gray-400 mt-1.5">
+                            Password must contain at least 8 characters with a number, uppercase letter, and special character.
+                        </p>
                     </div>
 
                     {/* Role Selection */}
