@@ -3,10 +3,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');                          // ← NEW
 const User = require('../models/User');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendPasswordResetEmail, sendRegistrationVerificationEmail } = require('../services/emailService');
 const { blacklistToken } = require('../services/tokenBlacklist'); // ← NEW
 const { verifyToken } = require('../utils/auth');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'; // Use env in prod!
 const {
   registerValidation,
   validate,
@@ -39,18 +39,29 @@ router.post('/register', registerValidation, validate, async (req, res) => {
         });
 
         if (existingUser) {
-            const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
-            const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
+            // If the user exists but their email is not verified, delete them so they can register again
+            if (!existingUser.isEmailVerified) {
+                const TeacherVerification = require('../models/TeacherVerification');
+                await TeacherVerification.deleteMany({ userId: existingUser._id });
+                await User.deleteOne({ _id: existingUser._id });
+            } else {
+                // Determine which field is duplicate
+                const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
+                const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
 
-            let message = 'User already exists';
-            if (isDuplicateEmail && isDuplicateUsername) {
-                message = 'A user with that email and username already exists';
-            } else if (isDuplicateEmail) {
-                message = 'A user with that email already exists';
-            } else if (isDuplicateUsername) {
-                message = 'A user with that username already exists';
+                let message = 'User already exists';
+                if (isDuplicateEmail && isDuplicateUsername) {
+                    message = 'A user with that email and username already exists';
+                } else if (isDuplicateEmail) {
+                    message = 'A user with that email already exists';
+                } else if (isDuplicateUsername) {
+                    message = 'A user with that username already exists';
+                }
+                return res.status(400).json({
+                    message,
+                    error: 'USER_EXISTS'
+                });
             }
-            return res.status(400).json({ message, error: 'USER_EXISTS' });
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -59,17 +70,37 @@ router.post('/register', registerValidation, validate, async (req, res) => {
         const userRole = role || 'student';
         const needsVerification = userRole === 'teacher';
 
+        // Generate 6-digit verification OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpSalt = await bcrypt.genSalt(10);
+        const hashedOtp = await bcrypt.hash(otp, otpSalt);
+
         const newUser = new User({
             username,
             email,
             password: hashedPassword,
             role: userRole,
-            isVerified: !needsVerification,
-            verificationStatus: needsVerification ? 'pending' : 'approved'
+            isVerified: !needsVerification, // true for admin/student, false for teacher
+            verificationStatus: needsVerification ? 'pending' : 'approved',
+            isEmailVerified: false,
+            emailVerificationOTP: hashedOtp,
+            emailVerificationExpire: Date.now() + 10 * 60 * 1000 // 10 minutes
         });
 
         const savedUser = await newUser.save();
 
+        // Send verification email
+        const emailResult = await sendRegistrationVerificationEmail(savedUser.email, savedUser.username, otp);
+        if (!emailResult.success) {
+            // Cleanup user if email failed on registration
+            await User.findByIdAndDelete(savedUser._id);
+            return res.status(500).json({
+                message: 'Failed to send verification email. Please check your email and try again.',
+                error: 'EMAIL_SEND_FAILED'
+            });
+        }
+
+        // Create temporary token for document upload / session tracking
         // ── jti added so the blacklist can target individual tokens ──
         const jti = crypto.randomUUID();
         const token = jwt.sign({ id: savedUser._id, jti }, JWT_SECRET, { expiresIn: '1d' });
@@ -82,11 +113,10 @@ router.post('/register', registerValidation, validate, async (req, res) => {
                 email: savedUser.email,
                 role: savedUser.role,
                 isVerified: savedUser.isVerified,
-                verificationStatus: savedUser.verificationStatus
+                verificationStatus: savedUser.verificationStatus,
+                isEmailVerified: savedUser.isEmailVerified
             },
-            message: savedUser.role === 'teacher'
-                ? 'Registration successful! Please upload your verification documents.'
-                : 'Registration successful!'
+            message: 'Registration successful! A verification code has been sent to your email.'
         });
     } catch (err) {
         console.error('Registration error:', err);
@@ -138,6 +168,16 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
         }
 
+        // Check if email is verified
+        if (user.isEmailVerified === false) {
+            return res.status(403).json({
+                message: 'Email not verified. Please verify your email first.',
+                error: 'EMAIL_NOT_VERIFIED',
+                email: user.email
+            });
+        }
+
+        // Check if teacher is verified
         if (user.role === 'teacher' && !user.isVerified) {
             return res.status(403).json({
                 message: 'Your account is pending verification. Please wait for admin approval.',
@@ -213,6 +253,16 @@ router.post('/forgot-password', async (req, res) => {
             return res.status(404).json({ message: 'No account found with this email address.' });
         }
 
+        // Check if email is verified
+        if (user.isEmailVerified === false) {
+            return res.status(403).json({
+                message: 'This email address is not verified yet. Please verify it first.',
+                error: 'EMAIL_NOT_VERIFIED',
+                email: user.email
+            });
+        }
+
+        // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
         const salt = await bcrypt.genSalt(10);
@@ -314,6 +364,99 @@ router.put('/reset-password', async (req, res) => {
         res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {
         console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// VERIFY REGISTRATION OTP
+router.post('/verify-registration-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required' });
+        }
+
+        const user = await User.findOne({
+            email,
+            emailVerificationExpire: { $gt: Date.now() }
+        });
+
+        if (!user || !user.emailVerificationOTP) {
+            return res.status(400).json({ message: 'Invalid or expired verification code' });
+        }
+
+        const isMatch = await bcrypt.compare(otp.toString(), user.emailVerificationOTP);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid or expired verification code' });
+        }
+
+        // Update status and clear fields
+        user.isEmailVerified = true;
+        user.emailVerificationOTP = undefined;
+        user.emailVerificationExpire = undefined;
+
+        const savedUser = await user.save();
+
+        // Create login token
+        // ── jti added so the blacklist can target individual tokens ──
+        const jti = crypto.randomUUID();
+        const token = jwt.sign({ id: savedUser._id, jti }, JWT_SECRET, { expiresIn: '1d' });
+
+        res.status(200).json({
+            token,
+            user: {
+                id: savedUser._id,
+                username: savedUser.username,
+                email: savedUser.email,
+                role: savedUser.role,
+                isVerified: savedUser.isVerified,
+                verificationStatus: savedUser.verificationStatus,
+                isEmailVerified: savedUser.isEmailVerified
+            },
+            message: 'Email verified successfully! Registration complete.'
+        });
+    } catch (error) {
+        console.error('Verify registration OTP error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// RESEND REGISTRATION OTP
+router.post('/resend-registration-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'No registered user found with this email address.' });
+        }
+
+        if (user.isEmailVerified) {
+            return res.status(400).json({ message: 'This email is already verified.' });
+        }
+
+        // Generate new OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpSalt = await bcrypt.genSalt(10);
+        const hashedOtp = await bcrypt.hash(otp, otpSalt);
+
+        user.emailVerificationOTP = hashedOtp;
+        user.emailVerificationExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+        await user.save();
+
+        const emailResult = await sendRegistrationVerificationEmail(user.email, user.username, otp);
+        if (!emailResult.success) {
+            return res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+        }
+
+        res.status(200).json({ message: 'Verification code resent successfully!' });
+    } catch (error) {
+        console.error('Resend registration OTP error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
