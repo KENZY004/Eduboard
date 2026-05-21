@@ -104,6 +104,7 @@ router.post('/register', registerValidation, validate, async (req, res) => {
         // ── jti added so the blacklist can target individual tokens ──
         const jti = crypto.randomUUID();
         const token = jwt.sign({ id: savedUser._id, jti }, JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
         res.status(201).json({
             token,
@@ -166,6 +167,15 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials', error: 'INVALID_CREDENTIALS' });
+        }
+
+        // Check if email is verified
+        if (user.isEmailVerified === false) {
+            return res.status(403).json({
+                message: 'Email not verified. Please verify your email first.',
+                error: 'EMAIL_NOT_VERIFIED',
+                email: user.email
+            });
         }
 
         // Check if email is verified
@@ -402,6 +412,7 @@ router.post('/verify-registration-otp', async (req, res) => {
         // ── jti added so the blacklist can target individual tokens ──
         const jti = crypto.randomUUID();
         const token = jwt.sign({ id: savedUser._id, jti }, JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
         res.status(200).json({
             token,
@@ -461,4 +472,5 @@ router.post('/resend-registration-otp', async (req, res) => {
     }
 });
 
+module.exports = router;
 module.exports = router;

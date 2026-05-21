@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaKey } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
-import TeacherCharacter from '../components/TeacherCharacter';
+import StudentCharacter from '../components/StudentCharacter';
 
-const VerifyOTP = () => {
+const VerifyRegistrationOTP = () => {
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [resendTimer, setResendTimer] = useState(60);
+    const hasAutoSent = useRef(false);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -20,9 +21,29 @@ const VerifyOTP = () => {
 
     useEffect(() => {
         if (!email) {
-            navigate('/forgot-password');
+            navigate('/signup');
+            return;
         }
-    }, [email, navigate]);
+
+        if (location.state?.autoSend && !hasAutoSent.current) {
+            hasAutoSent.current = true;
+            const triggerAutoSend = async () => {
+                setError('');
+                setSuccessMessage('');
+                setIsResending(true);
+                try {
+                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/resend-registration-otp`, { email });
+                    setSuccessMessage('A fresh verification code has been sent to your email.');
+                    setResendTimer(60);
+                } catch (err) {
+                    setError(err.response?.data?.message || 'Failed to send verification code. Please try resending manually.');
+                } finally {
+                    setIsResending(false);
+                }
+            };
+            triggerAutoSend();
+        }
+    }, [email, navigate, location.state]);
 
     useEffect(() => {
         let interval;
@@ -54,11 +75,20 @@ const VerifyOTP = () => {
         setIsLoading(true);
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-otp`, { email, otp });
-            // Navigate to reset password page with the reset token
-            navigate('/reset-password', { state: { resetToken: res.data.resetToken } });
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-registration-otp`, { email, otp });
+            
+            // Save token and user info
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+
+            // Redirect based on role
+            if (res.data.user.role === 'teacher') {
+                navigate('/verification-pending');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Invalid or expired OTP');
+            setError(err.response?.data?.message || 'Invalid or expired verification code');
         } finally {
             setIsLoading(false);
         }
@@ -71,11 +101,11 @@ const VerifyOTP = () => {
         setSuccessMessage('');
         setIsResending(true);
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/forgot-password`, { email });
-            setSuccessMessage('OTP resent successfully!');
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/resend-registration-otp`, { email });
+            setSuccessMessage('Verification code resent successfully!');
             setResendTimer(60);
         } catch (err) {
-            setError('Failed to resend OTP. Please try again.');
+            setError(err.response?.data?.message || 'Failed to resend verification code. Please try again.');
         } finally {
             setIsResending(false);
         }
@@ -103,13 +133,13 @@ const VerifyOTP = () => {
                             </div>
                             <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/login" className="text-sm text-slate-400 hover:text-white transition-colors">
-                            ← Back to Login
+                        <Link to="/signup" className="text-sm text-slate-400 hover:text-white transition-colors">
+                            ← Back to Signup
                         </Link>
                     </motion.div>
 
                     <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
-                        Verify OTP
+                        Verify Email
                     </h2>
                     <p className="text-slate-400 text-sm sm:text-base mb-6 sm:mb-8">
                         Enter the 6-digit code sent to <span className="font-medium text-white">{email}</span>
@@ -140,7 +170,7 @@ const VerifyOTP = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">One-Time Password</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Verification Code</label>
                         <div className="relative">
                             <FaKey className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
@@ -162,7 +192,7 @@ const VerifyOTP = () => {
                         disabled={isLoading || otp.length < 6}
                         className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${(isLoading || otp.length < 6) ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        {isLoading ? 'Verifying...' : 'Verify & Continue'}
+                        {isLoading ? 'Verifying...' : 'Verify & Activate'}
                         {!isLoading && <FaArrowRight className="group-hover:translate-x-1 transition-transform" />}
                     </motion.button>
                 </form>
@@ -174,12 +204,12 @@ const VerifyOTP = () => {
                         disabled={resendTimer > 0 || isResending}
                         className={`font-medium ${(resendTimer > 0 || isResending) ? 'text-slate-500 cursor-not-allowed' : 'text-indigo-400 hover:text-indigo-300 cursor-pointer'}`}
                     >
-                        {isResending ? 'Sending...' : resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}
+                        {isResending ? 'Sending...' : resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
                     </button>
                 </div>
             </motion.div>
 
-            {/* Right: Animated Teacher Character */}
+            {/* Right: Animated Student Character */}
             <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950 overflow-hidden">
                 <div className="absolute inset-0 opacity-30">
                     <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-400 rounded-full blur-3xl"></div>
@@ -187,12 +217,26 @@ const VerifyOTP = () => {
                     <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
                 </div>
 
-                <div className="relative z-10 w-full max-w-lg px-8">
-                    <TeacherCharacter className="w-full h-auto" />
+                <div className="relative z-10 w-full max-w-lg px-8 text-center">
+                    <StudentCharacter className="w-full h-auto" />
+                    
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="mt-8 text-center"
+                    >
+                        <h3 className="text-2xl font-bold text-white mb-3">
+                            Confirm Your Identity 🔒
+                        </h3>
+                        <p className="text-slate-300 text-lg">
+                            We've sent a 6-digit confirmation code to check that you own this email address.
+                        </p>
+                    </motion.div>
                 </div>
             </div>
         </div>
     );
 };
 
-export default VerifyOTP;
+export default VerifyRegistrationOTP;

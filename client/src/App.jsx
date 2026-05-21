@@ -13,6 +13,7 @@ import AdminPanel from './pages/AdminPanel';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
+import VerifyRegistrationOTP from './pages/VerifyRegistrationOTP';
 import ScrollToTop from './components/ScrollToTop';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -68,63 +69,74 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const AppLayout = () => {
+  const location = useLocation();
+  const authRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+  const isAuthRoute = authRoutes.includes(location.pathname);
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+      <Navbar /> 
+      <div className={isAuthRoute ? "" : "pt-14"}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/about" element={<AboutPage />} />
+
+          {/* Auth Routes */}
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
+
+          {/* Private Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/board/:roomId"
+            element={
+              <PrivateRoute>
+                <Whiteboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/verification-pending"
+            element={
+              <PrivateRoute>
+                <VerificationPending />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <ScrollToTop />
-        <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
-        <Navbar /> 
-          <div className="pt-16">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/features" element={<FeaturesPage />} />
-            <Route path="/about" element={<AboutPage />} />
-
-            {/* Auth Routes */}
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-            <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
-            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-
-            {/* Private Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/board/:roomId"
-              element={
-                <PrivateRoute>
-                  <Whiteboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/verification-pending"
-              element={
-                <PrivateRoute>
-                  <VerificationPending />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              }
-            />
-          </Routes>
-        </div>
-        </div>
+        <AppLayout />
       </Router>
     </ThemeProvider>
   );

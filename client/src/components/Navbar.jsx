@@ -40,6 +40,11 @@ const Navbar = () => {
         }
     };
 
+    const hiddenRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+    if (hiddenRoutes.includes(location.pathname)) {
+        return null;
+    }
+
     const navLinks = [
         { name: 'Home', path: '/' },
         { name: 'Features', path: '/features' },
@@ -58,7 +63,7 @@ const Navbar = () => {
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-14">
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-2 group">
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
