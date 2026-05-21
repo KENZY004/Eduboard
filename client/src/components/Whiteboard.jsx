@@ -65,6 +65,7 @@ const Whiteboard = () => {
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
     const [editingElement, setEditingElement] = useState(null); // { index, text, x, y, width, height }
     const [action, setAction] = useState('none'); // 'drawing', 'moving', 'resizing'
+    const [showShortcutsHelp, setShowShortcutsHelp] = useState(false); // ← NEW
     const textAreaRef = useRef(null);
     const draggedElementRef = useRef(null); // Fix for stale state in history
     const currentStrokeRef = useRef(null); // Optimization: Mutable ref for drawing to bypass React Render Cycle
@@ -1399,6 +1400,24 @@ const Whiteboard = () => {
         }
     };
 
+    const handleDeleteSelected = () => { // ← NEW
+        if (!selectedElement) return; // ← NEW
+        const index = selectedElement.index; // ← NEW
+        const el = elements[index]; // ← NEW
+        if (!el) return; // ← NEW
+        
+        const newElements = [...elements]; // ← NEW
+        newElements.splice(index, 1); // ← NEW
+        setElements(newElements); // ← NEW
+        setSelectedElement(null); // ← NEW
+        
+        setHistory(prev => [...prev, { type: 'DELETE', element: el }]); // ← NEW
+        
+        if (socket) { // ← NEW
+            socket.emit('delete-element', { roomId, elementId: el.id }); // ← NEW
+        } // ← NEW
+    }; // ← NEW
+
     const handleClear = () => {
         setElements([]);
         setHistory([]);
@@ -1838,8 +1857,63 @@ const Whiteboard = () => {
         ctx.restore();
     };
 
+    // ← NEW
+    useEffect(() => { // ← NEW
+        const handleKeyDown = (e) => { // ← NEW
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; // ← NEW
+            
+            if (e.key === '?') { // ← NEW
+                setShowShortcutsHelp(prev => !prev); // ← NEW
+                return; // ← NEW
+            } // ← NEW
+
+            if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) { // ← NEW
+                e.preventDefault(); // ← NEW
+            } // ← NEW
+            if (e.key === 'Delete' || e.key === 'Backspace') { // ← NEW
+                if (e.key === 'Backspace') e.preventDefault(); // ← NEW
+            } // ← NEW
+
+            switch (e.key.toLowerCase()) { // ← NEW
+                case 'p': case '1': setTool('pen'); break; // ← NEW
+                case 'e': case '2': setTool('eraser'); break; // ← NEW
+                case 'l': case '3': setTool('line'); break; // ← NEW
+                case 'r': case '4': setTool('rect'); break; // ← NEW
+                case 'c': case '5': setTool('circle'); break; // ← NEW
+                case 't': case '6': setTool('text'); break; // ← NEW
+                case 'delete': case 'backspace': // ← NEW
+                    handleDeleteSelected(); // ← NEW
+                    break; // ← NEW
+                case 'escape': // ← NEW
+                    setSelectedElement(null); // ← NEW
+                    if (isDrawing) { // ← NEW
+                        setIsDrawing(false); // ← NEW
+                        currentStrokeRef.current = null; // ← NEW
+                        setCurrentElement(null); // ← NEW
+                    } // ← NEW
+                    break; // ← NEW
+                case 'z': // ← NEW
+                    if (e.ctrlKey || e.metaKey) { // ← NEW
+                        if (e.shiftKey) handleRedo(); // ← NEW
+                        else handleUndo(); // ← NEW
+                    } // ← NEW
+                    break; // ← NEW
+                case 'y': // ← NEW
+                    if (e.ctrlKey || e.metaKey) handleRedo(); // ← NEW
+                    break; // ← NEW
+                default: break; // ← NEW
+            } // ← NEW
+        }; // ← NEW
+        window.addEventListener('keydown', handleKeyDown); // ← NEW
+        return () => window.removeEventListener('keydown', handleKeyDown); // ← NEW
+    }, [isDrawing, selectedElement, elements, socket, roomId]); // ← NEW
+
     return (
-        <div className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
+        <div 
+            className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}
+            role="application" // ← NEW
+            aria-label="Whiteboard Canvas" // ← NEW
+        >
 
             <input
                 type="file"
@@ -2185,8 +2259,31 @@ const Whiteboard = () => {
                         {/* Undo/Redo - Teacher Only */}
                         {user?.role === 'teacher' && (
                             <>
-                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
-                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={handleUndo} aria-label="Undo (Shortcut: Ctrl+Z)" aria-keyshortcuts="Control+Z" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Undo">
+                                        <FaUndo className="text-sm sm:text-base" />
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Undo <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">Ctrl+Z</span>
+                                    </div>
+                                </div>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={handleRedo} aria-label="Redo (Shortcut: Ctrl+Y)" aria-keyshortcuts="Control+Y" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Redo">
+                                        <FaRedo className="text-sm sm:text-base" />
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Redo <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">Ctrl+Y</span>
+                                    </div>
+                                </div>
+                                <div className="w-px h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard Shortcuts Help" aria-keyshortcuts="?" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Keyboard Shortcuts">
+                                        <span className="text-sm sm:text-base font-bold">?</span>
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Shortcuts <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">?</span>
+                                    </div>
+                                </div>
                             </>
                         )}
                         {user?.role === 'teacher' && (
@@ -2214,32 +2311,49 @@ const Whiteboard = () => {
                     </div>
 
                     {/* Primary Tools Dock */}
-                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full">
+                    <div 
+                        className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full"
+                        role="toolbar" // ← NEW
+                        aria-label="Whiteboard Tools" // ← NEW
+                    >
 
                         {/* Tools */}
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
                             {[
-                                { id: 'pen', icon: FaPen },
-                                { id: 'highlighter', icon: FaHighlighter },
-                                { id: 'eraser', icon: FaEraser },
-                                { id: 'line', icon: FaSlash },
+                                { id: 'pen', icon: FaPen, label: 'Pen Tool', shortcut: 'P' }, // ← NEW
+                                { id: 'highlighter', icon: FaHighlighter, label: 'Highlighter', shortcut: '' }, // ← NEW
+                                { id: 'eraser', icon: FaEraser, label: 'Eraser Tool', shortcut: 'E' }, // ← NEW
+                                { id: 'line', icon: FaSlash, label: 'Line Tool', shortcut: 'L' }, // ← NEW
+                                { id: 'text', icon: FaFont, label: 'Text Tool', shortcut: 'T' } // ← NEW
                             ].map((t) => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => setTool(t.id)}
-                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${tool === t.id
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                                >
-                                    <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
-                                </button>
+                                <div key={t.id} className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                    <button
+                                        onClick={() => setTool(t.id)}
+                                        aria-label={`${t.label} ${t.shortcut ? `(Shortcut: ${t.shortcut})` : ''}`} // ← NEW
+                                        aria-pressed={tool === t.id} // ← NEW
+                                        aria-keyshortcuts={t.shortcut || undefined} // ← NEW
+                                        className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${tool === t.id // ← NEW
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
+                                    </button>
+                                    {t.shortcut && ( // ← NEW
+                                        <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50"> {/* ← NEW */}
+                                            {t.label} <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">{t.shortcut}</span> {/* ← NEW */}
+                                        </div> // ← NEW
+                                    )}
+                                </div>
                             ))}
                             <div className="relative">
                                 <button
                                     onClick={() => {
                                         setShowShapeMenu(!showShapeMenu);
                                     }}
-                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
+                                    aria-label="Shapes Menu" // ← NEW
+                                    aria-expanded={showShapeMenu} // ← NEW
+                                    aria-haspopup="true" // ← NEW
+                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star') // ← NEW
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                     title="Shapes"
@@ -2255,22 +2369,31 @@ const Whiteboard = () => {
                                             className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl z-50"
                                         >
                                             {[
-                                                { id: 'rect', icon: BsSquare, label: 'Square' },
-                                                { id: 'circle', icon: BsCircle, label: 'Circle' },
-                                                { id: 'triangle', icon: BsTriangle, label: 'Triangle' },
-                                                { id: 'star', icon: BsStar, label: 'Star' },
-                                                { id: 'pentagon', icon: BsPentagon, label: 'Pentagon' },
-                                                { id: 'hexagon', icon: BsHexagon, label: 'Hexagon' },
-                                                { id: 'octagon', icon: BsOctagon, label: 'Octagon' },
+                                                { id: 'rect', icon: BsSquare, label: 'Rectangle', shortcut: 'R' }, // ← NEW
+                                                { id: 'circle', icon: BsCircle, label: 'Circle', shortcut: 'C' }, // ← NEW
+                                                { id: 'triangle', icon: BsTriangle, label: 'Triangle', shortcut: '' }, // ← NEW
+                                                { id: 'star', icon: BsStar, label: 'Star', shortcut: '' }, // ← NEW
+                                                { id: 'pentagon', icon: BsPentagon, label: 'Pentagon', shortcut: '' }, // ← NEW
+                                                { id: 'hexagon', icon: BsHexagon, label: 'Hexagon', shortcut: '' }, // ← NEW
+                                                { id: 'octagon', icon: BsOctagon, label: 'Octagon', shortcut: '' }, // ← NEW
                                             ].map(s => (
-                                                <button
-                                                    key={s.id}
-                                                    onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
-                                                    className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
-                                                    title={s.label}
-                                                >
-                                                    <s.icon className="text-xl" />
-                                                </button>
+                                                <div key={s.id} className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                                    <button
+                                                        onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
+                                                        aria-label={`${s.label} ${s.shortcut ? `(Shortcut: ${s.shortcut})` : ''}`} // ← NEW
+                                                        aria-pressed={tool === s.id} // ← NEW
+                                                        aria-keyshortcuts={s.shortcut || undefined} // ← NEW
+                                                        className={`p-2.5 rounded-lg flex w-full items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`} // ← NEW
+                                                        title={s.label}
+                                                    >
+                                                        <s.icon className="text-xl" />
+                                                    </button>
+                                                    {s.shortcut && ( // ← NEW
+                                                        <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50"> {/* ← NEW */}
+                                                            {s.label} <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">{s.shortcut}</span> {/* ← NEW */}
+                                                        </div> // ← NEW
+                                                    )}
+                                                </div>
                                             ))}
                                         </motion.div>
                                     )}
@@ -2280,12 +2403,26 @@ const Whiteboard = () => {
 
                         {/* Quick Insert */}
                         <div className="flex items-center gap-0.5 sm:gap-1">
-                            <button onClick={addStickyNote} className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
-                                <FaStickyNote className="text-sm sm:text-base" />
-                            </button>
-                            <button onClick={() => fileInputRef.current.click()} className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
-                                <FaImage className="text-sm sm:text-base" />
-                            </button>
+                            <div className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                <button 
+                                    onClick={addStickyNote} 
+                                    aria-label="Add Sticky Note"
+                                    className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" // ← NEW
+                                    title="Add Sticky Note"
+                                >
+                                    <FaStickyNote className="text-sm sm:text-base" />
+                                </button>
+                            </div> {/* ← NEW */}
+                            <div className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                <button 
+                                    onClick={() => fileInputRef.current.click()} 
+                                    aria-label="Upload Image"
+                                    className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" // ← NEW
+                                    title="Upload Image"
+                                >
+                                    <FaImage className="text-sm sm:text-base" />
+                                </button>
+                            </div> {/* ← NEW */}
                         </div>
 
                         {/* Properties */}
@@ -2364,6 +2501,45 @@ const Whiteboard = () => {
                     </div>
                 </div >
             )}
+
+            {/* ← NEW */}
+            {/* Keyboard Shortcuts Help Panel */}
+            <AnimatePresence>
+                {showShortcutsHelp && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className={`absolute bottom-24 right-4 sm:right-8 w-80 p-5 rounded-2xl shadow-2xl border backdrop-blur-xl z-[100] ${darkMode ? 'bg-slate-900/90 border-slate-700 text-slate-200' : 'bg-white/90 border-gray-200 text-gray-800'}`}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                ⌨️ Keyboard Shortcuts
+                            </h3>
+                            <button onClick={() => setShowShortcutsHelp(false)} className="text-gray-400 hover:text-white transition-colors">
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-2 gap-2 border-b border-white/10 pb-2">
+                                <span className="opacity-70">Pen Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">P / 1</kbd>
+                                <span className="opacity-70">Eraser Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">E / 2</kbd>
+                                <span className="opacity-70">Line Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">L / 3</kbd>
+                                <span className="opacity-70">Rectangle</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">R / 4</kbd>
+                                <span className="opacity-70">Circle</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">C / 5</kbd>
+                                <span className="opacity-70">Text Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">T / 6</kbd>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <span className="opacity-70">Undo</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Ctrl+Z</kbd>
+                                <span className="opacity-70">Redo</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Ctrl+Y</kbd>
+                                <span className="opacity-70">Delete selected</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Del/Bksp</kbd>
+                                <span className="opacity-70">Cancel/Deselect</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Esc</kbd>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* ← NEW END */}
         </div >
     );
 };
