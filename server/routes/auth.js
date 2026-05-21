@@ -8,9 +8,12 @@ const {
   registerValidation,
   validate,
 } = require("../middlewares/auth.validator");
-
+const { authLimiter, otpLimiter, globalAuthLimiter } = require('../middlewares/rateLimiter'); // ← NEW
+                                                                                            // ← NEW
+router.use(globalAuthLimiter); // ← NEW
+                                                                                            // ← NEW
 // REGISTER
-router.post('/register',registerValidation, validate, async (req, res) => {
+router.post('/register', authLimiter, registerValidation, validate, async (req, res) => { // ← NEW
     try {
         const { username, email, password, role } = req.body;
 
@@ -151,7 +154,7 @@ router.post('/register',registerValidation, validate, async (req, res) => {
 });
 
 // LOGIN
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => { // ← NEW
     try {
         const { email, password } = req.body;
 
@@ -225,7 +228,7 @@ router.post('/login', async (req, res) => {
 });
 
 // FORGOT PASSWORD
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', otpLimiter, async (req, res) => { // ← NEW
     try {
         const { email } = req.body;
         if (!email) {
@@ -276,7 +279,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // VERIFY OTP
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', otpLimiter, async (req, res) => { // ← NEW
     try {
         const { email, otp } = req.body;
 
