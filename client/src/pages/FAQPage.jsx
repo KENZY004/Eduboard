@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
+import { FaSearch } from "react-icons/fa";
 
 export default function FAQPage() {
   // --- State Hooks ---
@@ -192,7 +193,7 @@ export default function FAQPage() {
             <li>Check your inbox for a password reset link (valid for 24 hours).</li>
             <li>Click the link and set a new password.</li>
           </ul>
-          If you don't receive the email, check your spam folder or contact <a href="#" className="text-[#9f67ff] hover:underline">support</a>.
+          If you don't receive the email, check your spam folder or contact <Link to="/contact" className="text-purple-400 hover:underline">support</Link>.
         </>
       ),
     },
@@ -214,7 +215,7 @@ export default function FAQPage() {
       question: 'How do I delete my account?',
       answer: (
         <>
-          You can delete your account from <strong>Profile Settings → Danger Zone → Delete Account</strong>. This action is permanent and will remove all your boards and data. We recommend exporting important boards before deletion. For assistance, contact our <a href="#" className="text-[#9f67ff] hover:underline">support team</a>.
+          You can delete your account from <strong>Profile Settings → Danger Zone → Delete Account</strong>. This action is permanent and will remove all your boards and data. We recommend exporting important boards before deletion. For assistance, contact our <Link to="/contact" className="text-purple-400 hover:underline">support team</Link>.
         </>
       ),
     },
@@ -232,7 +233,7 @@ export default function FAQPage() {
             <li>Boards are private to your account by default.</li>
             <li>We comply with standard data protection practices.</li>
           </ul>
-          For details, see our <a href="#" className="text-[#9f67ff] hover:underline">Privacy Policy</a>.
+          For details, see our <Link to="/privacy" className="text-purple-400 hover:underline">Privacy Policy</Link>.
         </>
       ),
     },
@@ -241,9 +242,7 @@ export default function FAQPage() {
   // --- Filter and Search logic combined ---
   const filteredFAQs = faqData.filter((faq) => {
     const matchesCategory = activeCategory === 'all' || faq.category === activeCategory;
-    const matchesSearch =
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase());
-
+    const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -261,25 +260,23 @@ export default function FAQPage() {
   };
 
   return (
-    <div className="bg-[#0a0e1a] text-[#f1f5f9] font-sans antialiased min-h-screen selection:bg-purple-500 selection:text-white">
+    <div className="text-slate-200 min-h-[calc(100vh-4rem)] selection:bg-purple-500/30 selection:text-white pb-16">
       
       {/* ─── HERO ───────────────────────────────── */}
-      <section className="text-center pt-20 pb-14 px-5 relative overflow-hidden">
-        <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[600px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.22)_0%,transparent_70%)] pointer-events-none" />
+      <section className="text-center pt-16 pb-12 px-5 relative overflow-hidden">
+        <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[600px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.15)_0%,transparent_70%)] pointer-events-none" />
         
-        <div className="inline-block bg-[#7c3aed]/14 border border-[#7c3aed]/18 text-[#9f67ff] text-xs font-semibold tracking-widest uppercase px-3.5 py-1.25 rounded-full mb-5.5 animate-[fadeUp_0.5s_ease_both]">
-          Help Center
-        </div>
+        {/* Help Center Badge Removed as requested by maintainer */}
         
-        <h1 className="font-['Sora'] font-bold text-[clamp(2rem,5vw,3.2rem)] bg-gradient-to-r from-[#c4b5fd] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent mb-4 leading-[1.15] tracking-tight animate-[fadeUp_0.5s_0.1s_ease_both]">
+        <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4 leading-tight tracking-tight">
           Frequently Asked Questions
         </h1>
         
-        <p className="text-[#94a3b8] text-base max-w-[520px] mx-auto mb-9 leading-relaxed animate-[fadeUp_0.5s_0.2s_ease_both]">
+        <p className="text-slate-400 text-sm sm:text-base max-w-[520px] mx-auto mb-8 leading-relaxed">
           Everything you need to know about EduBoard. Can't find an answer? Reach out to our support team.
         </p>
 
-        <div className="max-w-[500px] mx-auto relative animate-[fadeUp_0.5s_0.3s_ease_both]">
+        <div className="max-w-[500px] mx-auto relative">
           <input
             type="text"
             id="searchInput"
@@ -287,16 +284,16 @@ export default function FAQPage() {
             autoComplete="off"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full bg-[#131929] border border-[#7c3aed]/18 rounded-xl pt-3.25 pb-3.25 pr-12 pl-4.5 text-[#f1f5f9] text-sm outline-none transition-all duration-200 focus:border-[#7c3aed] focus:shadow-[0_0_0_3px_rgba(124,58,237,0.25)] placeholder:text-[#64748b]"
+            className="w-full bg-slate-900/60 border border-slate-800 rounded-xl py-2.5 pr-12 pl-4.5 text-slate-200 text-sm outline-none transition-all duration-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-slate-600"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-base">
-            🔍
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-sm">
+            <FaSearch />
           </span>
         </div>
       </section>
 
       {/* ─── CATEGORIES FILTER ──────────────────── */}
-      <div className="max-w-[860px] mx-auto mb-14 px-5 flex flex-wrap gap-2.5 justify-center">
+      <div className="max-w-4xl mx-auto mb-12 px-5 flex flex-wrap gap-2.5 justify-center">
         {[
           { label: 'All', id: 'all' },
           { label: 'Getting Started', id: 'getting-started' },
@@ -311,10 +308,10 @@ export default function FAQPage() {
               setActiveCategory(cat.id);
               setSearchQuery('');
             }}
-            className={`text-xs sm:text-sm font-medium px-4.5 py-1.75 rounded-full border cursor-pointer transition-all duration-200 ${
+            className={`text-xs sm:text-sm font-medium px-4 py-1.5 rounded-full border cursor-pointer transition-all duration-200 ${
               activeCategory === cat.id
-                ? 'bg-[#7c3aed] border-[#7c3aed] text-white'
-                : 'bg-[#131929] border-[#7c3aed]/18 text-[#94a3b8] hover:bg-[#7c3aed] hover:border-[#7c3aed] hover:text-white'
+                ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/10'
+                : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:bg-purple-600 hover:border-purple-600 hover:text-white'
             }`}
           >
             {cat.label}
@@ -323,41 +320,41 @@ export default function FAQPage() {
       </div>
 
       {/* ─── FAQ CONTAINER ──────────────────────── */}
-      <div className="max-w-[760px] mx-auto px-5 pb-20">
+      <div className="max-w-3xl mx-auto px-5">
         {uniqueSections.map((sectionSlug) => {
           const sectionFAQs = filteredFAQs.filter(f => f.category === sectionSlug);
           const sectionTitle = sectionFAQs[0]?.categoryLabel;
 
           return (
-            <div key={sectionSlug} className="mb-12">
-              <div className="font-['Sora'] text-xs font-semibold tracking-wider uppercase text-[#9f67ff] mb-4.5 flex items-center gap-2.5">
+            <div key={sectionSlug} className="mb-10">
+              <div className="text-xs font-semibold tracking-wider uppercase text-purple-400 mb-4 flex items-center gap-2.5">
                 {sectionTitle}
-                <div className="flex-1 h-px bg-[#7c3aed]/18" />
+                <div className="flex-1 h-px bg-slate-800" />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {sectionFAQs.map((faq) => {
                   const isOpen = openIndex === faq.id;
                   return (
                     <div
                       key={faq.id}
-                      className={`bg-[#131929] border rounded-[14px] overflow-hidden transition-all duration-250 ${
+                      className={`bg-slate-900/40 border rounded-xl overflow-hidden transition-all duration-200 backdrop-blur-sm ${
                         isOpen 
-                          ? 'border-[#7c3aed] shadow-[0_0_0_1px_rgba(124,58,237,0.25),0_4px_24px_rgba(124,58,237,0.12)]' 
-                          : 'border-[#7c3aed]/18 hover:border-[#7c3aed]/55'
+                          ? 'border-purple-500/40 shadow-lg shadow-purple-500/5' 
+                          : 'border-slate-800 hover:border-slate-700'
                       }`}
                     >
                       <button
                         onClick={() => toggleAccordion(faq.id)}
                         aria-expanded={isOpen ? "true" : "false"}
-                        className="w-full flex items-center justify-between gap-4 bg-none border-none p-5 text-[#f1f5f9] text-[14.5px] font-medium text-left cursor-pointer transition-colors duration-200"
+                        className="w-full flex items-center justify-between gap-4 p-5 text-slate-200 text-sm sm:text-base font-medium text-left cursor-pointer"
                       >
-                        <span className={isOpen ? 'text-[#9f67ff]' : ''}>{faq.question}</span>
+                        <span className={isOpen ? 'text-purple-400' : ''}>{faq.question}</span>
                         <span
-                          className={`flex-shrink-0 w-6.5 h-6.5 rounded-full flex items-center justify-center text-base transition-all duration-300 ${
+                          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm transition-all duration-300 ${
                             isOpen 
-                              ? 'rotate-45 bg-[#7c3aed] text-white' 
-                              : 'bg-[#131929] border border-[#7c3aed]/18 text-[#9f67ff]'
+                              ? 'rotate-45 bg-purple-600 text-white' 
+                              : 'bg-slate-950 border border-slate-800 text-purple-400'
                           }`}
                         >
                           +
@@ -365,10 +362,10 @@ export default function FAQPage() {
                       </button>
 
                       <div
-                        className="transition-[max-height] duration-350 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
+                        className="transition-[max-height] duration-300 ease-in-out overflow-hidden"
                         style={{ maxHeight: isOpen ? '1000px' : '0px' }}
                       >
-                        <div className="px-5 pb-5 text-[#94a3b8] text-sm leading-relaxed border-t border-[#7c3aed]/18 pt-4">
+                        <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-slate-800/60 pt-4">
                           {faq.answer}
                         </div>
                       </div>
@@ -381,74 +378,29 @@ export default function FAQPage() {
         })}
 
         {filteredFAQs.length === 0 && (
-          <div className="text-center py-15 px-5 text-[#64748b]">
-            <span className="text-4xl block mb-3">🔍</span>
+          <div className="text-center py-12 px-5 text-slate-500">
+            <span className="text-3xl block mb-2">🔍</span>
             No questions found matching your search.<br />
-            Try different keywords or <a href="#" className="text-[#9f67ff] hover:underline">contact support</a>.
+            Try different keywords or <Link to="/contact" className="text-purple-400 hover:underline">contact support</Link>.
           </div>
         )}
       </div>
 
       {/* ─── CTA SECTION ────────────────────────── */}
-      <section className="bg-[#0f1629] border-t border-b border-[#7c3aed]/18 py-15 px-5 text-center">
-        <div className="max-w-[540px] mx-auto bg-gradient-to-br from-[#7c3aed]/12 to-[#a855f7]/08 border border-[#7c3aed]/18 rounded-2xl p-8 sm:p-10">
-          <h2 className="font-['Sora'] text-2xl font-bold mb-2.5">Still have questions?</h2>
-          <p className="text-[#94a3b8] text-sm mb-6">Our support team is happy to help you get started with EduBoard.</p>
+      <section className="mt-12 px-5 text-center">
+        <div className="max-w-xl mx-auto bg-slate-900/40 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+          <h2 className="text-xl font-bold text-slate-100 mb-2">Still have questions?</h2>
+          <p className="text-slate-400 text-sm mb-6">Our support team is happy to help you get started with EduBoard.</p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <button className="bg-gradient-to-br from-[#7c3aed] to-[#a855f7] border-none text-white text-sm font-semibold px-6 py-2.75 rounded-lg cursor-pointer transition-all duration-150 hover:opacity-88 hover:-translate-y-px">
+            <Link to="/contact" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/10 transform hover:-translate-y-0.5">
               Contact Support
-            </button>
-            <button className="bg-none border border-[#7c3aed]/18 text-[#94a3b8] hover:border-[#7c3aed] hover:text-[#f1f5f9] text-sm font-medium px-6 py-2.75 rounded-lg cursor-pointer transition-colors duration-200">
+            </Link>
+            <Link to="/docs" className="bg-slate-950 border border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200 text-sm font-medium px-6 py-2.5 rounded-xl transition-colors duration-200">
               View Documentation
-            </button>
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* ─── FOOTER ─────────────────────────────── */}
-      <footer className="bg-[#0a0e1a] border-t border-[#7c3aed]/18 p-10">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
-          <div className="flex flex-col gap-2">
-            <h4 className="font-['Sora'] text-xs font-semibold text-[#f1f5f9] mb-1.5">Product</h4>
-            <a href="features.html" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Features</a>
-            <a href="about.html" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">About</a>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Dashboard</a>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h4 className="font-['Sora'] text-xs font-semibold text-[#f1f5f9] mb-1.5">Company</h4>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">About Us</a>
-            <Link
-  to="/contact"
-  className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5"
->
-  Contact
-</Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h4 className="font-['Sora'] text-xs font-semibold text-[#f1f5f9] mb-1.5">Resources</h4>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Documentation</a>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Support</a>
-            <a href="faq.html" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">FAQ</a>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h4 className="font-['Sora'] text-xs font-semibold text-[#f1f5f9] mb-1.5">Legal</h4>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Privacy Policy</a>
-            <a href="#" className="text-[#94a3b8] hover:text-[#f1f5f9] text-xs transition-colors mb-0.5">Terms of Service</a>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-6 border-t border-[#7c3aed]/18 max-w-[1100px] mx-auto text-xs text-[#94a3b8]">
-          <div className="flex items-center gap-2 font-['Sora']">
-            <div className="w-7 h-7 bg-gradient-to-br from-[#7c3aed] to-[#a855f7] rounded flex items-center justify-center text-[11px] text-white">⚡</div>
-            © 2026 EduBoard. All rights reserved.
-          </div>
-          <div className="flex gap-4 text-base">
-            <a href="#" title="GitHub" className="text-[#64748b] hover:text-[#f1f5f9] transition-colors">⌨</a>
-            <a href="#" title="Twitter" className="text-[#64748b] hover:text-[#f1f5f9] transition-colors">𝕏</a>
-            <a href="#" title="LinkedIn" className="text-[#64748b] hover:text-[#f1f5f9] transition-colors">in</a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
