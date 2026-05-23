@@ -1,0 +1,45 @@
+# ← NEW
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=eduboard
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: ../Dockerfile.backend
+    depends_on:
+      - mongo
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    env_file:
+      - ./server/.env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/eduboard
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: ../Dockerfile.frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

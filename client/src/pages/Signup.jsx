@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FaArrowRight, FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import StudentCharacter from '../components/StudentCharacter';
+import TeacherCharacter from '../components/TeacherCharacter';
+import { AnimatePresence } from 'framer-motion';
 
 const isValidPassword = (p) =>
   p.length >= 8 && /[0-9]/.test(p) && /[A-Z]/.test(p) && /[^A-Za-z0-9]/.test(p);
@@ -339,31 +341,86 @@ const Signup = () => {
                 </p>
             </motion.div>
 
-            {/* Right: Animated Student Character */}
-            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-cyan-950 overflow-hidden">
-                {/* Decorative background elements */}
-                <div className="absolute inset-0 opacity-30">
+            {/* Right: Dynamic Character and Theme */}
+            <div className="hidden lg:flex relative items-center justify-center overflow-hidden">
+                {/* Background transitions */}
+                {/* Student Gradient */}
+                <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-900 to-cyan-950 transition-opacity duration-700 ease-in-out ${
+                        formData.role === 'student' ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+                {/* Teacher Gradient */}
+                <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-950 transition-opacity duration-700 ease-in-out ${
+                        formData.role === 'teacher' ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+
+                {/* Decorative background elements - Student Theme */}
+                <div 
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                        formData.role === 'student' ? 'opacity-30' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
                     <div className="absolute top-10 right-10 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 left-20 w-32 h-32 bg-blue-400 rounded-full blur-3xl"></div>
                     <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-purple-400 rounded-full blur-3xl"></div>
                 </div>
 
-                <div className="relative z-10 w-full max-w-lg px-8">
-                    <StudentCharacter className="w-full h-auto" />
+                {/* Decorative background elements - Teacher Theme */}
+                <div 
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                        formData.role === 'teacher' ? 'opacity-30' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
+                    <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-400 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-20 w-32 h-32 bg-purple-400 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
+                </div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="mt-8 text-center"
-                    >
-                        <h3 className="text-2xl font-bold text-white mb-3">
-                            Start Your Learning Journey! 🚀
-                        </h3>
-                        <p className="text-slate-300 text-lg">
-                            Join thousands of students collaborating and learning together
-                        </p>
-                    </motion.div>
+                <div className="relative z-10 w-full max-w-lg px-8">
+                    <AnimatePresence mode="wait">
+                        {formData.role === 'student' ? (
+                            <motion.div
+                                key="student-panel"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col items-center"
+                            >
+                                <StudentCharacter className="w-full h-auto" />
+                                <div className="mt-8 text-center">
+                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                        Start Your Learning Journey! 🚀
+                                    </h3>
+                                    <p className="text-slate-300 text-lg">
+                                        Join thousands of students collaborating and learning together
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="teacher-panel"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col items-center"
+                            >
+                                <TeacherCharacter className="w-full h-auto" />
+                                <div className="mt-8 text-center">
+                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                        Empower the Next Generation! 🎓
+                                    </h3>
+                                    <p className="text-slate-300 text-lg">
+                                        Create interactive whiteboards, share lessons, and engage your classroom
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>
