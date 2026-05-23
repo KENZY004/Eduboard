@@ -52,17 +52,23 @@ const Dashboard = () => {
         }
     };
 
+    const generateRoomId = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const randomStr = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return `EDU-${randomStr(4)}-${randomStr(4)}`;
+    };
+
     const handleCreateBoard = async (boardName) => {
         try {
-            const roomId = uuidv4();
+            const newRoomId = generateRoomId();
             const payload = {
                 name: boardName,
                 userId: user.id,
-                roomId
+                roomId: newRoomId
             };
             const response = await api.post('/api/boards/create', payload);
             setIsModalOpen(false);
-            navigate(`/board/${roomId}`);
+            navigate(`/board/${newRoomId}`);
         } catch (err) {
             console.error('Error creating board:', err);
             console.error('Error response:', err.response?.data);
@@ -108,10 +114,31 @@ const Dashboard = () => {
         }
     };
 
-    const joinMeeting = (e) => {
+    const joinMeeting = async (e) => {
         e.preventDefault();
-        if (roomId.trim()) {
-            navigate(`/board/${roomId}`);
+        const code = roomId.trim().toUpperCase();
+
+        if (!code) return;
+
+        // Validation - ensure either standard UUID or EDU-XXXX-XXXX format
+        // (to remain backwards compatible with old boards while strictly checking new ones)
+        const isEduPattern = /^EDU-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code);
+        const isUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+
+        if (!isEduPattern && !isUUIDPattern) {
+            alert('Invalid room code format. Expected format: EDU-XXXX-XXXX');
+            return;
+        }
+
+        try {
+            const response = await api.get(`/api/boards/${code}`);
+            if (response.data) {
+                navigate(`/board/${code}`);
+            } else {
+                alert('Room code is invalid or room no longer exists.');
+            }
+        } catch (err) {
+            alert('Room code is invalid or room no longer exists.');
         }
     };
 

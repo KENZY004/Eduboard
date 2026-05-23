@@ -40,7 +40,8 @@ const Whiteboard = () => {
         console.error('Error parsing user from localStorage:', error);
         user = null;
     }
-    const isStudent = user?.role === 'student';
+    const [isHost, setIsHost] = useState(false);
+    const isStudent = !isHost;
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('#ffffff');
@@ -60,6 +61,10 @@ const Whiteboard = () => {
     const [allowedStudents, setAllowedStudents] = useState([]); // Students with permission
     const [hasEditPermission, setHasEditPermission] = useState(false); // Current student's permission
     const [showStudentPanel, setShowStudentPanel] = useState(false); // Panel visibility
+    
+    // Waiting room state
+    const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
+    const [waitingStudents, setWaitingStudents] = useState([]);
 
     const [currentElement, setCurrentElement] = useState(null);
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
@@ -95,24 +100,15 @@ const Whiteboard = () => {
             try {
                 const response = await api.get(`/api/boards/${roomId}`);
                 if (!response.data) {
-                    // Board doesn't exist, clear everything
-                    setElements([]);
-                    setHistory([]);
-                    setRedoStack([]);
+                    alert('This board does not exist or has been deleted');
+                    navigate('/dashboard', { replace: true });
                 }
             } catch (error) {
                 if (error.response?.status === 404) {
                     // Board was deleted, clear everything
                     console.log('[BOARD-CHECK] Board was deleted (404), clearing state');
-                    setElements([]);
-                    setHistory([]);
-                    setRedoStack([]);
-
-                    // Clear canvas
-                    if (canvasRef.current) {
-                        const ctx = canvasRef.current.getContext('2d');
-                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                    }
+                    alert('This board does not exist or has been deleted');
+                    navigate('/dashboard', { replace: true });
                 }
             }
         };
@@ -144,6 +140,32 @@ const Whiteboard = () => {
             if (window.remoteStrokes && element.userId) {
                 delete window.remoteStrokes[element.userId];
             }
+        });
+
+        // Waiting Room Listeners
+        socket.on('waiting-for-approval', () => {
+            setIsWaitingForApproval(true);
+        });
+
+        socket.on('participant-waiting', (student) => {
+            if (isHost) {
+                setWaitingStudents(prev => [...prev.filter(s => s.socketId !== student.socketId), student]);
+            }
+        });
+
+        socket.on('waiting-participants-list', (students) => {
+            if (isHost) {
+                setWaitingStudents(students);
+            }
+        });
+
+        socket.on('join-accepted', () => {
+            setIsWaitingForApproval(false);
+        });
+
+        socket.on('join-declined', () => {
+            alert('Your request to join the board was declined by the teacher.');
+            navigate('/dashboard', { replace: true });
         });
 
         // Real-time stroke updates (while drawing)
@@ -187,7 +209,9 @@ const Whiteboard = () => {
         socket.on('load-board', async (boardData) => {
             // Handle both old format (array) and new format (object)
             const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
-            const allowedStudentsList = boardData.allowedStudents || [];
+            const allowedStudentsList = boardData.allowedParticipants || [];
+            const isCurrentUserHost = user?.id === boardData.hostId;
+            setIsHost(isCurrentUserHost);
 
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
@@ -198,7 +222,7 @@ const Whiteboard = () => {
             setAllowedStudents(allowedStudentsList);
 
             // Check if current student has permission
-            if (user?.role === 'student') {
+            if (!isCurrentUserHost) {
                 const hasPermission = allowedStudentsList.some(s => s._id === user.id);
                 setHasEditPermission(hasPermission);
 
@@ -207,7 +231,7 @@ const Whiteboard = () => {
                     await api.post('/api/boards/save', {
                         roomId: roomId,
                         boardName: boardData.boardName || 'Untitled Board',
-                        teacherName: boardData.teacherName || 'Unknown Teacher',
+                        teacherName: boardData.hostName || 'Unknown Host',
                         elements: loadedElements
                     });
                 } catch (err) {
@@ -257,14 +281,14 @@ const Whiteboard = () => {
 
         // Student editing permission changed (for individual students)
         socket.on('editing-permission-changed', (hasPermission) => {
-            if (user?.role === 'student') {
+            if (!isHost) {
                 setHasEditPermission(hasPermission);
             }
         });
 
         // Theme synchronization (students follow teacher's theme)
         socket.on('theme-changed', (isDark) => {
-            if (user?.role === 'student') {
+            if (!isHost) {
                 setDarkMode(isDark);
             } else {
                 console.log('[THEME-SYNC] Ignoring theme change (not a student)');
@@ -322,23 +346,6 @@ const Whiteboard = () => {
             });
         });
 
-        // Draw element (receive new elements from other users)
-        socket.on('draw-element', (element) => {
-            setElements(prev => {
-                // Check if element already exists (by ID)
-                const existingIndex = prev.findIndex(el => el.id === element.id);
-                if (existingIndex !== -1) {
-                    // Update existing element
-                    const updated = [...prev];
-                    updated[existingIndex] = element;
-                    return updated;
-                } else {
-                    // Add new element
-                    return [...prev, element];
-                }
-            });
-        });
-
         return () => {
             socket.off('draw-element');
             socket.off('drawing-stroke');
@@ -352,6 +359,11 @@ const Whiteboard = () => {
             socket.off('delete-element');
             socket.off('update-element');
             socket.off('sync-state');
+            socket.off('waiting-for-approval');
+            socket.off('participant-waiting');
+            socket.off('waiting-participants-list');
+            socket.off('join-accepted');
+            socket.off('join-declined');
         };
     }, [socket]);
 
@@ -819,7 +831,7 @@ const Whiteboard = () => {
         updateElement(index, newProps);
 
         // Ensure students receive the final state for sticky notes
-        if (editingElement.type === 'sticky' && socket && user?.role === 'teacher') {
+        if (editingElement.type === 'sticky' && socket && isHost) {
             socket.emit('update-element', {
                 roomId,
                 elementId: elements[index].id,
@@ -827,7 +839,7 @@ const Whiteboard = () => {
             });
         }
 
-        if (user?.role === 'teacher') {
+        if (isHost) {
             setHistory(prev => [...prev, {
                 type: 'UPDATE',
                 id: elements[index].id,
@@ -932,7 +944,7 @@ const Whiteboard = () => {
 
     const startDrawing = (e) => {
         // Check if user can edit (teacher always can, student needs permission)
-        const canEdit = user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission);
+        const canEdit = isHost || (!isHost && hasEditPermission);
         if (!canEdit) return;
 
         // Spacebar Panning Logic
@@ -1073,7 +1085,7 @@ const Whiteboard = () => {
             };
 
             setElements(prev => [...prev, newElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
 
@@ -1275,7 +1287,7 @@ const Whiteboard = () => {
                 // But for this specific task (Optimizing DRAWING), we focus on strokes.
                 // Optimization for drag/resize: Leave as is (React state) for now unless requested.
 
-                if (user?.role === 'teacher') {
+                if (isHost) {
                     setHistory(prev => [...prev, {
                         type: 'UPDATE',
                         id: finalElement.id,
@@ -1301,7 +1313,7 @@ const Whiteboard = () => {
         if (currentStrokeRef.current) {
             const newElement = currentStrokeRef.current;
             setElements(prev => [...prev, newElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
 
@@ -1322,7 +1334,7 @@ const Whiteboard = () => {
             }
 
             setElements(prev => [...prev, currentElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
             }
             if (socket) {
@@ -1366,7 +1378,7 @@ const Whiteboard = () => {
         const action = newRedoStack.pop();
         setRedoStack(newRedoStack);
 
-        if (user?.role === 'teacher') {
+        if (isHost) {
             setHistory(prev => [...prev, action]);
         }
 
@@ -1374,7 +1386,7 @@ const Whiteboard = () => {
             setElements(prev => {
                 const newElements = [...prev, action.element];
                 // Sync full state to students after redo to maintain order
-                if (socket && user?.role === 'teacher') {
+                if (socket && isHost) {
                     socket.emit('sync-state', { roomId, elements: newElements });
                 }
                 return newElements;
@@ -1387,7 +1399,7 @@ const Whiteboard = () => {
                         idx === targetIndex ? { ...el, ...action.newProps } : el
                     );
                     // Sync full state after update
-                    if (socket && user?.role === 'teacher') {
+                    if (socket && isHost) {
                         socket.emit('sync-state', { roomId, elements: updatedElements });
                     }
                     return updatedElements;
@@ -1639,7 +1651,7 @@ const Whiteboard = () => {
             setElements(prev => prev.map((el, idx) => idx === newIndex ? previewElement : el));
 
             // Emit base64 preview to students immediately
-            if (socket && user?.role === 'teacher') {
+            if (socket && isHost) {
                 socket.emit('draw-element', { roomId, ...previewElement });
             }
 
@@ -1658,7 +1670,7 @@ const Whiteboard = () => {
                 const updatedElement = { ...newElement, dataURL: url, uploading: false };
                 setElements(prev => prev.map((el, idx) => idx === newIndex ? updatedElement : el));
 
-                if (user?.role === 'teacher') {
+                if (isHost) {
                     setHistory(prev => [...prev, { type: 'ADD', element: updatedElement }]);
                 }
                 setRedoStack([]);
@@ -1839,7 +1851,7 @@ const Whiteboard = () => {
     };
 
     return (
-        <div className={`relative w-full h-screen overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
+        <div className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
 
             <input
                 type="file"
@@ -1849,8 +1861,61 @@ const Whiteboard = () => {
                 onChange={handleImageUpload}
             />
 
-            {/* Cursors Overlay */}
-            {/* Cursors Overlay */}
+            {/* Waiting For Approval Overlay */}
+            <AnimatePresence>
+                {isWaitingForApproval && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md"
+                    >
+                        <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+                            <div className="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <h2 className="text-xl font-bold text-white mb-2">Waiting for Approval</h2>
+                            <p className="text-slate-400 text-sm">Please wait while the teacher reviews your request to join the room.</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Waiting Students Notifications (Teacher) */}
+            <div className="absolute top-20 left-4 z-[90] flex flex-col gap-2">
+                <AnimatePresence>
+                    {isHost && waitingStudents.map((student) => (
+                        <motion.div
+                            key={student.socketId}
+                            initial={{ x: -50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -50, opacity: 0 }}
+                            className="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-xl w-72 pointer-events-auto"
+                        >
+                            <h4 className="text-white font-medium mb-1">{student.username} wants to join</h4>
+                            <p className="text-xs text-slate-400 mb-3">Role: {student.role}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        socket.emit('accept-participant', { roomId, socketId: student.socketId, userData: student });
+                                        setWaitingStudents(prev => prev.filter(s => s.socketId !== student.socketId));
+                                    }}
+                                    className="flex-1 bg-green-500/20 text-green-400 py-1.5 rounded text-sm hover:bg-green-500/30 transition-colors"
+                                >
+                                    Admit
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        socket.emit('decline-participant', { roomId, socketId: student.socketId });
+                                        setWaitingStudents(prev => prev.filter(s => s.socketId !== student.socketId));
+                                    }}
+                                    className="flex-1 bg-red-500/20 text-red-400 py-1.5 rounded text-sm hover:bg-red-500/30 transition-colors"
+                                >
+                                    Decline
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
 
             {/* Cursors Overlay */}
             {Object.entries(cursors).map(([userId, cursor]) => (
@@ -1882,7 +1947,7 @@ const Whiteboard = () => {
                 </div>
 
                 {/* Theme Toggle - Teacher Only */}
-                {user?.role === 'teacher' && (
+                {isHost && (
                     <div className="flex items-center gap-2 pointer-events-auto">
                         <button
                             onClick={() => {
@@ -2070,7 +2135,7 @@ const Whiteboard = () => {
             )}
 
             {/* Student Management Panel for Teachers */}
-            {user?.role === 'teacher' && (
+            {isHost && (
                 <AnimatePresence>
                     {showStudentPanel && (
                         <motion.div
@@ -2124,10 +2189,10 @@ const Whiteboard = () => {
                                                     <button
                                                         onClick={() => {
                                                             if (hasPermission) {
-                                                                socket.emit('revoke-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit('revoke-participant-permission', { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => prev.filter(s => s._id !== student.userId));
                                                             } else {
-                                                                socket.emit('grant-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit('grant-participant-permission', { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => [...prev, { _id: student.userId, username: student.username }]);
                                                             }
                                                         }}
@@ -2150,7 +2215,7 @@ const Whiteboard = () => {
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('grant-student-permission', { roomId, studentId: id });
+                                            socket.emit('grant-participant-permission', { roomId, studentId: id });
                                         });
                                         const students = connectedUsers.filter(u => u.role === 'student').map(s => ({ _id: s.userId, username: s.username }));
                                         setAllowedStudents(students);
@@ -2163,7 +2228,7 @@ const Whiteboard = () => {
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('revoke-student-permission', { roomId, studentId: id });
+                                            socket.emit('revoke-participant-permission', { roomId, studentId: id });
                                         });
                                         setAllowedStudents([]);
                                     }}
@@ -2178,18 +2243,18 @@ const Whiteboard = () => {
             )}
 
             {/* Main Toolbar - Hidden for Students unless editing is enabled */}
-            {(user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission)) && (
+            {(isHost || (!isHost && hasEditPermission)) && (
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
                         {/* Undo/Redo - Teacher Only */}
-                        {user?.role === 'teacher' && (
+                        {isHost && (
                             <>
                                 <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
                                 <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
                             </>
                         )}
-                        {user?.role === 'teacher' && (
+                        {isHost && (
                             <>
                                 <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
                                 <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
