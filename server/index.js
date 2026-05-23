@@ -641,14 +641,22 @@ io.on('connection', (socket) => {
   });
 
   socket.on('clear-canvas', async (roomId) => {
-    // Broadcast to ALL users in room (including sender)
-    io.to(roomId).emit('clear-canvas');
-    // Clear DB
+    // Only the board creator (teacher) can clear the canvas
     try {
+      const board = await Board.findOne({ roomId });
+
+      if (!board) return;
+
+      if (board.createdBy.toString() !== socket.userId) {
+        return; // Reject if not the board owner
+      }
+
+      // Broadcast to ALL users in room (including sender)
+      io.to(roomId).emit('clear-canvas');
+
       await Board.findOneAndUpdate(
         { roomId },
-        { $set: { elements: [] } },
-        { upsert: true }
+        { $set: { elements: [] } }
       );
     } catch (err) {
       console.error('Error clearing board:', err);
