@@ -92,14 +92,14 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative bg-white dark:bg-slate-950 transition-colors duration-300">
 
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-white/90 dark:bg-slate-900/90 transition-colors duration-300"
             >
                 <div>
                     <motion.div
@@ -112,94 +112,94 @@ const Signup = () => {
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                                 <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
                             </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                            <span className="font-bold text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+                        <Link to="/" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                             ← Back to Home
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
                         Start your <br className="hidden sm:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Journey.</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">Journey.</span>
                     </h2>
-                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Join the platform redefining digital collaboration.</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Join the platform redefining digital collaboration.</p>
                 </div>
 
                 {error && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
-                        className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2"
+                        className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm flex items-center gap-2"
                     >
-                        <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 animate-pulse"></div>
                         {error}
                     </motion.div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5 max-w-sm">
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Username</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1">Username</label>
                         <div className="relative">
-                            <FaUser className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaUser className="absolute top-4 left-4 text-slate-400 dark:text-slate-500 group-focus-within:text-cyan-600 dark:group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type="text"
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:border-cyan-500 transition-all shadow-sm"
                                 placeholder={formData.role === 'teacher' ? 'Teacher Name' : 'Student Name'}
                                 required
                             />
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
                         <div className="relative">
-                            <FaEnvelope className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaEnvelope className="absolute top-4 left-4 text-slate-400 dark:text-slate-500 group-focus-within:text-cyan-600 dark:group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:border-cyan-500 transition-all shadow-sm"
                                 placeholder="name@example.com"
                                 required
                             />
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
                         <div className="relative">
-                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaLock className="absolute top-4 left-4 text-slate-400 dark:text-slate-500 group-focus-within:text-cyan-600 dark:group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white pl-12 pr-12 py-3.5 rounded-xl focus:outline-none focus:border-cyan-500 transition-all shadow-sm"
                                 placeholder="••••••••"
                                 maxLength={64}
                                 required
                             />
                             {showPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
+                                <FaEyeSlash className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" onClick={() => setShowPassword(false)} />
                             ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
+                                <FaEye className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" onClick={() => setShowPassword(true)} />
                             )}
                         </div>
-                        <p className="text-sm text-gray-400 mt-1.5">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 font-medium leading-relaxed">
                             Password must contain at least 8 characters with a number, uppercase letter, and special character.
                         </p>
                     </div>
 
                     {/* Role Selection */}
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 ml-1">I am a</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 ml-1">I am a</label>
                         <div className="grid grid-cols-2 gap-3">
-                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'student'
-                                ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
-                                : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all border-2 ${formData.role === 'student'
+                                ? 'bg-cyan-50 dark:bg-cyan-500/10 border-cyan-500 shadow-md shadow-cyan-500/10'
+                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}>
                                 <input
                                     type="radio"
@@ -211,12 +211,12 @@ const Signup = () => {
                                 />
                                 <div className="text-center">
                                     <div className="text-2xl mb-1">🎓</div>
-                                    <div className="font-semibold text-white">Student</div>
+                                    <div className={`font-bold text-sm ${formData.role === 'student' ? 'text-cyan-700 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-400'}`}>Student</div>
                                 </div>
                             </label>
-                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
-                                ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
-                                : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
+                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all border-2 ${formData.role === 'teacher'
+                                ? 'bg-cyan-50 dark:bg-cyan-500/10 border-cyan-500 shadow-md shadow-cyan-500/10'
+                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}>
                                 <input
                                     type="radio"
@@ -228,7 +228,7 @@ const Signup = () => {
                                 />
                                 <div className="text-center">
                                     <div className="text-2xl mb-1">👨‍🏫</div>
-                                    <div className="font-semibold text-white">Teacher</div>
+                                    <div className={`font-bold text-sm ${formData.role === 'teacher' ? 'text-cyan-700 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-400'}`}>Teacher</div>
                                 </div>
                             </label>
                         </div>
@@ -240,20 +240,20 @@ const Signup = () => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="space-y-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700"
+                            className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700"
                         >
-                            <h3 className="text-sm font-semibold text-cyan-400 flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-2">
                                 📄 Verification Documents
                             </h3>
-                            <p className="text-xs text-slate-400">Upload documents to verify your teacher status</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Upload documents to verify your teacher status</p>
 
                             {/* ID Proof */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-400 mb-2">
-                                    ID Proof <span className="text-red-400">*</span>
+                                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                    ID Proof <span className="text-red-500">*</span>
                                 </label>
-                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
-                                    <div className="text-cyan-400">📎</div>
+                                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-cyan-500 cursor-pointer transition-all shadow-sm">
+                                    <div className="text-cyan-600 dark:text-cyan-400">📎</div>
                                     <input
                                         type="file"
                                         name="id_proof"
@@ -261,19 +261,19 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
-                                        {documents.id_proof ? documents.id_proof.name : 'Choose file...'}
+                                    <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold truncate">
+                                        {documents.id_proof ? documents.id_proof.name : 'Select identification...'}
                                     </span>
                                 </label>
                             </div>
 
                             {/* Teaching Certificate */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-400 mb-2">
-                                    Teaching Certificate <span className="text-red-400">*</span>
+                                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                    Teaching Certificate <span className="text-red-500">*</span>
                                 </label>
-                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
-                                    <div className="text-cyan-400">📎</div>
+                                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-cyan-500 cursor-pointer transition-all shadow-sm">
+                                    <div className="text-cyan-600 dark:text-cyan-400">📎</div>
                                     <input
                                         type="file"
                                         name="teaching_certificate"
@@ -281,19 +281,19 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
-                                        {documents.teaching_certificate ? documents.teaching_certificate.name : 'Choose file...'}
+                                    <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold truncate">
+                                        {documents.teaching_certificate ? documents.teaching_certificate.name : 'Select certificate...'}
                                     </span>
                                 </label>
                             </div>
 
                             {/* Degree (Optional) */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-400 mb-2">
+                                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
                                     Degree (Optional)
                                 </label>
-                                <label className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-cyan-500 cursor-pointer transition-colors">
-                                    <div className="text-cyan-400">📎</div>
+                                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-cyan-500 cursor-pointer transition-all shadow-sm">
+                                    <div className="text-cyan-600 dark:text-cyan-400">📎</div>
                                     <input
                                         type="file"
                                         name="degree"
@@ -301,8 +301,8 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
-                                        {documents.degree ? documents.degree.name : 'Choose file...'}
+                                    <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold truncate">
+                                        {documents.degree ? documents.degree.name : 'Select degree...'}
                                     </span>
                                 </label>
                             </div>
@@ -320,29 +320,29 @@ const Signup = () => {
                         {loading ? (
                             <>
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Processing...
+                                <span className="font-bold tracking-widest uppercase text-xs">Authenticating...</span>
                             </>
                         ) : (
                             <>
-                                {formData.role === 'teacher' ? 'Submit for Verification' : 'Create Account'}
+                                <span className="font-bold tracking-widest uppercase text-xs">{formData.role === 'teacher' ? 'Submit for Verification' : 'Initialize Account'}</span>
                                 <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                             </>
                         )}
                     </motion.button>
                 </form>
 
-                <p className="mt-10 text-slate-500 text-center text-sm">
+                <p className="mt-10 text-slate-500 dark:text-slate-400 text-center text-sm font-medium">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-white hover:text-cyan-300 transition-colors font-medium border-b border-cyan-500/30 hover:border-cyan-500">
+                    <Link to="/login" className="text-cyan-600 dark:text-white hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors font-bold border-b border-cyan-500/30 hover:border-cyan-500">
                         Sign In
                     </Link>
                 </p>
             </motion.div>
 
             {/* Right: Animated Student Character */}
-            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-cyan-950 overflow-hidden">
+            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-50 to-cyan-100 dark:from-slate-900 dark:to-cyan-950 overflow-hidden transition-colors duration-300">
                 {/* Decorative background elements */}
-                <div className="absolute inset-0 opacity-30">
+                <div className="absolute inset-0 opacity-20 dark:opacity-30 transition-opacity">
                     <div className="absolute top-10 right-10 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 left-20 w-32 h-32 bg-blue-400 rounded-full blur-3xl"></div>
                     <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-purple-400 rounded-full blur-3xl"></div>
@@ -357,11 +357,11 @@ const Signup = () => {
                         transition={{ delay: 0.5 }}
                         className="mt-8 text-center"
                     >
-                        <h3 className="text-2xl font-bold text-white mb-3">
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
                             Start Your Learning Journey! 🚀
                         </h3>
-                        <p className="text-slate-300 text-lg">
-                            Join thousands of students collaborating and learning together
+                        <p className="text-slate-600 dark:text-slate-300 text-lg font-medium">
+                            Join thousands of educators and students collaborating together
                         </p>
                     </motion.div>
                 </div>

@@ -277,73 +277,19 @@ const LandingPage = () => {
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white overflow-hidden ">
+        <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
 
             {/* Hero Section */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <section ref={heroRef} className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
                 {/* Grid Background */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
-                {/* Animated Background Elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                <motion.div
-                    animate={{
-                        x: [0, 100, 0],
-                        y: [0, -100, 0],
-                    }}
-                    transition={{
-                        duration: 20,
-                        repeat: Infinity,
-                        ease: "linear",
-                    }}
-                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"
-                />
-                <motion.div
-                    animate={{
-                        x: [0, -100, 0],
-                        y: [0, 100, 0],
-                    }}
-                    transition={{
-                        duration: 15,
-                        repeat: Infinity,
-                        ease: "linear",
-                    }}
-                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
-                />
-                <motion.div
-                    animate={{
-                        x: [0, -50, 0],
-                        y: [0, 50, 0],
-                        scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                        duration: 18,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                    className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl"
-                />
-                <motion.div
-                    animate={{
-                        x: [0, 80, 0],
-                        y: [0, -80, 0],
-                        scale: [1, 0.8, 1],
-                    }}
-                    transition={{
-                        duration: 22,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                    className="absolute top-10 right-10 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl"
-                />
-                </div>
-
-                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center -mt-24">
+                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center mt-20">
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent leading-tight"
+                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-indigo-600 to-purple-600 dark:from-white dark:via-indigo-200 dark:purple-200 bg-clip-text text-transparent leading-tight"
                     >
                         Collaborate. Create. Learn.
                     </motion.h1>
@@ -351,7 +297,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto"
+                        className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-8 max-w-3xl mx-auto"
                     >
                         EduBoard is the ultimate collaborative whiteboard
                         platform for modern education. Bring your classroom to
@@ -372,7 +318,7 @@ const LandingPage = () => {
                         </Link>
                         <Link
                             to="/features"
-                            className="px-8 py-4 text-lg font-semibold text-white bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
+                            className="px-8 py-4 text-lg font-semibold text-slate-700 dark:text-white bg-slate-100 dark:bg-white/10 backdrop-blur-sm rounded-xl hover:bg-slate-200 dark:hover:bg-white/20 transition-all border border-slate-200 dark:border-white/20"
                         >
                             Explore Features
                         </Link>
@@ -385,10 +331,10 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.6 }}
                         >
-                            <div className="text-4xl font-bold text-indigo-400">
+                            <div className="text-4xl font-bold text-indigo-500 dark:text-indigo-400">
                                 ∞
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                                 Infinite Canvas
                             </div>
                         </motion.div>
@@ -397,10 +343,10 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.7 }}
                         >
-                            <div className="text-4xl font-bold text-purple-400">
+                            <div className="text-4xl font-bold text-purple-500 dark:text-purple-400">
                                 ⚡
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                                 Real-time Sync
                             </div>
                         </motion.div>
@@ -409,10 +355,10 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.8 }}
                         >
-                            <div className="text-4xl font-bold text-pink-400">
+                            <div className="text-4xl font-bold text-pink-500 dark:text-pink-400">
                                 🎨
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                                 Creative Tools
                             </div>
                         </motion.div>
@@ -429,10 +375,10 @@ const LandingPage = () => {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 dark:text-white">
                             Powerful Features
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Everything you need for collaborative learning
                         </p>
                     </motion.div>
@@ -446,15 +392,17 @@ const LandingPage = () => {
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ y: -10, scale: 1.02 }}
-                                className="surface-card p-8 rounded-2xl group"
+                                className="surface-card p-8 rounded-2xl group shadow-sm hover:shadow-xl transition-all"
                             >
-                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    {feature.icon}
+                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20">
+                                    <div className="text-white">
+                                        {feature.icon}
+                                    </div>
                                 </div>
-                                <h3 className="text-xl font-semibold mb-3">
+                                <h3 className="text-xl font-semibold mb-3 text-slate-900 dark:text-white">
                                     {feature.title}
                                 </h3>
-                                <p className="text-slate-400">
+                                <p className="text-slate-600 dark:text-slate-400">
                                     {feature.description}
                                 </p>
                             </motion.div>
@@ -464,7 +412,7 @@ const LandingPage = () => {
             </section>
 
             {/* How It Works */}
-            <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
+            <section className="py-24 px-6 lg:px-8 bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -472,10 +420,10 @@ const LandingPage = () => {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 dark:text-white">
                             How It Works
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Get started in three simple steps
                         </p>
                     </motion.div>
@@ -491,22 +439,22 @@ const LandingPage = () => {
                                 className="text-center"
                             >
                                 <div className="mb-8 flex flex-col items-center ">
-                                    <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                                        <span className="text-2xl font-bold text-indigo-300">
+                                    <div className="w-16 h-16 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full flex items-center justify-center">
+                                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-300">
                                             {step.number}
                                         </span>
                                     </div>
-                                    <div className="w-0.5 h-8 bg-indigo-500/30 rounded-full "></div>
+                                    <div className="w-0.5 h-8 bg-indigo-500/20 dark:bg-indigo-500/30 rounded-full "></div>
 
-                                    <div className="w-24 h-24 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white transform hover:scale-110 transition-transform ">
+                                    <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white transform hover:scale-110 transition-transform shadow-xl shadow-indigo-500/20">
                                         {step.icon}
                                     </div>
                                 </div>
 
-                                <h3 className="text-2xl font-semibold mb-3">
+                                <h3 className="text-2xl font-semibold mb-3 text-slate-900 dark:text-white">
                                     {step.title}
                                 </h3>
-                                <p className="text-slate-400 max-w-xs mx-auto">
+                                <p className="text-slate-600 dark:text-slate-400 max-w-xs mx-auto">
                                     {step.description}
                                 </p>
                             </motion.div>
@@ -524,10 +472,10 @@ const LandingPage = () => {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 dark:text-white">
                             Built for Everyone
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Tailored experiences for teachers and students
                         </p>
                     </motion.div>
@@ -543,10 +491,10 @@ const LandingPage = () => {
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.1 }}
-                                className="surface-card p-10 rounded-2xl"
+                                className="surface-card p-10 rounded-2xl shadow-sm hover:shadow-xl transition-all"
                             >
                                 <div
-                                    className={`inline-block px-6 py-2 bg-gradient-to-r ${useCase.gradient} rounded-full text-white font-semibold mb-6`}
+                                    className={`inline-block px-6 py-2 bg-gradient-to-r ${useCase.gradient} rounded-full text-white font-semibold mb-6 shadow-lg shadow-indigo-500/20`}
                                 >
                                     {useCase.role}
                                 </div>
@@ -557,7 +505,7 @@ const LandingPage = () => {
                                             className="flex items-start"
                                         >
                                             <svg
-                                                className="w-6 h-6 text-indigo-400 mr-3 flex-shrink-0 mt-0.5"
+                                                className="w-6 h-6 text-indigo-500 dark:text-indigo-400 mr-3 flex-shrink-0 mt-0.5"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -569,7 +517,7 @@ const LandingPage = () => {
                                                     d="M5 13l4 4L19 7"
                                                 />
                                             </svg>
-                                            <span className="text-slate-300">
+                                            <span className="text-slate-600 dark:text-slate-300">
                                                 {benefit}
                                             </span>
                                         </li>
@@ -582,13 +530,13 @@ const LandingPage = () => {
             </section>
 
             {/* Final CTA */}
-            <section className="py-24 px-6 lg:px-8">
+            <section className="py-24 px-6 lg:px-8 bg-slate-50/30 dark:bg-transparent">
                 <div className="max-w-4xl mx-auto text-center scroll-animate opacity-0">
-                    <div className="surface-card p-12 rounded-3xl">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                    <div className="surface-card p-12 rounded-3xl shadow-xl">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900 dark:text-white">
                             Ready to Transform Your Classroom?
                         </h2>
-                        <p className="text-xl text-slate-300 mb-8">
+                        <p className="text-xl text-slate-600 dark:text-slate-300 mb-8">
                             Join thousands of educators and students already
                             using EduBoard for collaborative learning.
                         </p>

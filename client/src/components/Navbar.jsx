@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -47,10 +48,10 @@ const Navbar = () => {
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
                 isMobileMenuOpen
-                    ? 'bottom-0 bg-slate-950'
+                    ? 'bottom-0 bg-white dark:bg-slate-950'
                     : (isScrolled
-                        ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
-                        : 'bg-slate-950/70 backdrop-blur-md '
+                        ? 'bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-lg overflow-hidden'
+                        : 'bg-transparent'
                       )
                 }`}
         >
@@ -67,7 +68,7 @@ const Navbar = () => {
                                 <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
                             </svg>
                         </div>
-                        <span className="text-xl font-bold text-white">EduBoard</span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">EduBoard</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -77,8 +78,8 @@ const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                    ? 'text-white'
-                                    : 'text-slate-300 hover:text-white'
+                                    ? 'text-indigo-600 dark:text-white'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white'
                                     }`}
                             >
                                 {link.name}
@@ -86,95 +87,101 @@ const Navbar = () => {
                         ))}
                     </div>
 
-                    {/* Auth Buttons */}
-                    <div className="hidden md:flex items-center space-x-4">
-                        {token ? (
-                            <>
-                                <Link
-                                    to="/dashboard"
-                                    className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors"
-                                >
-                                    Dashboard
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-                                >
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/login"
-                                    className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    to="/signup"
-                                    className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30"
-                                >
-                                    Sign Up
-                                </Link>
-                            </>
-                        )}
+                    {/* Auth & Theme Toggle */}
+                    <div className="hidden md:flex items-center space-x-6">
+                        <ThemeToggle />
+                        <div className="flex items-center space-x-4">
+                            {token ? (
+                                <>
+                                    <Link
+                                        to="/dashboard"
+                                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/login"
+                                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                                    >
+                                        Login
+                                    </Link>
+                                    <Link
+                                        to="/signup"
+                                        className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30"
+                                    >
+                                        Sign Up
+                                    </Link>
+                                </>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="md:hidden p-2 text-white hover:text-indigo-300 transition-colors"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    {/* Mobile Controls */}
+                    <div className="flex items-center space-x-4 md:hidden">
+                        <ThemeToggle />
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="p-2 text-slate-600 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
                         >
-                            {isMobileMenuOpen ? (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            ) : (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                            )}
-                        </svg>
-                    </button>
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                {isMobileMenuOpen ? (
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                ) : (
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M4 6h16M4 12h16M4 18h16"
+                                    />
+                                )}
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden fixed inset-0 top-16 z-40 bg-slate-950 px-6 py-4 border-t border-white/10 overflow-y-auto">
+                    <div className="md:hidden fixed inset-0 top-14 z-40 bg-white dark:bg-slate-950 px-6 py-4 border-t border-slate-200 dark:border-white/10 overflow-y-auto">
                         <div className="flex flex-col space-y-4">
                             {navLinks.map((link) => (
                                 <Link
                                     key={link.path}
                                     to={link.path}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                        ? 'text-white'
-                                        : 'text-slate-300 hover:text-white'
+                                    className={`text-base font-medium transition-colors ${location.pathname === link.path
+                                        ? 'text-indigo-600 dark:text-white'
+                                        : 'text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white'
                                         }`}
                                 >
                                     {link.name}
                                 </Link>
                             ))}
-                            <div className="pt-4 border-t border-white/10 flex flex-col space-y-3">
+                            <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col space-y-3">
                                 {token ? (
                                     <>
                                         <Link
                                             to="/dashboard"
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600/20 rounded-lg hover:bg-indigo-600/30 transition-colors text-center"
+                                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors text-center"
                                         >
                                             Dashboard
                                         </Link>
@@ -183,7 +190,7 @@ const Navbar = () => {
                                                 handleLogout();
                                                 setIsMobileMenuOpen(false);
                                             }}
-                                            className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors text-center"
+                                            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors text-center"
                                         >
                                             Logout
                                         </button>
@@ -193,7 +200,7 @@ const Navbar = () => {
                                         <Link
                                             to="/login"
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors text-center"
+                                            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors text-center"
                                         >
                                             Login
                                         </Link>

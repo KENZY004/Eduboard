@@ -46,7 +46,7 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={handleClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4"
                     >
                         {/* Modal */}
                         <motion.div
@@ -54,27 +54,27 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="surface-card rounded-3xl p-8 max-w-md w-full relative"
+                            className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 max-w-md w-full relative shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors duration-300"
                         >
                             {/* Close Button */}
                             <button
                                 onClick={handleClose}
-                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                                className="absolute top-8 right-8 p-3 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white transition-all duration-200 group"
                             >
-                                <FaTimes />
+                                <FaTimes className="group-hover:rotate-90 transition-transform duration-300" />
                             </button>
 
                             {/* Header */}
-                            <div className="mb-6">
-                                <h2 className="text-3xl font-bold text-white mb-2">Create New Board</h2>
-                                <p className="text-slate-400">Give your whiteboard a name to save it</p>
+                            <div className="mb-8">
+                                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2.5 tracking-tight">Create New Board</h2>
+                                <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">Give your whiteboard a name to save it to your workspace</p>
                             </div>
 
                             {/* Form */}
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                                        Board Name
+                            <form onSubmit={handleSubmit} className="space-y-8">
+                                <div className="space-y-3">
+                                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.25em] ml-1">
+                                        Identity
                                     </label>
                                     <input
                                         type="text"
@@ -83,29 +83,36 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                                             setBoardName(e.target.value);
                                             setError('');
                                         }}
-                                        placeholder="e.g., Physics - Chapter 5"
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                        placeholder="e.g., Geometry Fundamentals"
+                                        className="w-full bg-slate-50 dark:bg-slate-950/50 border-2 border-slate-100 dark:border-slate-800 rounded-[1.25rem] px-5 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-lg shadow-inner"
                                         autoFocus
                                     />
                                     {error && (
-                                        <p className="text-red-400 text-sm mt-2 ml-1">{error}</p>
+                                        <motion.p 
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="text-red-500 font-bold text-xs mt-2 ml-2 flex items-center gap-2"
+                                        >
+                                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                            {error}
+                                        </motion.p>
                                     )}
                                 </div>
 
                                 {/* Buttons */}
-                                <div className="flex gap-3">
+                                <div className="flex gap-4 pt-2">
                                     <button
                                         type="button"
                                         onClick={handleClose}
-                                        className="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-3 rounded-xl border border-white/10 transition-all"
+                                        className="flex-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold py-4 rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 uppercase tracking-widest text-[10px]"
                                     >
-                                        Cancel
+                                        Dismiss
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all"
+                                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-[10px]"
                                     >
-                                        Create <FaRocket className="text-sm" />
+                                        Launch <FaRocket className="text-xs" />
                                     </button>
                                 </div>
                             </form>

@@ -56,13 +56,13 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative bg-white dark:bg-slate-950 transition-colors duration-300">
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-white/90 dark:bg-slate-900/90 transition-colors duration-300"
             >
                 <div>
                     <motion.div
@@ -75,14 +75,14 @@ const ResetPassword = () => {
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                                 <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
                             </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                            <span className="font-bold text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">EduBoard</span>
                         </div>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
                         Set New Password
                     </h2>
-                    <p className="text-slate-400 text-sm sm:text-base mb-6 sm:mb-8">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mb-6 sm:mb-8 transition-colors">
                         Enter your new password below to regain access to your account.
                     </p>
                 </div>
@@ -91,51 +91,51 @@ const ResetPassword = () => {
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
-                        className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2"
+                        className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm flex items-center gap-2"
                     >
-                        <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 animate-pulse"></div>
                         {error}
                     </motion.div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">New Password</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1 transition-colors">New Password</label>
                         <div className="relative">
-                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                            <FaLock className="absolute top-4 left-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="newPassword"
                                 value={formData.newPassword}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white pl-12 pr-12 py-3.5 rounded-xl focus:outline-none focus:border-indigo-500 transition-all shadow-sm"
                                 placeholder="••••••••"
                                 required
                             />
                             {showPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
+                                <FaEyeSlash className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" onClick={() => setShowPassword(false)} />
                             ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
+                                <FaEye className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" onClick={() => setShowPassword(true)} />
                             )}
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Confirm Password</label>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1 transition-colors">Confirm Password</label>
                         <div className="relative">
-                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                            <FaLock className="absolute top-4 left-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 name="confirmPassword"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white pl-12 pr-12 py-3.5 rounded-xl focus:outline-none focus:border-indigo-500 transition-all shadow-sm"
                                 placeholder="••••••••"
                                 required
                             />
                             {showConfirmPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowConfirmPassword(false)} />
+                                <FaEyeSlash className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" onClick={() => setShowConfirmPassword(false)} />
                             ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowConfirmPassword(true)} />
+                                <FaEye className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" onClick={() => setShowConfirmPassword(true)} />
                             )}
                         </div>
                     </div>
@@ -145,17 +145,17 @@ const ResetPassword = () => {
                         whileTap={{ scale: 0.98 }}
                         type="submit"
                         disabled={isLoading}
-                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-3 group transition-all mt-4 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        {isLoading ? 'Resetting...' : 'Reset Password'}
+                        <span className="tracking-widest uppercase text-xs">{isLoading ? 'Resetting...' : 'Reset Password'}</span>
                         {!isLoading && <FaArrowRight className="group-hover:translate-x-1 transition-transform" />}
                     </motion.button>
                 </form>
             </motion.div>
 
             {/* Right: Animated Teacher Character */}
-            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950 overflow-hidden">
-                <div className="absolute inset-0 opacity-30">
+            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-100 dark:from-slate-900 dark:to-indigo-950 overflow-hidden transition-colors duration-300">
+                <div className="absolute inset-0 opacity-20 dark:opacity-30 transition-opacity">
                     <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-400 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-20 w-32 h-32 bg-purple-400 rounded-full blur-3xl"></div>
                     <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>

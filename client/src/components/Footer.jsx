@@ -71,19 +71,19 @@ const Footer = () => {
     ];
 
     return (
-        <footer className="relative bg-slate-950/50 backdrop-blur-xl border-t border-white/10 mt-20">
+        <footer className="relative bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 mt-20 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
                 {/* Main Footer Content */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
                     {Object.entries(footerLinks).map(([category, links]) => (
                         <div key={category}>
-                            <h3 className="text-sm font-semibold text-white mb-4">{category}</h3>
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">{category}</h3>
                             <ul className="space-y-3">
                                 {links.map((link) => (
                                     <li key={link.name}>
                                         <Link
                                             to={link.path}
-                                            className="text-sm text-slate-400 hover:text-white transition-colors"
+                                            className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white transition-colors"
                                         >
                                             {link.name}
                                         </Link>
@@ -95,10 +95,10 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <div className="pt-8 border-t border-slate-200 dark:border-white/10 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
                     {/* Logo and Copyright */}
                     <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
                             <svg
                                 className="w-4 h-4 text-white"
                                 fill="currentColor"
@@ -107,7 +107,7 @@ const Footer = () => {
                                 <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
                             </svg>
                         </div>
-                        <span className="text-sm text-slate-400">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
                             © {currentYear} EduBoard. All rights reserved.
                         </span>
                     </div>
@@ -120,7 +120,7 @@ const Footer = () => {
                                 href={social.url}
                                 target={social.external ? '_blank' : undefined}
                                 rel={social.external ? 'noreferrer' : undefined}
-                                className="text-slate-400 hover:text-white transition-colors"
+                                className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white transition-colors"
                                 aria-label={social.name}
                                 title={social.name}
                             >

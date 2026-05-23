@@ -107,7 +107,7 @@ const FeaturesPage = () => {
     ];
 
     return (
-        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
+        <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
 
             {/* Hero Section with Animated Background */}
             <section className="relative pt-48 pb-20 px-6 overflow-hidden">
@@ -119,8 +119,7 @@ const FeaturesPage = () => {
                             y: [0, -100, 0],
                         }}
                         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                        className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl ${theme === 'dark' ? 'bg-indigo-500/20' : 'bg-indigo-300/30'
-                            }`}
+                        className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl bg-indigo-300/30 dark:bg-indigo-500/20"
                     />
                     <motion.div
                         animate={{
@@ -128,8 +127,7 @@ const FeaturesPage = () => {
                             y: [0, 100, 0],
                         }}
                         transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                        className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl ${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-300/30'
-                            }`}
+                        className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl bg-purple-300/30 dark:bg-purple-500/20"
                     />
                 </div>
 
@@ -140,11 +138,11 @@ const FeaturesPage = () => {
                         transition={{ duration: 0.6 }}
                         className="text-6xl md:text-7xl font-extrabold mb-6"
                     >
-                        <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
                             Powerful Features
                         </span>
                         <br />
-                        <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                        <span className="text-slate-900 dark:text-white">
                             Built for Education
                         </span>
                     </motion.h1>
@@ -152,7 +150,7 @@ const FeaturesPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                        className="text-xl max-w-3xl mx-auto text-slate-600 dark:text-slate-400"
                     >
                         Everything you need for interactive, collaborative learning in one powerful platform
                     </motion.p>
@@ -162,19 +160,18 @@ const FeaturesPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.4 }}
-                        className="grid grid-cols-3 gap-8 max-w-3xl mx-auto mt-16"
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto mt-16"
                     >
                         {[
                             { label: "Active Users", value: stats.users.toLocaleString() + "+" },
                             { label: "Boards Created", value: stats.boards.toLocaleString() + "+" },
                             { label: "Drawings Made", value: stats.drawings.toLocaleString() + "+" },
                         ].map((stat, i) => (
-                            <div key={i} className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-900/50 border border-gray-800' : 'bg-gray-50 border border-gray-200'
-                                }`}>
-                                <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                            <div key={i} className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/50">
+                                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                                     {stat.value}
                                 </div>
-                                <div className={`text-sm mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <div className="text-sm mt-2 text-slate-600 dark:text-slate-400 font-medium">
                                     {stat.label}
                                 </div>
                             </div>
@@ -190,12 +187,12 @@ const FeaturesPage = () => {
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-4xl md:text-5xl font-bold text-center mb-16"
+                        className="text-4xl md:text-5xl font-bold text-center mb-16 text-slate-900 dark:text-white"
                     >
                         Everything You Need
                     </motion.h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {bentoFeatures.map((feature, i) => (
                             <motion.div
                                 key={i}
@@ -208,16 +205,16 @@ const FeaturesPage = () => {
                                     relative overflow-hidden rounded-3xl p-8
                                     ${feature.size === 'large' ? 'md:col-span-2 md:row-span-2' : ''}
                                     ${feature.size === 'medium' ? 'md:col-span-2' : ''}
-                                    ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-gray-50 border border-gray-200'}
-                                    cursor-pointer transition-all duration-300
+                                    bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800
+                                    cursor-pointer transition-all duration-300 shadow-sm hover:shadow-xl hover:border-indigo-500/30
                                 `}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 hover:opacity-10 transition-opacity duration-300`} />
 
                                 <div className="relative z-10">
-                                    <div className="text-5xl mb-4">{feature.icon}</div>
-                                    <h3 className="text-2xl font-bold mb-2">{feature.title}</h3>
-                                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                                    <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform">{feature.icon}</div>
+                                    <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">{feature.title}</h3>
+                                    <p className="text-slate-600 dark:text-slate-400">
                                         {feature.description}
                                     </p>
                                 </div>
@@ -228,7 +225,7 @@ const FeaturesPage = () => {
             </section>
 
             {/* Feature Categories with Icons */}
-            <section className={`py-24 px-6 ${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+            <section className="py-24 px-6 bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-3 gap-12">
                         {features.map((category, i) => (
@@ -239,7 +236,7 @@ const FeaturesPage = () => {
                                 viewport={{ once: true }}
                                 transition={{ delay: i * 0.2 }}
                             >
-                                <h3 className="text-2xl font-bold mb-8 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                                <h3 className="text-2xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                                     {category.category}
                                 </h3>
                                 <div className="space-y-6">
@@ -247,12 +244,12 @@ const FeaturesPage = () => {
                                         <motion.div
                                             key={j}
                                             whileHover={{ x: 10 }}
-                                            className="flex items-start gap-4"
+                                            className="flex items-start gap-4 group"
                                         >
-                                            <div className="text-3xl flex-shrink-0">{item.icon}</div>
+                                            <div className="text-3xl flex-shrink-0 transform group-hover:scale-110 transition-transform">{item.icon}</div>
                                             <div>
-                                                <h4 className="font-semibold mb-1">{item.title}</h4>
-                                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                <h4 className="font-semibold mb-1 text-slate-900 dark:text-white">{item.title}</h4>
+                                                <p className="text-sm text-slate-600 dark:text-slate-400">
                                                     {item.desc}
                                                 </p>
                                             </div>
@@ -272,13 +269,12 @@ const FeaturesPage = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className={`p-12 rounded-3xl ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-gray-700' : 'bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200'
-                            }`}
+                        className="p-12 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 border-2 border-slate-200 dark:border-slate-800 shadow-xl transition-all"
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900 dark:text-white">
                             Ready to Transform Your Classroom?
                         </h2>
-                        <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <p className="text-xl mb-8 text-slate-600 dark:text-slate-300">
                             Join thousands of educators using EduBoard
                         </p>
                         <Link
