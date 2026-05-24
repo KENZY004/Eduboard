@@ -65,9 +65,9 @@ const VerificationPending = () => {
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-2 mb-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                            <BsLightningChargeFill className="text-white text-2xl" />
+                            <BsLightningChargeFill className="text-[var(--text-primary)] text-2xl" />
                         </div>
-                        <span className="font-bold text-3xl text-white tracking-tight">EduBoard</span>
+                        <span className="font-bold text-3xl text-[var(--text-primary)] tracking-tight">EduBoard</span>
                     </div>
                 </div>
 
@@ -83,13 +83,13 @@ const VerificationPending = () => {
                                 >
                                     <FaClock className="text-6xl text-yellow-400" />
                                 </motion.div>
-                                <h1 className="text-3xl font-bold text-white mb-2">Verification Pending</h1>
+                                <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Verification Pending</h1>
                                 <p className="text-slate-400">Your teacher account is under review</p>
                             </div>
 
                             <div className="bg-slate-900/50 rounded-xl p-6 mb-6">
-                                <h2 className="text-lg font-semibold text-white mb-4">What's Next?</h2>
-                                <ul className="space-y-3 text-slate-300">
+                                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">What's Next?</h2>
+                                <ul className="space-y-3 text-[var(--text-secondary)]">
                                     <li className="flex items-start gap-3">
                                         <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                                             <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
@@ -129,14 +129,14 @@ const VerificationPending = () => {
                         <>
                             <div className="text-center mb-6">
                                 <FaTimesCircle className="text-6xl text-red-400 mx-auto mb-4" />
-                                <h1 className="text-3xl font-bold text-white mb-2">Application Not Approved</h1>
+                                <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Application Not Approved</h1>
                                 <p className="text-slate-400">Your teacher verification was not approved</p>
                             </div>
 
                             {verificationStatus.rejectionReason && (
                                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
                                     <h3 className="font-semibold text-red-400 mb-2">Reason:</h3>
-                                    <p className="text-slate-300">{verificationStatus.rejectionReason}</p>
+                                    <p className="text-[var(--text-secondary)]">{verificationStatus.rejectionReason}</p>
                                 </div>
                             )}
 
@@ -149,7 +149,7 @@ const VerificationPending = () => {
                     {/* Logout Button */}
                     <button
                         onClick={handleLogout}
-                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-colors"
+                        className="w-full bg-slate-700 hover:bg-slate-600 text-[var(--text-primary)] font-semibold py-3 rounded-xl transition-colors"
                     >
                         Logout
                     </button>

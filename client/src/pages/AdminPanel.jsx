@@ -119,7 +119,7 @@ const AdminPanel = () => {
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 border-b border-white/5 pb-4 sm:pb-6 gap-4 sm:gap-0">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
                         <BsLightningChargeFill className="text-indigo-500 text-xl sm:text-2xl" /> Admin Panel <span className="text-xs px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 font-mono font-normal tracking-wide">PRO</span>
                     </h1>
                     <p className="text-slate-400 font-light text-sm sm:text-base">Teacher Verification Management</p>
@@ -127,7 +127,7 @@ const AdminPanel = () => {
                 <div className="flex items-center gap-3 sm:gap-6 self-end sm:self-auto">
                     <button
                         onClick={fetchTeachers}
-                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-white/10"
                         title="Refresh"
                     >
                         <FaSync />
@@ -138,7 +138,7 @@ const AdminPanel = () => {
                             localStorage.removeItem('user');
                             window.location.href = '/login';
                         }}
-                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-white/10"
                     >
                         <FaSignOutAlt />
                     </button>
@@ -156,7 +156,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-yellow-400 text-sm font-semibold mb-1">Pending Review</p>
-                            <p className="text-4xl font-bold text-white">{pendingTeachers.length}</p>
+                            <p className="text-4xl font-bold text-[var(--text-primary)]">{pendingTeachers.length}</p>
                         </div>
                         <div className="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
                             <FaClock className="text-yellow-400 text-2xl" />
@@ -173,7 +173,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-green-400 text-sm font-semibold mb-1">Total Teachers</p>
-                            <p className="text-4xl font-bold text-white">{allTeachers.length}</p>
+                            <p className="text-4xl font-bold text-[var(--text-primary)]">{allTeachers.length}</p>
                         </div>
                         <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center">
                             <FaUser className="text-green-400 text-2xl" />
@@ -190,7 +190,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-indigo-400 text-sm font-semibold mb-1">Approved</p>
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold text-[var(--text-primary)]">
                                 {allTeachers.filter(t => t.verificationStatus === 'approved').length}
                             </p>
                         </div>
@@ -208,8 +208,8 @@ const AdminPanel = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveTab('pending')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'pending'
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        ? 'bg-indigo-600 text-[var(--text-primary)] shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
+                        : 'bg-slate-800/50 text-slate-400 hover:text-[var(--text-primary)] hover:bg-slate-700/50 border border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -222,8 +222,8 @@ const AdminPanel = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveTab('all')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'all'
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        ? 'bg-indigo-600 text-[var(--text-primary)] shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
+                        : 'bg-slate-800/50 text-slate-400 hover:text-[var(--text-primary)] hover:bg-slate-700/50 border border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -236,8 +236,8 @@ const AdminPanel = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveTab('students')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'students'
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        ? 'bg-indigo-600 text-[var(--text-primary)] shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
+                        : 'bg-slate-800/50 text-slate-400 hover:text-[var(--text-primary)] hover:bg-slate-700/50 border border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -259,7 +259,7 @@ const AdminPanel = () => {
                             <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <FaCheckCircle className="text-6xl text-green-400" />
                             </div>
-                            <h3 className="text-2xl font-semibold text-white mb-2">All Caught Up!</h3>
+                            <h3 className="text-2xl font-semibold text-[var(--text-primary)] mb-2">All Caught Up!</h3>
                             <p className="text-slate-400">No pending teacher verifications at the moment</p>
                         </motion.div>
                     ) : (
@@ -278,11 +278,11 @@ const AdminPanel = () => {
                                             <div className="relative flex-shrink-0">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
                                                 <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                                                    <FaUser className="text-white text-lg sm:text-2xl" />
+                                                    <FaUser className="text-[var(--text-primary)] text-lg sm:text-2xl" />
                                                 </div>
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 truncate">{teacher.username}</h3>
+                                                <h3 className="text-lg sm:text-2xl font-bold text-[var(--text-primary)] mb-1 truncate">{teacher.username}</h3>
                                                 <div className="flex items-center gap-2 text-slate-400">
                                                     <FaEnvelope className="text-xs sm:text-sm flex-shrink-0" />
                                                     <span className="text-xs sm:text-sm truncate">{teacher.email}</span>
@@ -291,7 +291,7 @@ const AdminPanel = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                                            <div className="flex items-center gap-3 text-slate-300 bg-slate-900/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 text-[var(--text-secondary)] bg-slate-900/50 rounded-xl p-4">
                                                 <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                                                     <FaCalendar className="text-indigo-400" />
                                                 </div>
@@ -300,7 +300,7 @@ const AdminPanel = () => {
                                                     <p className="font-semibold">{new Date(teacher.registeredAt).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3 text-slate-300 bg-slate-900/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 text-[var(--text-secondary)] bg-slate-900/50 rounded-xl p-4">
                                                 <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                                                     <FaFileAlt className="text-indigo-400" />
                                                 </div>
@@ -313,7 +313,7 @@ const AdminPanel = () => {
 
                                         {/* Documents */}
                                         {teacher.documents.length > 0 && (
-                                            <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 mb-6">
+                                            <div className="bg-[var(--bg-primary)]/50 border border-slate-800 rounded-2xl p-6 mb-6">
                                                 <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Uploaded Documents</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     {teacher.documents.map((doc, idx) => (
@@ -329,7 +329,7 @@ const AdminPanel = () => {
                                                                 <FaFileAlt className="text-indigo-400" />
                                                             </div>
                                                             <div className="flex-1">
-                                                                <p className="font-semibold text-white text-sm">
+                                                                <p className="font-semibold text-[var(--text-primary)] text-sm">
                                                                     {doc.type.replace('_', ' ').toUpperCase()}
                                                                 </p>
                                                                 <p className="text-xs text-slate-500">Click to view</p>
@@ -349,7 +349,7 @@ const AdminPanel = () => {
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => handleApprove(teacher.id, teacher.username)}
                                             disabled={processingId === teacher.id}
-                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-2xl shadow-2xl shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-green-400/30 text-sm sm:text-base"
+                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-[var(--text-primary)] font-bold rounded-2xl shadow-2xl shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-green-400/30 text-sm sm:text-base"
                                         >
                                             <FaCheckCircle className="text-lg sm:text-xl" />
                                             <span>{processingId === teacher.id ? 'Processing...' : 'Approve'}</span>
@@ -359,7 +359,7 @@ const AdminPanel = () => {
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => handleReject(teacher.id, teacher.username)}
                                             disabled={processingId === teacher.id}
-                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-2xl shadow-2xl shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-red-400/30 text-sm sm:text-base"
+                                            className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-[var(--text-primary)] font-bold rounded-2xl shadow-2xl shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 border border-red-400/30 text-sm sm:text-base"
                                         >
                                             <FaTimesCircle className="text-lg sm:text-xl" />
                                             <span>Reject</span>
@@ -381,7 +381,7 @@ const AdminPanel = () => {
                 >
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-slate-950/50 border-b border-slate-700">
+                            <thead className="bg-[var(--bg-primary)]/50 border-b border-slate-700">
                                 <tr>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Teacher</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
@@ -403,12 +403,12 @@ const AdminPanel = () => {
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
-                                                    <FaUser className="text-white" />
+                                                    <FaUser className="text-[var(--text-primary)]" />
                                                 </div>
-                                                <span className="text-white font-semibold">{teacher.username}</span>
+                                                <span className="text-[var(--text-primary)] font-semibold">{teacher.username}</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 text-slate-300">{teacher.email}</td>
+                                        <td className="px-8 py-5 text-[var(--text-secondary)]">{teacher.email}</td>
                                         <td className="px-8 py-5">
                                             <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${teacher.verificationStatus === 'approved'
                                                 ? 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -459,7 +459,7 @@ const AdminPanel = () => {
                 >
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-slate-950/50 border-b border-slate-700">
+                            <thead className="bg-[var(--bg-primary)]/50 border-b border-slate-700">
                                 <tr>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Student</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
@@ -489,12 +489,12 @@ const AdminPanel = () => {
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-                                                        <FaUser className="text-white" />
+                                                        <FaUser className="text-[var(--text-primary)]" />
                                                     </div>
-                                                    <span className="text-white font-semibold">{student.username}</span>
+                                                    <span className="text-[var(--text-primary)] font-semibold">{student.username}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5 text-slate-300">{student.email}</td>
+                                            <td className="px-8 py-5 text-[var(--text-secondary)]">{student.email}</td>
                                             <td className="px-8 py-5 text-slate-400 text-sm">
                                                 {new Date(student.createdAt).toLocaleDateString()}
                                             </td>

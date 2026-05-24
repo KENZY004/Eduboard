@@ -94,7 +94,7 @@ const AboutPage = () => {
     ];
 
     return (
-        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
+        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-[var(--text-primary)]' : 'bg-white text-gray-900'}`}>
 
             {/* Hero Section */}
             <section className="relative pt-32 pb-20 px-6 overflow-hidden">
@@ -204,7 +204,7 @@ const AboutPage = () => {
                                 >
                                     <div className="flex-1" />
                                     <div className="relative z-10">
-                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-500 to-purple-500`}>
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-[var(--text-primary)] bg-gradient-to-br from-blue-500 to-purple-500`}>
                                             {i + 1}
                                         </div>
                                     </div>
@@ -259,7 +259,7 @@ const AboutPage = () => {
                                         className="w-32 h-32 mx-auto mb-6 rounded-full object-cover border-4 border-indigo-500/30 group-hover:scale-110 group-hover:border-indigo-500/50 transition-all duration-300"
                                     />
                                 ) : (
-                                    <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-4xl font-bold text-white group-hover:scale-110 transition-transform">
+                                    <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-4xl font-bold text-[var(--text-primary)] group-hover:scale-110 transition-transform">
                                         {member.name.charAt(0)}
                                     </div>
                                 )}
@@ -286,7 +286,7 @@ const AboutPage = () => {
                                 onClick={() => setSelectedMember(null)}
                                 className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
                             >
-                                <FontAwesomeIcon icon={faTimes} className="text-white" />
+                                <FontAwesomeIcon icon={faTimes} className="text-[var(--text-primary)]" />
                             </button>
                             <img
                                 src={selectedMember.image}
@@ -297,14 +297,14 @@ const AboutPage = () => {
 
                         {/* Content */}
                         <div className="p-8">
-                            <h2 className={`text-3xl font-bold text-center mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{selectedMember.name}</h2>
+                            <h2 className={`text-3xl font-bold text-center mb-2 ${theme === 'dark' ? 'text-[var(--text-primary)]' : 'text-gray-900'}`}>{selectedMember.name}</h2>
                             <p className={`text-center font-semibold mb-6 uppercase tracking-wide ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}>{selectedMember.role}</p>
 
-                            <p className={`text-center mb-8 leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>{selectedMember.bio}</p>
+                            <p className={`text-center mb-8 leading-relaxed ${theme === 'dark' ? 'text-[var(--text-secondary)]' : 'text-gray-700'}`}>{selectedMember.bio}</p>
 
                             {/* Skills */}
                             <div className="mb-8">
-                                <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Skills</h3>
+                                <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-[var(--text-primary)]' : 'text-gray-900'}`}>Skills</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {selectedMember.skills.map((skill, i) => (
                                         <span key={i} className={`px-4 py-2 rounded-lg text-sm font-medium ${theme === 'dark' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
@@ -317,12 +317,12 @@ const AboutPage = () => {
 
                             {/* Projects */}
                             <div>
-                                <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Key Projects</h3>
+                                <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-[var(--text-primary)]' : 'text-gray-900'}`}>Key Projects</h3>
                                 <div className="space-y-3">
                                     {selectedMember.projects.map((project, i) => (
                                         <div key={i} className="flex items-center gap-3">
                                             <FontAwesomeIcon icon={faCheckCircle} className="text-green-400" />
-                                            <span className={theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}>{project}</span>
+                                            <span className={theme === 'dark' ? 'text-[var(--text-secondary)]' : 'text-gray-700'}>{project}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -422,13 +422,13 @@ const AboutPage = () => {
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link
                                 to="/signup"
-                                className="px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
+                                className="px-10 py-5 text-lg font-semibold text-[var(--text-primary)] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
                             >
                                 Get Started Free
                             </Link>
                             <Link
                                 to="/features"
-                                className="px-10 py-5 text-lg font-semibold text-white bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
+                                className="px-10 py-5 text-lg font-semibold text-[var(--text-primary)] bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
                             >
                                 Explore Features
                             </Link>

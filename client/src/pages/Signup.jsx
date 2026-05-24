@@ -112,16 +112,16 @@ const Signup = () => {
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                                <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
+                                <BsLightningChargeFill className="text-[var(--text-primary)] text-lg sm:text-xl" />
                             </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                            <span className="font-bold text-xl sm:text-2xl text-[var(--text-primary)] tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+                        <Link to="/" className="text-sm text-slate-400 hover:text-[var(--text-primary)] transition-colors">
                             ← Back to Home
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-3 sm:mb-4 tracking-tight leading-tight">
                         Start your <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Journey.</span>
                     </h2>
@@ -213,7 +213,7 @@ const Signup = () => {
                                 />
                                 <div className="text-center">
                                     <div className="text-2xl mb-1">🎓</div>
-                                    <div className="font-semibold text-white">Student</div>
+                                    <div className="font-semibold text-[var(--text-primary)]">Student</div>
                                 </div>
                             </label>
                             <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
@@ -230,7 +230,7 @@ const Signup = () => {
                                 />
                                 <div className="text-center">
                                     <div className="text-2xl mb-1">👨‍🏫</div>
-                                    <div className="font-semibold text-white">Teacher</div>
+                                    <div className="font-semibold text-[var(--text-primary)]">Teacher</div>
                                 </div>
                             </label>
                         </div>
@@ -263,7 +263,7 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
+                                    <span className="text-sm text-[var(--text-secondary)] truncate">
                                         {documents.id_proof ? documents.id_proof.name : 'Choose file...'}
                                     </span>
                                 </label>
@@ -283,7 +283,7 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
+                                    <span className="text-sm text-[var(--text-secondary)] truncate">
                                         {documents.teaching_certificate ? documents.teaching_certificate.name : 'Choose file...'}
                                     </span>
                                 </label>
@@ -303,7 +303,7 @@ const Signup = () => {
                                         accept=".jpg,.jpeg,.png,.pdf"
                                         className="hidden"
                                     />
-                                    <span className="text-sm text-slate-300 truncate">
+                                    <span className="text-sm text-[var(--text-secondary)] truncate">
                                         {documents.degree ? documents.degree.name : 'Choose file...'}
                                     </span>
                                 </label>
@@ -316,7 +316,7 @@ const Signup = () => {
                         whileTap={{ scale: loading ? 1 : 0.98 }}
                         type="submit"
                         disabled={loading}
-                        className={`w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                        className={`w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-[var(--text-primary)] font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                     >
                         {loading ? (
@@ -335,7 +335,7 @@ const Signup = () => {
 
                 <p className="mt-10 text-slate-500 text-center text-sm">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-white hover:text-cyan-300 transition-colors font-medium border-b border-cyan-500/30 hover:border-cyan-500">
+                    <Link to="/login" className="text-[var(--text-primary)] hover:text-cyan-300 transition-colors font-medium border-b border-cyan-500/30 hover:border-cyan-500">
                         Sign In
                     </Link>
                 </p>
@@ -392,10 +392,10 @@ const Signup = () => {
                             >
                                 <StudentCharacter className="w-full h-auto" />
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                                         Start Your Learning Journey! 🚀
                                     </h3>
-                                    <p className="text-slate-300 text-lg">
+                                    <p className="text-[var(--text-secondary)] text-lg">
                                         Join thousands of students collaborating and learning together
                                     </p>
                                 </div>
@@ -411,10 +411,10 @@ const Signup = () => {
                             >
                                 <TeacherCharacter className="w-full h-auto" />
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                                         Empower the Next Generation! 🎓
                                     </h3>
-                                    <p className="text-slate-300 text-lg">
+                                    <p className="text-[var(--text-secondary)] text-lg">
                                         Create interactive whiteboards, share lessons, and engage your classroom
                                     </p>
                                 </div>

@@ -129,20 +129,20 @@ const VerifyRegistrationOTP = () => {
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                                <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
+                                <BsLightningChargeFill className="text-[var(--text-primary)] text-lg sm:text-xl" />
                             </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                            <span className="font-bold text-xl sm:text-2xl text-[var(--text-primary)] tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/signup" className="text-sm text-slate-400 hover:text-white transition-colors">
+                        <Link to="/signup" className="text-sm text-slate-400 hover:text-[var(--text-primary)] transition-colors">
                             ← Back to Signup
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-3 sm:mb-4 tracking-tight leading-tight">
                         Verify Email
                     </h2>
                     <p className="text-slate-400 text-sm sm:text-base mb-6 sm:mb-8">
-                        Enter the 6-digit code sent to <span className="font-medium text-white">{email}</span>
+                        Enter the 6-digit code sent to <span className="font-medium text-[var(--text-primary)]">{email}</span>
                     </p>
                 </div>
 
@@ -190,7 +190,7 @@ const VerifyRegistrationOTP = () => {
                         whileTap={{ scale: 0.98 }}
                         type="submit"
                         disabled={isLoading || otp.length < 6}
-                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${(isLoading || otp.length < 6) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-[var(--text-primary)] font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${(isLoading || otp.length < 6) ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {isLoading ? 'Verifying...' : 'Verify & Activate'}
                         {!isLoading && <FaArrowRight className="group-hover:translate-x-1 transition-transform" />}
@@ -226,10 +226,10 @@ const VerifyRegistrationOTP = () => {
                         transition={{ delay: 0.5 }}
                         className="mt-8 text-center"
                     >
-                        <h3 className="text-2xl font-bold text-white mb-3">
+                        <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                             Confirm Your Identity 🔒
                         </h3>
-                        <p className="text-slate-300 text-lg">
+                        <p className="text-[var(--text-secondary)] text-lg">
                             We've sent a 6-digit confirmation code to check that you own this email address.
                         </p>
                     </motion.div>

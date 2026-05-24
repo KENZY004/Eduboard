@@ -277,7 +277,7 @@ const LandingPage = () => {
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white overflow-hidden ">
+        <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden ">
 
             {/* Hero Section */}
             <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -338,86 +338,97 @@ const LandingPage = () => {
                 />
                 </div>
 
-                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center -mt-24">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent leading-tight"
-                    >
-                        Collaborate. Create. Learn.
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto"
-                    >
-                        EduBoard is the ultimate collaborative whiteboard
-                        platform for modern education. Bring your classroom to
-                        life with real-time interaction and infinite
-                        possibilities.
-                    </motion.p>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-4"
-                    >
-                        <Link
-                            to="/signup"
-                            className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
-                        >
-                            Get Started Free
-                        </Link>
-                        <Link
-                            to="/features"
-                            className="px-8 py-4 text-lg font-semibold text-white bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
-                        >
-                            Explore Features
-                        </Link>
-                    </motion.div>
+              <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center -mt-24">
 
-                    {/* Floating Stats */}
-                    <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.6 }}
-                        >
-                            <div className="text-4xl font-bold text-indigo-400">
-                                ∞
-                            </div>
-                            <div className="text-sm text-slate-400 mt-2">
-                                Infinite Canvas
-                            </div>
-                        </motion.div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.7 }}
-                        >
-                            <div className="text-4xl font-bold text-purple-400">
-                                ⚡
-                            </div>
-                            <div className="text-sm text-slate-400 mt-2">
-                                Real-time Sync
-                            </div>
-                        </motion.div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.8 }}
-                        >
-                            <div className="text-4xl font-bold text-pink-400">
-                                🎨
-                            </div>
-                            <div className="text-sm text-slate-400 mt-2">
-                                Creative Tools
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
+    <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-5xl md:text-7xl font-bold mb-6 text-blue-600 dark:text-blue-400 leading-tight"
+    >
+        Collaborate. Create. Learn.
+    </motion.h1>
+
+    <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="text-xl md:text-2xl text-[var(--text-secondary)] mb-8 max-w-3xl mx-auto"
+    >
+        EduBoard is the ultimate collaborative whiteboard
+        platform for modern education. Bring your classroom to
+        life with real-time interaction and infinite
+        possibilities.
+    </motion.p>
+
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="flex flex-col sm:flex-row items-center justify-center gap-4"
+    >
+        <Link
+            to="/signup"
+            className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
+        >
+            Get Started Free
+        </Link>
+
+        <Link
+            to="/features"
+            className="px-8 py-4 text-lg font-semibold text-[var(--text-primary)] bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
+        >
+            Explore Features
+        </Link>
+    </motion.div>
+
+    {/* Floating Stats */}
+    <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+        >
+            <div className="text-4xl font-bold text-indigo-500">
+                ∞
+            </div>
+
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                Infinite Canvas
+            </div>
+        </motion.div>
+
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+        >
+            <div className="text-4xl font-bold text-purple-500">
+                ⚡
+            </div>
+
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                Real-time Sync
+            </div>
+        </motion.div>
+
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+        >
+            <div className="text-4xl font-bold text-pink-500">
+                🎨
+            </div>
+
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                Creative Tools
+            </div>
+        </motion.div>
+
+    </div>
+</div>
             </section>
 
             {/* Features Grid */}
@@ -498,7 +509,7 @@ const LandingPage = () => {
                                     </div>
                                     <div className="w-0.5 h-8 bg-indigo-500/30 rounded-full "></div>
 
-                                    <div className="w-24 h-24 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white transform hover:scale-110 transition-transform ">
+                                    <div className="w-24 h-24 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-[var(--text-primary)] transform hover:scale-110 transition-transform ">
                                         {step.icon}
                                     </div>
                                 </div>
@@ -546,7 +557,7 @@ const LandingPage = () => {
                                 className="surface-card p-10 rounded-2xl"
                             >
                                 <div
-                                    className={`inline-block px-6 py-2 bg-gradient-to-r ${useCase.gradient} rounded-full text-white font-semibold mb-6`}
+                                    className={`inline-block px-6 py-2 bg-gradient-to-r ${useCase.gradient} rounded-full text-[var(--text-primary)] font-semibold mb-6`}
                                 >
                                     {useCase.role}
                                 </div>
@@ -569,7 +580,7 @@ const LandingPage = () => {
                                                     d="M5 13l4 4L19 7"
                                                 />
                                             </svg>
-                                            <span className="text-slate-300">
+                                            <span className="text-[var(--text-secondary)]">
                                                 {benefit}
                                             </span>
                                         </li>
@@ -588,13 +599,13 @@ const LandingPage = () => {
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
                             Ready to Transform Your Classroom?
                         </h2>
-                        <p className="text-xl text-slate-300 mb-8">
+                        <p className="text-xl text-[var(--text-secondary)] mb-8">
                             Join thousands of educators and students already
                             using EduBoard for collaborative learning.
                         </p>
                         <Link
                             to="/signup"
-                            className="inline-block px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
+                            className="inline-block px-10 py-5 text-lg font-semibold text-[var(--text-primary)] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
                         >
                             Start Free Today
                         </Link>

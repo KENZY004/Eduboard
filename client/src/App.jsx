@@ -71,26 +71,97 @@ const AdminRoute = ({ children }) => {
 
 const AppLayout = () => {
   const location = useLocation();
-  const authRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+
+  const authRoutes = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/verify-otp',
+    '/reset-password',
+    '/verify-email'
+  ];
+
   const isAuthRoute = authRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
-      <Navbar /> 
+    <div
+      className="
+      min-h-screen
+      bg-white
+      dark:bg-[var(--bg-primary)]
+      text-slate-900
+      dark:text-[var(--text-primary)]
+      overflow-x-hidden
+      font-sans
+      transition-colors
+      duration-300
+      selection:bg-purple-500/30
+    "
+    >
+      <Navbar />
+
       <div className={isAuthRoute ? "" : "pt-14"}>
         <Routes>
+
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
 
           {/* Auth Routes */}
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-          <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
-          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-          <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/verify-otp"
+            element={
+              <PublicRoute>
+                <VerifyOTP />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/verify-email"
+            element={
+              <PublicRoute>
+                <VerifyRegistrationOTP />
+              </PublicRoute>
+            }
+          />
 
           {/* Private Routes */}
           <Route
@@ -101,6 +172,7 @@ const AppLayout = () => {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/board/:roomId"
             element={
@@ -109,6 +181,7 @@ const AppLayout = () => {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/verification-pending"
             element={
@@ -117,6 +190,7 @@ const AppLayout = () => {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/admin"
             element={
@@ -130,7 +204,6 @@ const AppLayout = () => {
     </div>
   );
 };
-
 function App() {
   return (
     <ThemeProvider>

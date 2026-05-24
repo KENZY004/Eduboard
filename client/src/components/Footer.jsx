@@ -71,19 +71,19 @@ const Footer = () => {
     ];
 
     return (
-        <footer className="relative bg-slate-950/50 backdrop-blur-xl border-t border-white/10 mt-20">
+        <footer className="relative bg-[var(--bg-primary)]/50 backdrop-blur-xl border-t border-white/10 mt-20">
             <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
                 {/* Main Footer Content */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
                     {Object.entries(footerLinks).map(([category, links]) => (
                         <div key={category}>
-                            <h3 className="text-sm font-semibold text-white mb-4">{category}</h3>
+                            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">{category}</h3>
                             <ul className="space-y-3">
                                 {links.map((link) => (
                                     <li key={link.name}>
                                         <Link
                                             to={link.path}
-                                            className="text-sm text-slate-400 hover:text-white transition-colors"
+                                            className="text-sm text-slate-400 hover:text-[var(--text-primary)] transition-colors"
                                         >
                                             {link.name}
                                         </Link>
@@ -100,7 +100,7 @@ const Footer = () => {
                     <div className="flex items-center space-x-2">
                         <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <svg
-                                className="w-4 h-4 text-white"
+                                className="w-4 h-4 text-[var(--text-primary)]"
                                 fill="currentColor"
                                 viewBox="0 0 24 24"
                             >
@@ -120,7 +120,7 @@ const Footer = () => {
                                 href={social.url}
                                 target={social.external ? '_blank' : undefined}
                                 rel={social.external ? 'noreferrer' : undefined}
-                                className="text-slate-400 hover:text-white transition-colors"
+                                className="text-slate-400 hover:text-[var(--text-primary)] transition-colors"
                                 aria-label={social.name}
                                 title={social.name}
                             >

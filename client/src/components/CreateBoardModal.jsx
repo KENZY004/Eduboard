@@ -59,14 +59,14 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                             {/* Close Button */}
                             <button
                                 onClick={handleClose}
-                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-[var(--text-primary)] transition-colors"
                             >
                                 <FaTimes />
                             </button>
 
                             {/* Header */}
                             <div className="mb-6">
-                                <h2 className="text-3xl font-bold text-white mb-2">Create New Board</h2>
+                                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Create New Board</h2>
                                 <p className="text-slate-400">Give your whiteboard a name to save it</p>
                             </div>
 
@@ -84,7 +84,7 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                                             setError('');
                                         }}
                                         placeholder="e.g., Physics - Chapter 5"
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 text-[var(--text-primary)] focus:outline-none focus:border-indigo-500/50 transition-colors"
                                         autoFocus
                                     />
                                     {error && (
@@ -97,13 +97,13 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
                                     <button
                                         type="button"
                                         onClick={handleClose}
-                                        className="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-3 rounded-xl border border-white/10 transition-all"
+                                        className="flex-1 bg-white/5 hover:bg-white/10 text-[var(--text-primary)] font-medium py-3 rounded-xl border border-white/10 transition-all"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all"
+                                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-[var(--text-primary)] font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all"
                                     >
                                         Create <FaRocket className="text-sm" />
                                     </button>

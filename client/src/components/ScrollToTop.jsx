@@ -117,7 +117,7 @@ export default function ScrollToTop() {
                     type="button"
                     aria-label="Scroll to top"
                     onClick={handleScrollToTop}
-                    className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-[9999] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-violet-600 to-blue-600 text-white shadow-lg shadow-purple-500/35 ring-1 ring-white/20 transition-shadow duration-300 hover:shadow-xl hover:shadow-blue-500/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:bottom-7 sm:right-6 sm:h-12 sm:w-12"
+                    className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-[9999] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-violet-600 to-blue-600 text-[var(--text-primary)] shadow-lg shadow-purple-500/35 ring-1 ring-white/20 transition-shadow duration-300 hover:shadow-xl hover:shadow-blue-500/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:bottom-7 sm:right-6 sm:h-12 sm:w-12"
                     initial={{ opacity: 0, y: 18, scale: 0.85 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 18, scale: 0.85 }}

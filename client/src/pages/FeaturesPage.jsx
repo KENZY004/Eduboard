@@ -107,7 +107,7 @@ const FeaturesPage = () => {
     ];
 
     return (
-        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'}`}>
+        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950 text-[var(--text-primary)]' : 'bg-white text-gray-900'}`}>
 
             {/* Hero Section with Animated Background */}
             <section className="relative pt-48 pb-20 px-6 overflow-hidden">
@@ -144,7 +144,7 @@ const FeaturesPage = () => {
                             Powerful Features
                         </span>
                         <br />
-                        <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                        <span className={theme === 'dark' ? 'text-[var(--text-primary)]' : 'text-gray-900'}>
                             Built for Education
                         </span>
                     </motion.h1>
@@ -283,7 +283,7 @@ const FeaturesPage = () => {
                         </p>
                         <Link
                             to="/signup"
-                            className="inline-block px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
+                            className="inline-block px-10 py-5 text-lg font-semibold text-[var(--text-primary)] bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-2xl shadow-indigo-500/50 hover:shadow-indigo-500/70 hover:scale-105"
                         >
                             Get Started Free
                         </Link>

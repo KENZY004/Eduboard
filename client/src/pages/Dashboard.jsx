@@ -177,19 +177,19 @@ const Dashboard = () => {
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 border-b border-white/5 pb-4 sm:pb-6 gap-4 sm:gap-0">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
                         <BsLightningChargeFill className="text-indigo-500 text-xl sm:text-2xl" /> EduBoard <span className="text-xs px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 font-mono font-normal tracking-wide">PRO</span>
                     </h1>
                     <p className="text-slate-400 font-light text-sm sm:text-base">Collaborative workspace & infinite canvas</p>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-6 self-end sm:self-auto">
                     <div className="text-right hidden sm:block">
-                        <p className="text-white font-medium">{user?.username}</p>
+                        <p className="text-[var(--text-primary)] font-medium">{user?.username}</p>
                         <p className="text-xs text-slate-500 font-mono uppercase">{user?.role || 'Student'}</p>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-white/10"
                     >
                         <FaSignOutAlt />
                     </button>
@@ -213,10 +213,10 @@ const Dashboard = () => {
                         <div className="absolute top-0 right-0 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
 
                         <div className="relative z-10">
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/10 text-indigo-400 mb-4 sm:mb-6 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/10 text-indigo-400 mb-4 sm:mb-6 group-hover:bg-indigo-500 group-hover:text-[var(--text-primary)] transition-all duration-300">
                                 <FaPlus className="text-xl sm:text-2xl" />
                             </div>
-                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight">Create New <br className="hidden sm:block" /> Whiteboard</h2>
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-3 sm:mb-4 tracking-tight">Create New <br className="hidden sm:block" /> Whiteboard</h2>
                             <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-md font-light">
                                 Start a new session on an infinite high-performance canvas. Optimized for teaching and sketching.
                             </p>
@@ -235,7 +235,7 @@ const Dashboard = () => {
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
                                 <FaSignInAlt className="text-cyan-400 text-lg sm:text-xl" />
                             </div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white">Student Access</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Student Access</h3>
                         </div>
                         <p className="text-slate-400 text-sm sm:text-base">
                             As a student, you can join whiteboards shared by your teachers using the room code below.
@@ -247,7 +247,7 @@ const Dashboard = () => {
                 {!isTeacher && (
                     <div className="surface-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 flex flex-col justify-center relative overflow-hidden">
                         <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
-                        <h3 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
                             <FaSignInAlt className="text-cyan-400" /> Join Session
                         </h3>
                         <p className="text-slate-500 text-xs sm:text-sm mb-4 sm:mb-6">Enter a room code to connect.</p>
@@ -258,9 +258,9 @@ const Dashboard = () => {
                                 placeholder="Room ID..."
                                 value={roomId}
                                 onChange={(e) => setRoomId(e.target.value)}
-                                className="bg-black/50 border border-white/10 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-white w-full focus:outline-none focus:border-cyan-500/50 transition-colors font-mono text-xs sm:text-sm"
+                                className="bg-black/50 border border-white/10 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-[var(--text-primary)] w-full focus:outline-none focus:border-cyan-500/50 transition-colors font-mono text-xs sm:text-sm"
                             />
-                            <button className="bg-white/10 hover:bg-white/20 text-white p-2.5 sm:p-3 rounded-lg border border-white/10 transition-all">
+                            <button className="bg-white/10 hover:bg-white/20 text-[var(--text-primary)] p-2.5 sm:p-3 rounded-lg border border-white/10 transition-all">
                                 →
                             </button>
                         </form>
@@ -271,7 +271,7 @@ const Dashboard = () => {
                 <div className="lg:row-span-2 surface-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col relative overflow-hidden min-h-[300px] sm:min-h-[400px]">
                     <div className="flex justify-between items-start mb-3 sm:mb-4">
                         <div>
-                            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
+                            <h3 className="text-lg sm:text-xl font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
                                 <FaFolder className="text-indigo-400 text-base sm:text-lg" /> Saved Boards
                             </h3>
                             <p className="text-slate-500 text-xs">
@@ -304,7 +304,7 @@ const Dashboard = () => {
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-white font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
+                                            <h4 className="text-[var(--text-primary)] font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
                                                 {isTeacher
                                                     ? (board.name || 'Untitled Board')
                                                     : (board.boardName || 'Untitled Board')}

@@ -131,16 +131,16 @@ const Login = () => {
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                                <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
+                                <BsLightningChargeFill className="text-[var(--text-primary)] text-lg sm:text-xl" />
                             </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
+                            <span className="font-bold text-xl sm:text-2xl text-[var(--text-primary)] tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+                        <Link to="/" className="text-sm text-slate-400 hover:text-[var(--text-primary)] transition-colors">
                             ← Back to Home
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-3 sm:mb-4 tracking-tight leading-tight">
                         Welcome back to <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Infinity.</span>
                     </h2>
@@ -216,7 +216,7 @@ const Login = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         type="submit"
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-[var(--text-primary)] font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
                     >
                         Sign In Details <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                     </motion.button>
@@ -224,7 +224,7 @@ const Login = () => {
 
                 <p className="mt-10 text-slate-500 text-center text-sm">
                     New to EduBoard?{' '}
-                    <Link to="/signup" className="text-white hover:text-indigo-300 transition-colors font-medium border-b border-indigo-500/30 hover:border-indigo-500">
+                    <Link to="/signup" className="text-[var(--text-primary)] hover:text-indigo-300 transition-colors font-medium border-b border-indigo-500/30 hover:border-indigo-500">
                         Create an account
                     </Link>
                 </p>
@@ -298,10 +298,10 @@ const Login = () => {
                             >
                                 <StudentCharacter className="w-full h-auto" />
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                                         Welcome Back, Scholar! 🚀
                                     </h3>
-                                    <p className="text-slate-300 text-lg">
+                                    <p className="text-[var(--text-secondary)] text-lg">
                                         Jump back into your boards and collaborate with teachers and peers.
                                     </p>
                                 </div>
@@ -317,10 +317,10 @@ const Login = () => {
                             >
                                 <TeacherCharacter className="w-full h-auto" />
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                                         Welcome Back, Educator! 🎓
                                     </h3>
-                                    <p className="text-slate-300 text-lg">
+                                    <p className="text-[var(--text-secondary)] text-lg">
                                         Continue inspiring students with interactive lessons
                                     </p>
                                 </div>
@@ -336,10 +336,10 @@ const Login = () => {
                             >
                                 <TeacherCharacter className="w-full h-auto" />
                                 <div className="mt-8 text-center">
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                                         Welcome to EduBoard! 👋
                                     </h3>
-                                    <p className="text-slate-300 text-lg">
+                                    <p className="text-[var(--text-secondary)] text-lg">
                                         Access your high-performance collaborative digital workspace.
                                     </p>
                                 </div>

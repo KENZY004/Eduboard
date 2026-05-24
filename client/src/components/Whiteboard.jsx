@@ -1851,7 +1851,7 @@ const Whiteboard = () => {
     };
 
     return (
-        <div className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
+        <div className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-[var(--bg-primary)]' : 'bg-gray-100'}`}>
 
             <input
                 type="file"
@@ -1872,7 +1872,7 @@ const Whiteboard = () => {
                     >
                         <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
                             <div className="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                            <h2 className="text-xl font-bold text-white mb-2">Waiting for Approval</h2>
+                            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Waiting for Approval</h2>
                             <p className="text-slate-400 text-sm">Please wait while the teacher reviews your request to join the room.</p>
                         </div>
                     </motion.div>
@@ -1890,7 +1890,7 @@ const Whiteboard = () => {
                             exit={{ x: -50, opacity: 0 }}
                             className="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-xl w-72 pointer-events-auto"
                         >
-                            <h4 className="text-white font-medium mb-1">{student.username} wants to join</h4>
+                            <h4 className="text-[var(--text-primary)] font-medium mb-1">{student.username} wants to join</h4>
                             <p className="text-xs text-slate-400 mb-3">Role: {student.role}</p>
                             <div className="flex gap-2">
                                 <button
@@ -1925,7 +1925,7 @@ const Whiteboard = () => {
                     style={{ left: cursor.x, top: cursor.y }}
                 >
                     <FaMousePointer className="text-xl" style={{ color: cursor.color || '#f00' }} />
-                    <span className="text-xs px-2 py-1 rounded bg-slate-800/80 text-white backdrop-blur-sm whitespace-nowrap">
+                    <span className="text-xs px-2 py-1 rounded bg-slate-800/80 text-[var(--text-primary)] backdrop-blur-sm whitespace-nowrap">
                         {userId}
                     </span>
                 </div>
@@ -1934,7 +1934,7 @@ const Whiteboard = () => {
             {/* Header / Room Info */}
             <div className={`absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 pointer-events-none`}>
                 <div className="flex items-center gap-3 pointer-events-auto">
-                    <div className={`bg-opacity-80 backdrop-blur-md px-4 py-2 rounded-xl border text-sm flex items-center gap-2 shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>
+                    <div className={`bg-opacity-80 backdrop-blur-md px-4 py-2 rounded-xl border text-sm flex items-center gap-2 shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700 text-[var(--text-secondary)]' : 'bg-white border-gray-200 text-gray-600'}`}>
                         <span className="font-semibold text-blue-500">Room:</span>
                         <span className="font-mono">{roomId ? roomId.slice(0, 8) : 'Demo'}...</span>
                         <button onClick={copyRoomId} className="hover:text-blue-500 ml-2 transition-colors"><FaCopy /></button>
@@ -2076,9 +2076,9 @@ const Whiteboard = () => {
 
             {/* Zoom Controls - Moved to top-right to avoid overlap */}
             <div className="absolute top-20 right-4 sm:right-6 flex items-center gap-2 bg-[#020617] border border-white/10 p-1.5 sm:p-2 rounded-lg shadow-xl z-50">
-                <button onClick={() => handleZoom(-0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-white transition-colors"><BsZoomOut /></button>
-                <span className="text-white font-mono text-xs sm:text-sm w-10 sm:w-12 text-center">{Math.round(scale * 100)}%</span>
-                <button onClick={() => handleZoom(0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-white transition-colors"><BsZoomIn /></button>
+                <button onClick={() => handleZoom(-0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-[var(--text-primary)] transition-colors"><BsZoomOut /></button>
+                <span className="text-[var(--text-primary)] font-mono text-xs sm:text-sm w-10 sm:w-12 text-center">{Math.round(scale * 100)}%</span>
+                <button onClick={() => handleZoom(0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-[var(--text-primary)] transition-colors"><BsZoomIn /></button>
             </div>
 
             <canvas
@@ -2147,11 +2147,11 @@ const Whiteboard = () => {
                             {/* Header */}
                             <div className="p-4 border-b border-white/10">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-white font-semibold flex items-center gap-2">
+                                    <h3 className="text-[var(--text-primary)] font-semibold flex items-center gap-2">
                                         <FaUsers className="text-blue-400" />
                                         Connected Students
                                     </h3>
-                                    <button onClick={() => setShowStudentPanel(false)} className="text-slate-400 hover:text-white transition-colors">
+                                    <button onClick={() => setShowStudentPanel(false)} className="text-slate-400 hover:text-[var(--text-primary)] transition-colors">
                                         <FaTimes />
                                     </button>
                                 </div>
@@ -2175,11 +2175,11 @@ const Whiteboard = () => {
                                                     className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors mb-2"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-[var(--text-primary)] font-semibold text-sm">
                                                             {student.username.charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
-                                                            <div className="text-white font-medium">{student.username}</div>
+                                                            <div className="text-[var(--text-primary)] font-medium">{student.username}</div>
                                                             <div className="text-xs text-slate-400">
                                                                 {hasPermission ? 'Can edit' : 'View only'}
                                                             </div>
@@ -2250,8 +2250,8 @@ const Whiteboard = () => {
                         {/* Undo/Redo - Teacher Only */}
                         {isHost && (
                             <>
-                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
-                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-[var(--text-primary)] hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
+                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-[var(--text-primary)] hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
                             </>
                         )}
                         {isHost && (
@@ -2263,13 +2263,13 @@ const Whiteboard = () => {
                                     onClick={() => setShowStudentPanel(!showStudentPanel)}
                                     className={`p-2 sm:p-2.5 rounded-full transition-colors relative ${showStudentPanel
                                         ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        : 'text-slate-400 hover:text-[var(--text-primary)] hover:bg-white/5'
                                         }`}
                                     title="Manage Student Permissions"
                                 >
                                     <FaUsers className="text-sm sm:text-base" />
                                     {connectedUsers.filter(u => u.role === 'student').length > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                                        <span className="absolute -top-1 -right-1 bg-blue-500 text-[var(--text-primary)] text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
                                             {connectedUsers.filter(u => u.role === 'student').length}
                                         </span>
                                     )}
@@ -2293,8 +2293,8 @@ const Whiteboard = () => {
                                     key={t.id}
                                     onClick={() => setTool(t.id)}
                                     className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${tool === t.id
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                        ? 'bg-indigo-600 text-[var(--text-primary)] shadow-lg shadow-indigo-500/20'
+                                        : 'text-slate-400 hover:text-[var(--text-primary)] hover:bg-white/5'}`}
                                 >
                                     <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
                                 </button>
@@ -2305,8 +2305,8 @@ const Whiteboard = () => {
                                         setShowShapeMenu(!showShapeMenu);
                                     }}
                                     className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                        ? 'bg-indigo-600 text-[var(--text-primary)] shadow-lg shadow-indigo-500/20'
+                                        : 'text-slate-400 hover:text-[var(--text-primary)] hover:bg-white/5'}`}
                                     title="Shapes"
                                 >
                                     <FaDrawPolygon className="text-sm sm:text-base" />
@@ -2331,7 +2331,7 @@ const Whiteboard = () => {
                                                 <button
                                                     key={s.id}
                                                     onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
-                                                    className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                                                    className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
                                                     title={s.label}
                                                 >
                                                     <s.icon className="text-xl" />
