@@ -273,16 +273,7 @@ const LandingPage = () => {
             projects: ["Admin Dashboard", "User Management System"],
             gradient: "from-fuchsia-600 to-pink-500",
         },
-        {
-            id: 3,
-            name: "Mansi Singh",
-            role: "Developer",
-            bio: "Focused on real-time collaboration technology and database optimization.",
-            image: "/team/mansi.jpeg",
-            skills: ["MongoDB", "Express", "Socket.io", "Data Modeling"],
-            projects: ["Real-time Collaboration", "Database Architecture"],
-            gradient: "from-emerald-600 to-teal-500",
-        },
+
     ]
 
     return (

@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FaArrowRight, FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import TeacherCharacter from '../components/TeacherCharacter';
+import StudentCharacter from '../components/StudentCharacter';
+import { AnimatePresence } from 'framer-motion';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -14,6 +16,7 @@ const Login = () => {
     const location = useLocation();
     const from = location.state?.from || '/dashboard';
     const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+    const [detectedRole, setDetectedRole] = useState(null);
 
     useEffect(() => {
         if (error) {
@@ -31,6 +34,35 @@ const Login = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === 'email' && !e.target.value.trim()) {
+            setDetectedRole(null);
+        }
+    };
+
+    const handleEmailBlur = async () => {
+        const trimmedEmail = formData.email.trim();
+        if (!trimmedEmail) {
+            setDetectedRole(null);
+            return;
+        }
+
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/check-role`, {
+                email: trimmedEmail
+            });
+            // Prevent race conditions where email has changed while request was in flight
+            if (formData.email.trim() === trimmedEmail) {
+                if (res.data && res.data.role) {
+                    setDetectedRole(res.data.role);
+                } else {
+                    setDetectedRole(null);
+                }
+            }
+        } catch (err) {
+            if (formData.email.trim() === trimmedEmail) {
+                setDetectedRole(null);
+            }
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -147,6 +179,7 @@ const Login = () => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
+                                onBlur={handleEmailBlur}
                                 className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
                                 placeholder="name@example.com"
                                 required
@@ -197,31 +230,122 @@ const Login = () => {
                 </p>
             </motion.div>
 
-            {/* Right: Animated Teacher Character */}
-            <div className="hidden lg:flex relative items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950 overflow-hidden">
-                {/* Decorative background elements */}
-                <div className="absolute inset-0 opacity-30">
+            {/* Right: Dynamic Character and Theme */}
+            <div className="hidden lg:flex relative items-center justify-center overflow-hidden">
+                {/* Background transitions */}
+                {/* Default Gradient */}
+                <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === null ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+                {/* Student Gradient */}
+                <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-900 to-cyan-950 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === 'student' ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+                {/* Teacher Gradient */}
+                <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-950 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === 'teacher' || detectedRole === 'admin' ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+
+                {/* Decorative background elements - Default Theme */}
+                <div 
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === null ? 'opacity-30' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
+                    <div className="absolute top-10 left-10 w-20 h-20 bg-slate-700 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-20 w-32 h-32 bg-slate-800 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-indigo-950 rounded-full blur-3xl"></div>
+                </div>
+
+                {/* Decorative background elements - Student Theme */}
+                <div 
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === 'student' ? 'opacity-30' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
+                    <div className="absolute top-10 right-10 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 left-20 w-32 h-32 bg-blue-400 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-purple-400 rounded-full blur-3xl"></div>
+                </div>
+
+                {/* Decorative background elements - Teacher Theme */}
+                <div 
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                        detectedRole === 'teacher' || detectedRole === 'admin' ? 'opacity-30' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
                     <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-400 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-20 w-32 h-32 bg-purple-400 rounded-full blur-3xl"></div>
                     <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-cyan-400 rounded-full blur-3xl"></div>
                 </div>
 
                 <div className="relative z-10 w-full max-w-lg px-8">
-                    <TeacherCharacter className="w-full h-auto" />
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="mt-8 text-center"
-                    >
-                        <h3 className="text-2xl font-bold text-white mb-3">
-                            Welcome Back, Educator! 👋
-                        </h3>
-                        <p className="text-slate-300 text-lg">
-                            Continue inspiring students with interactive lessons
-                        </p>
-                    </motion.div>
+                    <AnimatePresence mode="wait">
+                        {detectedRole === 'student' ? (
+                            <motion.div
+                                key="student-login-panel"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col items-center"
+                            >
+                                <StudentCharacter className="w-full h-auto" />
+                                <div className="mt-8 text-center">
+                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                        Welcome Back, Scholar! 🚀
+                                    </h3>
+                                    <p className="text-slate-300 text-lg">
+                                        Jump back into your boards and collaborate with teachers and peers.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : detectedRole === 'teacher' || detectedRole === 'admin' ? (
+                            <motion.div
+                                key="teacher-login-panel"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col items-center"
+                            >
+                                <TeacherCharacter className="w-full h-auto" />
+                                <div className="mt-8 text-center">
+                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                        Welcome Back, Educator! 🎓
+                                    </h3>
+                                    <p className="text-slate-300 text-lg">
+                                        Continue inspiring students with interactive lessons
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="default-login-panel"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.4 }}
+                                className="flex flex-col items-center"
+                            >
+                                <TeacherCharacter className="w-full h-auto" />
+                                <div className="mt-8 text-center">
+                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                        Welcome to EduBoard! 👋
+                                    </h3>
+                                    <p className="text-slate-300 text-lg">
+                                        Access your high-performance collaborative digital workspace.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

@@ -273,6 +273,29 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
+## 🐳 Docker Setup
+
+**Prerequisites:** Ensure you have Docker Desktop (or Docker Engine) installed and running.
+
+Instead of running MongoDB locally and managing terminals manually, you can run the entire stack with a single command!
+
+**One-command startup:**
+```bash
+docker compose up --build
+```
+
+**How to stop:**
+```bash
+docker compose down
+```
+
+**How to wipe volumes (resets database):**
+```bash
+docker compose down -v
+```
+
+> **Note:** The `server/.env` file is still required for `CLOUDINARY_`, `SMTP_`, and `JWT_SECRET`. However, the `MONGODB_URI` is automatically overridden in Docker to use the local container instance instead of Atlas.
+
 <a id="helpful-scripts"></a>
 
 ## 🧰 Helpful Scripts
