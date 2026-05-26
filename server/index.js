@@ -9,6 +9,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const Board = require('./models/Board');
 const SavedBoard = require('./models/SavedBoard');
+const User = require('./models/User');
 const verifyToken = require('./utils/verifyToken');
 const verifyOwnership = require('./utils/verifyOwnership');
 
@@ -85,19 +86,29 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // Create a new named board (requires authentication)
 app.post('/api/boards/create', verifyToken, async (req, res) => {
   try {
-    const { name, userId, roomId } = req.body;
+    const { name, roomId } = req.body;
+    const authUserId = req.user?.id;
 
-    if (!name || !userId || !roomId) {
-      return res.status(400).json({ message: 'Name, userId, and roomId are required' });
+    if (!authUserId) {
+      return res.status(401).json({ message: 'Invalid authentication state' });
+    }
+
+    if (!name || !roomId) {
+      return res.status(400).json({ message: 'Name and roomId are required' });
+    }
+
+    const user = await User.findById(authUserId);
+    if (!user) {
+      return res.status(404).json({ message: 'Authenticated user not found' });
     }
 
     const newBoard = new Board({
       roomId,
       name,
-      createdBy: userId,
+      createdBy: authUserId,
       elements: [],
       participants: [{
-        userId: userId,
+        userId: authUserId,
         role: 'teacher', // Creator is assumed to be teacher
         joinedAt: new Date()
       }],
