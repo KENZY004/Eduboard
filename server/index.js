@@ -473,20 +473,17 @@ io.on('connection', (socket) => {
 
   // Sync elements (for redo to maintain correct order)
   socket.on('sync-elements', async ({ roomId, elements }) => {
-    console.log(`[SYNC-ELEMENTS] Received from ${socket.id}, syncing ${elements.length} elements`);
-    // Broadcast full element array to all other users
-    socket.to(roomId).emit('sync-elements', elements);
-
-    // Update database with full element array
     try {
+      // FIX #81: only board owner can sync full element state
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can sync elements' });
+      }
+      console.log(`[SYNC-ELEMENTS] Received from ${socket.id}, syncing ${elements.length} elements`);
+      socket.to(roomId).emit('sync-elements', elements);
       await Board.findOneAndUpdate(
         { roomId },
-        {
-          $set: {
-            elements: elements,
-            updatedAt: new Date()
-          }
-        }
+        { $set: { elements: elements, updatedAt: new Date() } }
       );
       console.log(`[SYNC-ELEMENTS] Updated DB with ${elements.length} elements`);
     } catch (err) {
@@ -496,20 +493,17 @@ io.on('connection', (socket) => {
 
   // Sync state (for redo to maintain exact element order)
   socket.on('sync-state', async ({ roomId, elements }) => {
-    console.log(`[SYNC-STATE] Broadcasting ${elements.length} elements to room ${roomId}`);
-    // Broadcast to all other users
-    socket.to(roomId).emit('sync-state', elements);
-
-    // Update database
     try {
+      // FIX #81: only board owner can sync full board state
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can sync board state' });
+      }
+      console.log(`[SYNC-STATE] Broadcasting ${elements.length} elements to room ${roomId}`);
+      socket.to(roomId).emit('sync-state', elements);
       await Board.findOneAndUpdate(
         { roomId },
-        {
-          $set: {
-            elements: elements,
-            updatedAt: new Date()
-          }
-        }
+        { $set: { elements: elements, updatedAt: new Date() } }
       );
     } catch (err) {
       console.error('Error syncing state:', err);
