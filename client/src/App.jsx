@@ -21,8 +21,8 @@ import { ThemeProvider } from './context/ThemeContext';
 
 // --- Route Protection Guards ---
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const location = useLocation();
 
   if (!token) {
@@ -37,8 +37,8 @@ const PrivateRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   if (token) {
     if (user.isVerified) {
@@ -54,14 +54,14 @@ const PublicRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   if (!token) {
     return <Navigate to="/login" />;
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== "admin") {
     return <Navigate to="/dashboard" />;
   }
 
@@ -71,12 +71,19 @@ const AdminRoute = ({ children }) => {
 // --- Main Layout Wrapper ---
 const AppLayout = () => {
   const location = useLocation();
-  const authRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+  const authRoutes = [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/verify-otp",
+    "/reset-password",
+    "/verify-email",
+  ];
   const isAuthRoute = authRoutes.includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
-      <Navbar /> 
+      <Navbar />
       <div className={isAuthRoute ? "" : "pt-14"}>
         <Routes>
           {/* Public Routes */}
@@ -87,12 +94,54 @@ const AppLayout = () => {
           <Route path="/contact" element={<ContactPage />} />
 
           {/* Auth Routes */}
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-          <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
-          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-          <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/verify-otp"
+            element={
+              <PublicRoute>
+                <VerifyOTP />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <PublicRoute>
+                <VerifyRegistrationOTP />
+              </PublicRoute>
+            }
+          />
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
