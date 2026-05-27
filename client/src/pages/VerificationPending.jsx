@@ -48,14 +48,14 @@ const VerificationPending = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-white via-slate-100 to-white flex items-center justify-center dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-gradient-to-br from-white via-slate-100 to-white flex items-center justify-center p-6 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ const VerificationPending = () => {
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                             <BsLightningChargeFill className="text-white text-2xl" />
                         </div>
-                        <span className="font-bold text-3xl text-white tracking-tight">EduBoard</span>
+                        <span className="font-bold text-3xl text-slate-950 tracking-tight dark:text-white">EduBoard</span>
                     </div>
                 </div>
 
@@ -83,13 +83,13 @@ const VerificationPending = () => {
                                 >
                                     <FaClock className="text-6xl text-yellow-400" />
                                 </motion.div>
-                                <h1 className="text-3xl font-bold text-white mb-2">Verification Pending</h1>
-                                <p className="text-slate-400">Your teacher account is under review</p>
+                                <h1 className="text-3xl font-bold text-slate-950 mb-2 dark:text-white">Verification Pending</h1>
+                                <p className="text-slate-600 dark:text-slate-400">Your teacher account is under review</p>
                             </div>
 
-                            <div className="bg-slate-900/50 rounded-xl p-6 mb-6">
-                                <h2 className="text-lg font-semibold text-white mb-4">What's Next?</h2>
-                                <ul className="space-y-3 text-slate-300">
+                            <div className="bg-white/80 rounded-xl p-6 mb-6 border border-slate-200 dark:bg-slate-900/50 dark:border-transparent">
+                                <h2 className="text-lg font-semibold text-slate-950 mb-4 dark:text-white">What's Next?</h2>
+                                <ul className="space-y-3 text-slate-700 dark:text-slate-300">
                                     <li className="flex items-start gap-3">
                                         <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                                             <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
@@ -129,18 +129,18 @@ const VerificationPending = () => {
                         <>
                             <div className="text-center mb-6">
                                 <FaTimesCircle className="text-6xl text-red-400 mx-auto mb-4" />
-                                <h1 className="text-3xl font-bold text-white mb-2">Application Not Approved</h1>
-                                <p className="text-slate-400">Your teacher verification was not approved</p>
+                                <h1 className="text-3xl font-bold text-slate-950 mb-2 dark:text-white">Application Not Approved</h1>
+                                <p className="text-slate-600 dark:text-slate-400">Your teacher verification was not approved</p>
                             </div>
 
                             {verificationStatus.rejectionReason && (
                                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
                                     <h3 className="font-semibold text-red-400 mb-2">Reason:</h3>
-                                    <p className="text-slate-300">{verificationStatus.rejectionReason}</p>
+                                    <p className="text-slate-700 dark:text-slate-300">{verificationStatus.rejectionReason}</p>
                                 </div>
                             )}
 
-                            <p className="text-slate-400 text-center mb-6">
+                            <p className="text-slate-600 text-center mb-6 dark:text-slate-400">
                                 If you believe this is an error, please contact our support team.
                             </p>
                         </>
@@ -149,7 +149,7 @@ const VerificationPending = () => {
                     {/* Logout Button */}
                     <button
                         onClick={handleLogout}
-                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-colors"
+                        className="w-full bg-slate-200 hover:bg-slate-300 text-slate-950 font-semibold py-3 rounded-xl transition-colors dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white"
                     >
                         Logout
                     </button>

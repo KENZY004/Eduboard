@@ -8,12 +8,14 @@ const ThemeToggle = () => {
     return (
         <motion.button
             onClick={toggleTheme}
-            className="relative w-14 h-7 rounded-full bg-slate-700 dark:bg-slate-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+            className="relative h-8 w-[3.75rem] rounded-full border border-slate-300 bg-slate-100 shadow-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-offset-slate-950"
             whileTap={{ scale: 0.95 }}
-            aria-label="Toggle theme"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            aria-pressed={theme === 'dark'}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
         >
             <motion.div
-                className="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white dark:bg-slate-900 shadow-md flex items-center justify-center"
+                className="absolute left-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-md dark:bg-slate-950"
                 animate={{
                     x: theme === 'dark' ? 28 : 0,
                 }}

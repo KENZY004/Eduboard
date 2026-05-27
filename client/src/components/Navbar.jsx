@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -47,10 +48,10 @@ const Navbar = () => {
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
                 isMobileMenuOpen
-                    ? 'bottom-0 bg-slate-950'
+                    ? 'bottom-0 bg-white dark:bg-slate-950'
                     : (isScrolled
-                        ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
-                        : 'bg-slate-950/70 backdrop-blur-md '
+                        ? 'bg-white/85 backdrop-blur-xl border-b border-slate-200 shadow-lg overflow-hidden dark:bg-slate-950/80 dark:border-white/10'
+                        : 'bg-white/70 backdrop-blur-md dark:bg-slate-950/70'
                       )
                 }`}
         >
@@ -67,7 +68,7 @@ const Navbar = () => {
                                 <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
                             </svg>
                         </div>
-                        <span className="text-xl font-bold text-white">EduBoard</span>
+                        <span className="text-xl font-bold text-slate-950 dark:text-white">EduBoard</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -77,8 +78,8 @@ const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                    ? 'text-white'
-                                    : 'text-slate-300 hover:text-white'
+                                    ? 'text-indigo-600 dark:text-white'
+                                    : 'text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white'
                                     }`}
                             >
                                 {link.name}
@@ -92,13 +93,13 @@ const Navbar = () => {
                             <>
                                 <Link
                                     to="/dashboard"
-                                    className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-slate-800 hover:text-indigo-600 transition-colors dark:text-white dark:hover:text-indigo-300"
                                 >
                                     Dashboard
                                 </Link>
                                 <button
                                     onClick={handleLogout}
-                                    className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-950 transition-colors dark:text-slate-300 dark:hover:text-white"
                                 >
                                     Logout
                                 </button>
@@ -107,7 +108,7 @@ const Navbar = () => {
                             <>
                                 <Link
                                     to="/login"
-                                    className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-slate-800 hover:text-indigo-600 transition-colors dark:text-white dark:hover:text-indigo-300"
                                 >
                                     Login
                                 </Link>
@@ -119,12 +120,13 @@ const Navbar = () => {
                                 </Link>
                             </>
                         )}
+                        <ThemeToggle />
                     </div>
 
                     {/* Mobile Menu Button */}
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="md:hidden p-2 text-white hover:text-indigo-300 transition-colors"
+                        className="md:hidden p-2 text-slate-800 hover:text-indigo-600 transition-colors dark:text-white dark:hover:text-indigo-300"
                     >
                         <svg
                             className="w-6 h-6"
@@ -153,22 +155,26 @@ const Navbar = () => {
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden fixed inset-0 top-16 z-40 bg-slate-950 px-6 py-4 border-t border-white/10 overflow-y-auto">
+                    <div className="md:hidden fixed inset-0 top-16 z-40 bg-white px-6 py-4 border-t border-slate-200 overflow-y-auto dark:bg-slate-950 dark:border-white/10">
                         <div className="flex flex-col space-y-4">
+                            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
+                                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Theme</span>
+                                <ThemeToggle />
+                            </div>
                             {navLinks.map((link) => (
                                 <Link
                                     key={link.path}
                                     to={link.path}
                                     onClick={() => setIsMobileMenuOpen(false)}
                                     className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                        ? 'text-white'
-                                        : 'text-slate-300 hover:text-white'
+                                        ? 'text-indigo-600 dark:text-white'
+                                        : 'text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white'
                                         }`}
                                 >
                                     {link.name}
                                 </Link>
                             ))}
-                            <div className="pt-4 border-t border-white/10 flex flex-col space-y-3">
+                            <div className="pt-4 border-t border-slate-200 flex flex-col space-y-3 dark:border-white/10">
                                 {token ? (
                                     <>
                                         <Link
@@ -183,7 +189,7 @@ const Navbar = () => {
                                                 handleLogout();
                                                 setIsMobileMenuOpen(false);
                                             }}
-                                            className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors text-center"
+                                            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-950 transition-colors text-center dark:text-slate-300 dark:hover:text-white"
                                         >
                                             Logout
                                         </button>
@@ -193,7 +199,7 @@ const Navbar = () => {
                                         <Link
                                             to="/login"
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors text-center"
+                                            className="px-4 py-2 text-sm font-medium text-slate-800 hover:text-indigo-600 transition-colors text-center dark:text-white dark:hover:text-indigo-300"
                                         >
                                             Login
                                         </Link>

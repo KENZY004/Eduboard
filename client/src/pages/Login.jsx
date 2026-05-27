@@ -120,7 +120,7 @@ const Login = () => {
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-white/95 text-slate-950 dark:bg-slate-900/90 dark:text-white"
             >
                 <div>
                     <motion.div
@@ -135,12 +135,12 @@ const Login = () => {
                             </div>
                             <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
                         </div>
-                        <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+                        <Link to="/" className="text-sm text-slate-500 hover:text-slate-950 transition-colors dark:text-slate-400 dark:hover:text-white">
                             ← Back to Home
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-950 mb-3 sm:mb-4 tracking-tight leading-tight dark:text-white">
                         Welcome back to <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Infinity.</span>
                     </h2>

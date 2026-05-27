@@ -277,7 +277,7 @@ const LandingPage = () => {
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white overflow-hidden ">
+        <div className="min-h-screen bg-white text-slate-950 overflow-hidden dark:bg-slate-950 dark:text-white">
 
             {/* Hero Section */}
             <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -343,7 +343,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent leading-tight"
+                        className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-950 via-indigo-700 to-purple-700 bg-clip-text text-transparent leading-tight dark:from-white dark:via-indigo-200 dark:to-purple-200"
                     >
                         Collaborate. Create. Learn.
                     </motion.h1>
@@ -351,7 +351,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto"
+                        className="text-xl md:text-2xl text-slate-600 mb-8 max-w-3xl mx-auto dark:text-slate-300"
                     >
                         EduBoard is the ultimate collaborative whiteboard
                         platform for modern education. Bring your classroom to
@@ -372,7 +372,7 @@ const LandingPage = () => {
                         </Link>
                         <Link
                             to="/features"
-                            className="px-8 py-4 text-lg font-semibold text-white bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-white/20"
+                            className="px-8 py-4 text-lg font-semibold text-slate-800 bg-white/80 backdrop-blur-sm rounded-xl hover:bg-white transition-all border border-slate-200 shadow-lg dark:text-white dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/20"
                         >
                             Explore Features
                         </Link>
@@ -388,7 +388,7 @@ const LandingPage = () => {
                             <div className="text-4xl font-bold text-indigo-400">
                                 ∞
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                                 Infinite Canvas
                             </div>
                         </motion.div>
@@ -400,7 +400,7 @@ const LandingPage = () => {
                             <div className="text-4xl font-bold text-purple-400">
                                 ⚡
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                                 Real-time Sync
                             </div>
                         </motion.div>
@@ -412,7 +412,7 @@ const LandingPage = () => {
                             <div className="text-4xl font-bold text-pink-400">
                                 🎨
                             </div>
-                            <div className="text-sm text-slate-400 mt-2">
+                            <div className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                                 Creative Tools
                             </div>
                         </motion.div>
@@ -432,7 +432,7 @@ const LandingPage = () => {
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">
                             Powerful Features
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Everything you need for collaborative learning
                         </p>
                     </motion.div>
@@ -454,7 +454,7 @@ const LandingPage = () => {
                                 <h3 className="text-xl font-semibold mb-3">
                                     {feature.title}
                                 </h3>
-                                <p className="text-slate-400">
+                                <p className="text-slate-600 dark:text-slate-400">
                                     {feature.description}
                                 </p>
                             </motion.div>
@@ -464,7 +464,7 @@ const LandingPage = () => {
             </section>
 
             {/* How It Works */}
-            <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
+            <section className="py-24 px-6 lg:px-8 bg-slate-100/70 dark:bg-slate-900/50">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -475,7 +475,7 @@ const LandingPage = () => {
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">
                             How It Works
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Get started in three simple steps
                         </p>
                     </motion.div>
@@ -506,7 +506,7 @@ const LandingPage = () => {
                                 <h3 className="text-2xl font-semibold mb-3">
                                     {step.title}
                                 </h3>
-                                <p className="text-slate-400 max-w-xs mx-auto">
+                                <p className="text-slate-600 max-w-xs mx-auto dark:text-slate-400">
                                     {step.description}
                                 </p>
                             </motion.div>
@@ -527,7 +527,7 @@ const LandingPage = () => {
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">
                             Built for Everyone
                         </h2>
-                        <p className="text-xl text-slate-400">
+                        <p className="text-xl text-slate-600 dark:text-slate-400">
                             Tailored experiences for teachers and students
                         </p>
                     </motion.div>
@@ -569,7 +569,7 @@ const LandingPage = () => {
                                                     d="M5 13l4 4L19 7"
                                                 />
                                             </svg>
-                                            <span className="text-slate-300">
+                                            <span className="text-slate-700 dark:text-slate-300">
                                                 {benefit}
                                             </span>
                                         </li>
@@ -588,7 +588,7 @@ const LandingPage = () => {
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
                             Ready to Transform Your Classroom?
                         </h2>
-                        <p className="text-xl text-slate-300 mb-8">
+                        <p className="text-xl text-slate-600 mb-8 dark:text-slate-300">
                             Join thousands of educators and students already
                             using EduBoard for collaborative learning.
                         </p>

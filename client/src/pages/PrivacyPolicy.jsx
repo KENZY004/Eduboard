@@ -2,11 +2,11 @@ import React from "react";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-slate-950 text-white px-6 py-16">
+    <div className="min-h-screen bg-white text-slate-950 px-6 py-16 dark:bg-slate-950 dark:text-white">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-center">Privacy Policy</h1>
 
-        <p className="text-slate-400 mb-10 text-center">
+        <p className="text-slate-500 mb-10 text-center dark:text-slate-400">
           Last Updated: May 2026
         </p>
 
@@ -14,7 +14,7 @@ const PrivacyPolicy = () => {
           {/* Introduction */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               Welcome to EduBoard. Your privacy is important to us. This Privacy
               Policy explains how we collect, use, and protect your information
               while using our platform.
@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
           {/* Data Collection */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">Data Collection</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               We may collect personal information such as your name, email
               address, profile details, and usage data when you interact with
               EduBoard.
@@ -34,7 +34,7 @@ const PrivacyPolicy = () => {
           {/* Use of Information */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">Use of Information</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               The collected information is used to improve user experience,
               provide support, personalize content, and maintain platform
               security.
@@ -44,7 +44,7 @@ const PrivacyPolicy = () => {
           {/* Cookies */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">Cookies & Tracking</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               EduBoard may use cookies and analytics tools to understand user
               behavior and improve performance.
             </p>
@@ -55,7 +55,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-2xl font-semibold mb-4">
               Third-Party Services
             </h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               We may use trusted third-party services for authentication,
               analytics, and hosting. These services may process your data
               according to their own privacy policies.
@@ -65,7 +65,7 @@ const PrivacyPolicy = () => {
           {/* User Rights */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">User Rights</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               Users have the right to access, update, or request deletion of
               their personal information whenever applicable.
             </p>
@@ -74,7 +74,7 @@ const PrivacyPolicy = () => {
           {/* Contact */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
-            <p className="text-slate-300 leading-7">
+            <p className="text-slate-700 leading-7 dark:text-slate-300">
               If you have any questions regarding this Privacy Policy, please
               contact us at:
             </p>
