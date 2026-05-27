@@ -25,19 +25,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const location = useLocation();
-
-  if (!token) {
-    return <Navigate to="/login" state={{ from: location.pathname }} />;
-  }
-
-  // If admin tries to access dashboard, redirect to admin panel
-  if (user.role === "admin" && location.pathname === "/dashboard") {
-    return <Navigate to="/admin" />;
-  }
-
+  // 🚀 BYPASS ENABLED: Ab yeh bina login check kiye direct andar jaane dega
   return children;
 };
 
