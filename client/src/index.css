@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ===== Theme Variables ===== */
 :root {
@@ -30,6 +31,7 @@
 
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(0, 0, 0, 0.1);
+  color-scheme: light;
 }
 
 .dark {
@@ -58,6 +60,7 @@
 
   --glass-bg: rgba(15, 23, 42, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
+  color-scheme: dark;
 }
 
 
@@ -71,7 +74,7 @@ body,
   background-color: var(--bg-primary);
   color: var(--text-primary);
   overflow-x: hidden;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -135,14 +138,14 @@ body::after {
 
 /* Glass Inputs */
 .input-glass {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   transition: all 0.3s ease;
 }
 
 .input-glass:focus {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--bg-surface);
   border-color: rgba(99, 102, 241, 0.5);
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
@@ -160,16 +163,15 @@ h6 {
 
 /* Utilities */
 .surface-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .surface-card:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  border-color: var(--border-glow);
+  box-shadow: 0 10px 40px -10px var(--shadow-md);
 }
 
 /* Buttons */
@@ -188,7 +190,7 @@ h6 {
 }
 
 .text-gradient {
-  background: linear-gradient(to right, #ffffff, #94a3b8);
+  background: linear-gradient(to right, var(--text-primary), var(--text-tertiary));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -218,16 +220,16 @@ h6 {
 
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: var(--bg-depth);
   box-shadow: none;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--bg-tertiary);
   border-radius: 4px;
 }
 :root {
-  scrollbar-color: #1e293b #020617;
+  scrollbar-color: var(--bg-tertiary) var(--bg-depth);
   scrollbar-width: none;
 }
 

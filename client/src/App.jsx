@@ -23,6 +23,7 @@ import VerifyRegistrationOTP from "./pages/VerifyRegistrationOTP";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./context/ThemeContext";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ThemeToggle from "./components/ThemeToggle";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -89,8 +90,13 @@ const AppLayout = () => {
   const isAuthRoute = authRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen bg-white text-slate-950 overflow-x-hidden font-sans selection:bg-purple-500/30 dark:bg-slate-950 dark:text-white">
       <Navbar />
+      {isAuthRoute && (
+        <div className="fixed right-4 top-4 z-50">
+          <ThemeToggle />
+        </div>
+      )}
       <div className={isAuthRoute ? "" : "pt-14"}>
         <Routes>
           {/* Public Routes */}

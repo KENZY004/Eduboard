@@ -108,7 +108,7 @@ const AdminPanel = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-white via-slate-100 to-white flex items-center justify-center dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
@@ -117,17 +117,17 @@ const AdminPanel = () => {
     return (
         <div className="min-h-screen p-4 sm:p-6 md:p-8 flex flex-col max-w-7xl mx-auto">
             {/* Header */}
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 border-b border-white/5 pb-4 sm:pb-6 gap-4 sm:gap-0">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 border-b border-slate-200 pb-4 sm:pb-6 gap-4 sm:gap-0 dark:border-white/5">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-950 mb-2 tracking-tight flex items-center gap-2 sm:gap-3 dark:text-white">
                         <BsLightningChargeFill className="text-indigo-500 text-xl sm:text-2xl" /> Admin Panel <span className="text-xs px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 font-mono font-normal tracking-wide">PRO</span>
                     </h1>
-                    <p className="text-slate-400 font-light text-sm sm:text-base">Teacher Verification Management</p>
+                    <p className="text-slate-600 font-light text-sm sm:text-base dark:text-slate-400">Teacher Verification Management</p>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-6 self-end sm:self-auto">
                     <button
                         onClick={fetchTeachers}
-                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                        className="p-2 sm:p-3 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-950 transition-colors border border-transparent hover:border-slate-200 dark:hover:bg-white/5 dark:text-slate-400 dark:hover:text-white dark:hover:border-white/10"
                         title="Refresh"
                     >
                         <FaSync />
@@ -138,7 +138,7 @@ const AdminPanel = () => {
                             localStorage.removeItem('user');
                             window.location.href = '/login';
                         }}
-                        className="p-2 sm:p-3 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                        className="p-2 sm:p-3 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-950 transition-colors border border-transparent hover:border-slate-200 dark:hover:bg-white/5 dark:text-slate-400 dark:hover:text-white dark:hover:border-white/10"
                     >
                         <FaSignOutAlt />
                     </button>
@@ -156,7 +156,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-yellow-400 text-sm font-semibold mb-1">Pending Review</p>
-                            <p className="text-4xl font-bold text-white">{pendingTeachers.length}</p>
+                            <p className="text-4xl font-bold text-slate-950 dark:text-white">{pendingTeachers.length}</p>
                         </div>
                         <div className="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center">
                             <FaClock className="text-yellow-400 text-2xl" />
@@ -173,7 +173,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-green-400 text-sm font-semibold mb-1">Total Teachers</p>
-                            <p className="text-4xl font-bold text-white">{allTeachers.length}</p>
+                            <p className="text-4xl font-bold text-slate-950 dark:text-white">{allTeachers.length}</p>
                         </div>
                         <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center">
                             <FaUser className="text-green-400 text-2xl" />
@@ -190,7 +190,7 @@ const AdminPanel = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-indigo-400 text-sm font-semibold mb-1">Approved</p>
-                            <p className="text-4xl font-bold text-white">
+                            <p className="text-4xl font-bold text-slate-950 dark:text-white">
                                 {allTeachers.filter(t => t.verificationStatus === 'approved').length}
                             </p>
                         </div>
@@ -209,7 +209,7 @@ const AdminPanel = () => {
                     onClick={() => setActiveTab('pending')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'pending'
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        : 'bg-white/80 text-slate-600 hover:text-slate-950 hover:bg-white border border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50 dark:border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -223,7 +223,7 @@ const AdminPanel = () => {
                     onClick={() => setActiveTab('all')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'all'
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        : 'bg-white/80 text-slate-600 hover:text-slate-950 hover:bg-white border border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50 dark:border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -237,7 +237,7 @@ const AdminPanel = () => {
                     onClick={() => setActiveTab('students')}
                     className={`px-8 py-4 rounded-2xl font-semibold transition-all text-base ${activeTab === 'students'
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border border-indigo-500/50'
-                        : 'bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700'
+                        : 'bg-white/80 text-slate-600 hover:text-slate-950 hover:bg-white border border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50 dark:border-slate-700'
                         }`}
                 >
                     <span className="flex items-center gap-2">
@@ -254,12 +254,12 @@ const AdminPanel = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-16 text-center"
+                            className="bg-gradient-to-br from-white to-slate-100 backdrop-blur-sm border border-slate-200 rounded-3xl p-16 text-center dark:from-slate-800/50 dark:to-slate-900/50 dark:border-slate-700"
                         >
                             <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <FaCheckCircle className="text-6xl text-green-400" />
                             </div>
-                            <h3 className="text-2xl font-semibold text-white mb-2">All Caught Up!</h3>
+                            <h3 className="text-2xl font-semibold text-slate-950 mb-2 dark:text-white">All Caught Up!</h3>
                             <p className="text-slate-400">No pending teacher verifications at the moment</p>
                         </motion.div>
                     ) : (
@@ -270,7 +270,7 @@ const AdminPanel = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={{ y: -4 }}
-                                className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl border border-slate-700 hover:border-indigo-500/50 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 group"
+                                className="bg-gradient-to-br from-white to-slate-100 backdrop-blur-xl border border-slate-200 hover:border-indigo-300 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 group dark:from-slate-800/80 dark:to-slate-900/80 dark:border-slate-700 dark:hover:border-indigo-500/50"
                             >
                                 <div className="flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-6">
                                     <div className="flex-1 w-full">
@@ -282,7 +282,7 @@ const AdminPanel = () => {
                                                 </div>
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 truncate">{teacher.username}</h3>
+                                                <h3 className="text-lg sm:text-2xl font-bold text-slate-950 mb-1 truncate dark:text-white">{teacher.username}</h3>
                                                 <div className="flex items-center gap-2 text-slate-400">
                                                     <FaEnvelope className="text-xs sm:text-sm flex-shrink-0" />
                                                     <span className="text-xs sm:text-sm truncate">{teacher.email}</span>
@@ -291,7 +291,7 @@ const AdminPanel = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                                            <div className="flex items-center gap-3 text-slate-300 bg-slate-900/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 text-slate-700 bg-white/80 border border-slate-200 rounded-xl p-4 dark:text-slate-300 dark:bg-slate-900/50 dark:border-transparent">
                                                 <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                                                     <FaCalendar className="text-indigo-400" />
                                                 </div>
@@ -300,7 +300,7 @@ const AdminPanel = () => {
                                                     <p className="font-semibold">{new Date(teacher.registeredAt).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3 text-slate-300 bg-slate-900/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 text-slate-700 bg-white/80 border border-slate-200 rounded-xl p-4 dark:text-slate-300 dark:bg-slate-900/50 dark:border-transparent">
                                                 <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                                                     <FaFileAlt className="text-indigo-400" />
                                                 </div>
@@ -323,7 +323,7 @@ const AdminPanel = () => {
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             whileHover={{ scale: 1.02, x: 4 }}
-                                                            className="flex items-center gap-3 bg-slate-900/50 hover:bg-slate-800/50 border border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 transition-all group/doc"
+                                                            className="flex items-center gap-3 bg-white/80 hover:bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-4 transition-all group/doc dark:bg-slate-900/50 dark:hover:bg-slate-800/50 dark:border-slate-700 dark:hover:border-indigo-500/50"
                                                         >
                                                             <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center group-hover/doc:bg-indigo-500/30 transition-colors">
                                                                 <FaFileAlt className="text-indigo-400" />
@@ -377,11 +377,11 @@ const AdminPanel = () => {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-slate-700 rounded-3xl overflow-hidden shadow-2xl"
+                    className="bg-gradient-to-br from-white to-slate-100 backdrop-blur-xl border border-slate-200 rounded-3xl overflow-hidden shadow-2xl dark:from-slate-800/50 dark:to-slate-900/50 dark:border-slate-700"
                 >
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-slate-950/50 border-b border-slate-700">
+                            <thead className="bg-slate-100/80 border-b border-slate-200 dark:bg-slate-950/50 dark:border-slate-700">
                                 <tr>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Teacher</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
@@ -408,7 +408,7 @@ const AdminPanel = () => {
                                                 <span className="text-white font-semibold">{teacher.username}</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 text-slate-300">{teacher.email}</td>
+                                        <td className="px-8 py-5 text-slate-700 dark:text-slate-300">{teacher.email}</td>
                                         <td className="px-8 py-5">
                                             <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${teacher.verificationStatus === 'approved'
                                                 ? 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -455,11 +455,11 @@ const AdminPanel = () => {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-slate-700 rounded-3xl overflow-hidden shadow-2xl"
+                    className="bg-gradient-to-br from-white to-slate-100 backdrop-blur-xl border border-slate-200 rounded-3xl overflow-hidden shadow-2xl dark:from-slate-800/50 dark:to-slate-900/50 dark:border-slate-700"
                 >
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-slate-950/50 border-b border-slate-700">
+                            <thead className="bg-slate-100/80 border-b border-slate-200 dark:bg-slate-950/50 dark:border-slate-700">
                                 <tr>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Student</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
@@ -494,7 +494,7 @@ const AdminPanel = () => {
                                                     <span className="text-white font-semibold">{student.username}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5 text-slate-300">{student.email}</td>
+                                            <td className="px-8 py-5 text-slate-700 dark:text-slate-300">{student.email}</td>
                                             <td className="px-8 py-5 text-slate-400 text-sm">
                                                 {new Date(student.createdAt).toLocaleDateString()}
                                             </td>

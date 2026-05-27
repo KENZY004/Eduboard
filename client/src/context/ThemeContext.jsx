@@ -12,15 +12,16 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
-        // Get theme from localStorage or default to 'dark'
-        return localStorage.getItem('theme') || 'dark';
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) return savedTheme;
+
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
     useEffect(() => {
-        // Save theme to localStorage whenever it changes
         localStorage.setItem('theme', theme);
+        document.documentElement.dataset.theme = theme;
 
-        // Apply theme class to document root
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {

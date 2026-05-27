@@ -62,7 +62,7 @@ const ResetPassword = () => {
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-white/95 text-slate-950 dark:bg-slate-900/90 dark:text-white"
             >
                 <div>
                     <motion.div
@@ -79,7 +79,7 @@ const ResetPassword = () => {
                         </div>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-slate-950 mb-3 sm:mb-4 tracking-tight leading-tight dark:text-white">
                         Set New Password
                     </h2>
                     <p className="text-slate-400 text-sm sm:text-base mb-6 sm:mb-8">
