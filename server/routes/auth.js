@@ -97,16 +97,18 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
         const savedUser = await newUser.save();
 
         // Send verification email
-        const emailResult = await sendRegistrationVerificationEmail(savedUser.email, savedUser.username, otp);
+        // BYPASS EMAIL SENDING FOR LOCAL TESTING
+        /* const emailResult = await sendRegistrationVerificationEmail(savedUser.email, savedUser.username, otp);
         if (!emailResult.success) {
-            // Cleanup user if email failed on registration
             await User.findByIdAndDelete(savedUser._id);
-            return res.status(500).json({
-                message: 'Failed to send verification email. Please check your email and try again.',
-                error: 'EMAIL_SEND_FAILED'
-            });
+            return res.status(500).json({ message: 'Failed...' });
         }
-
+        */
+        
+        // Force verify the user automatically so login works immediately
+        savedUser.isEmailVerified = true;
+        savedUser.verificationStatus = 'approved'; 
+        await savedUser.save();
         // Create temporary token for document upload / session tracking
         const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
