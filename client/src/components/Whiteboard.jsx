@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 // import { v4 as uuidv4 } from 'uuid'; // Removed in favor of crypto.randomUUID()
 import io from 'socket.io-client';
@@ -14,6 +15,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
+import MinimapRadar from './MinimapRadar';
 
 const Whiteboard = () => {
     const canvasRef = useRef(null);
@@ -359,6 +361,10 @@ const Whiteboard = () => {
     const drawElement = (ctx, element) => {
         const { type, color, size, points, x, y, width, height, endX, endY, text, dataURL } = element;
 
+        let displayColor = color;
+    if (!displayColor || displayColor === '#ffffff' || displayColor === '#000000' || displayColor === '#cbd5e1') {
+        displayColor = darkMode ? '#ffffff' : '#000000';
+    }
         ctx.save();
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -370,7 +376,7 @@ const Whiteboard = () => {
                 ctx.globalAlpha = 1.0; // Full opacity to completely erase
             } else {
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = color;
+                ctx.strokeStyle = displayColor;
             }
             ctx.lineWidth = size;
             if (type === 'highlighter') {
@@ -1984,7 +1990,7 @@ const Whiteboard = () => {
                         width: ((elements[editingElement.index]?.width || editingElement.width || 100)) * scale,
                         height: ((elements[editingElement.index]?.height || editingElement.height || 50)) * scale,
                         backgroundColor: editingElement.type === 'sticky' ? '#fef08a' : 'transparent',
-                        color: editingElement.type === 'sticky' ? '#000' : (editingElement.color || color),
+                        color: editingElement.type === 'sticky' ? '#000' : ((!editingElement.color || editingElement.color === '#ffffff' || editingElement.color === '#000000' || editingElement.color === '#cbd5e1') ? (darkMode ? '#ffffff' : '#000000') : editingElement.color),
                         fontSize: (() => {
                             if (editingElement.type === 'sticky') {
                                 // Font size proportional to note width (10% of width)
@@ -2015,7 +2021,13 @@ const Whiteboard = () => {
                 <span className="text-white font-mono text-xs sm:text-sm w-10 sm:w-12 text-center">{Math.round(scale * 100)}%</span>
                 <button onClick={() => handleZoom(0.1)} className="p-1.5 sm:p-2 text-slate-400 hover:text-white transition-colors"><BsZoomIn /></button>
             </div>
-
+            <MinimapRadar 
+                elements={elements} 
+                scale={scale} 
+                panOffset={panOffset} 
+                setPanOffset={setPanOffset} 
+                darkMode={darkMode} 
+            />
             <canvas
                 ref={canvasRef}
                 onPointerDown={handlePointerDown}
