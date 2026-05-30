@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
@@ -221,6 +221,39 @@ const LandingPage = () => {
         },
     ]
 
+    const [mousePosition, setMousePosition] = useState({
+    x: 0,
+    y: 0,
+});
+useEffect(() => {
+    const handleMouseMove = (e) => {
+        if (!heroRef.current) return;
+
+        const rect = heroRef.current.getBoundingClientRect();
+
+        setMousePosition({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        });
+    };
+
+    const heroElement = heroRef.current;
+
+    if (heroElement) {
+        heroElement.addEventListener("mousemove", handleMouseMove);
+    }
+
+    return () => {
+        if (heroElement) {
+            heroElement.removeEventListener(
+                "mousemove",
+                handleMouseMove
+            );
+        }
+    };
+}, []);
+
+
     const useCases = [
         {
             role: "For Teachers",
@@ -281,10 +314,34 @@ const LandingPage = () => {
 
             {/* Hero Section */}
             <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+
+                {/* Spotlight Effect */}
+                <div
+                className="pointer-events-none absolute inset-0 transition-opacity duration-300 hidden md:block"
+                style={{
+                    background: `radial-gradient(
+                    350px circle at ${mousePosition.x}px ${mousePosition.y}px,
+                    rgba(99, 102, 241, 0.18),
+                    rgba(168, 85, 247, 0.12),
+                    transparent 60%
+                    )`,
+                }}
+                />
                 {/* Grid Background */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
                 {/* Animated Background Elements */}
+                <div
+                className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+                style={{
+                    background: `radial-gradient(
+                    350px circle at ${mousePosition.x}px ${mousePosition.y}px,
+                     rgba(99, 102, 241, 0.18),
+                      rgba(168, 85, 247, 0.12),
+                      transparent 60%
+                    )`,
+                }}
+        />  
                 <div className="absolute inset-0 overflow-hidden">
                 <motion.div
                     animate={{
