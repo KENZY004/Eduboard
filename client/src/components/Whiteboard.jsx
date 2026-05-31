@@ -5,7 +5,7 @@ import api from '../lib/api';
 import {
     FaEraser, FaPen, FaTrash, FaSignOutAlt, FaShareAlt, FaCopy,
     FaSlash, FaUndo, FaRedo, FaSave, FaMoon, FaSun, FaDownload, FaFilePdf, FaFont,
-    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes
+    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes, FaFileAlt
 } from 'react-icons/fa';
 import {
     BsSquare, BsCircle, BsTriangle, BsPentagon, BsHexagon, BsOctagon, BsStar,
@@ -14,6 +14,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
+import SideNotes from './SideNotes';
 
 const Whiteboard = () => {
     const canvasRef = useRef(null);
@@ -50,6 +51,7 @@ const Whiteboard = () => {
     const [showCopied, setShowCopied] = useState(false);
     const [showSaveMenu, setShowSaveMenu] = useState(false);
     const [showShapeMenu, setShowShapeMenu] = useState(false);
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [scale, setScale] = useState(1);
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -2286,6 +2288,14 @@ const Whiteboard = () => {
                             <button onClick={() => fileInputRef.current.click()} className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
                                 <FaImage className="text-sm sm:text-base" />
                             </button>
+                            {/* NEW NOTES BUTTON */}
+                            <button 
+                                onClick={() => setIsNotesOpen(!isNotesOpen)} 
+                                className={`p-2 sm:p-3 rounded-lg transition-colors ${isNotesOpen ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} 
+                                title="Toggle Markdown Notes"
+                            >
+                                <FaFileAlt className="text-sm sm:text-base" />
+                            </button>
                         </div>
 
                         {/* Properties */}
@@ -2363,8 +2373,16 @@ const Whiteboard = () => {
                         </div>
                     </div>
                 </div >
+
             )}
+            {/* Sidebar Notes Component */}
+            <SideNotes 
+                isOpen={isNotesOpen} 
+                onClose={() => setIsNotesOpen(false)} 
+                darkMode={darkMode} 
+            />
         </div >
+
     );
 };
 
