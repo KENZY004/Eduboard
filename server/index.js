@@ -413,23 +413,22 @@ io.on('connection', (socket) => {
         .populate('allowedStudents', 'username email')
         .populate('createdBy', 'username');
 
-        if (board) {
-          socket.emit('load-board', {
-            elements: board.elements,
-            allowedParticipants: board.allowedStudents || [],
-            boardName: board.name,
-            hostName: board.createdBy?.username || 'Unknown Host',
-            hostId: board.createdBy?._id || board.createdBy
-          });
-        } else {
-          socket.emit('load-board', {
-            elements: [],
-            allowedParticipants: [],
-            boardName: 'Untitled Board',
-            hostName: 'Unknown Host',
-            hostId: null
-          });
-        }
+      if (board) {
+        socket.emit('load-board', {
+          elements: board.elements,
+          allowedStudents: board.allowedStudents || [],
+          allowStudentEditing: board.allowStudentEditing || false, // FIX #95: send persisted toggle state to client
+          boardName: board.name,
+          teacherName: board.createdBy?.username || 'Unknown Teacher'
+        });
+      } else {
+        socket.emit('load-board', {
+          elements: [],
+          allowedStudents: [],
+          boardName: 'Untitled Board',
+          teacherName: 'Unknown Teacher'
+        });
+      }
     } catch (err) {
       console.error('Error loading board:', err);
     }
@@ -490,18 +489,18 @@ io.on('connection', (socket) => {
         if (board) {
           studentSocket.emit('load-board', {
             elements: board.elements,
-            allowedParticipants: board.allowedStudents || [],
+            allowedStudents: board.allowedStudents || [],
+            allowStudentEditing: board.allowStudentEditing || false,
             boardName: board.name,
-            hostName: board.createdBy?.username || 'Unknown Host',
-            hostId: board.createdBy?._id || board.createdBy
+            teacherName: board.createdBy?.username || 'Unknown Teacher'
           });
         } else {
           studentSocket.emit('load-board', {
             elements: [],
-            allowedParticipants: [],
+            allowedStudents: [],
+            allowStudentEditing: false,
             boardName: 'Untitled Board',
-            hostName: 'Unknown Host',
-            hostId: null
+            teacherName: 'Unknown Teacher'
           });
         }
       } catch (err) {
@@ -652,19 +651,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('clear-canvas', async (roomId) => {
-    // Only the board creator (teacher) can clear the canvas
     try {
+      // FIX #94: verify the emitting user is the board owner before clearing
       const board = await Board.findOne({ roomId });
-
-      if (!board) return;
-
-      if (board.createdBy.toString() !== socket.userId) {
-        return; // Reject if not the board owner
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can clear the canvas' });
       }
-
-      // Broadcast to ALL users in room (including sender)
       io.to(roomId).emit('clear-canvas');
-
       await Board.findOneAndUpdate(
         { roomId },
         { $set: { elements: [] } }
@@ -693,6 +686,11 @@ io.on('connection', (socket) => {
   // Grant editing permission to specific student
   socket.on('grant-participant-permission', async ({ roomId, studentId }) => {
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can grant permissions' });
+      }
       await Board.findOneAndUpdate(
         { roomId },
         { $addToSet: { allowedStudents: studentId } }
@@ -714,6 +712,11 @@ io.on('connection', (socket) => {
   // Revoke editing permission from specific student
   socket.on('revoke-participant-permission', async ({ roomId, studentId }) => {
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can revoke permissions' });
+      }
       await Board.findOneAndUpdate(
         { roomId },
         { $pull: { allowedStudents: studentId } }
@@ -734,11 +737,13 @@ io.on('connection', (socket) => {
 
   // Toggle student editing permission
   socket.on('toggle-student-editing', async ({ roomId, allowEditing }) => {
-    // Broadcast to all users in room
-    socket.to(roomId).emit('student-editing-changed', allowEditing);
-
-    // Update database
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can toggle student editing' });
+      }
+      socket.to(roomId).emit('student-editing-changed', allowEditing);
       await Board.findOneAndUpdate(
         { roomId },
         { $set: { allowStudentEditing: allowEditing } }

@@ -8,6 +8,27 @@ import TeacherCharacter from '../components/TeacherCharacter';
 import StudentCharacter from '../components/StudentCharacter';
 import { AnimatePresence } from 'framer-motion';
 
+const GoogleIcon = () => (
+    <svg className="w-5 h-5 flex-shrink-0 mr-2" viewBox="0 0 24 24" fill="none">
+        <path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        />
+        <path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        />
+        <path
+            fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+        />
+        <path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+        />
+    </svg>
+);
+
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
@@ -17,6 +38,67 @@ const Login = () => {
     const from = location.state?.from || '/dashboard';
     const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
     const [detectedRole, setDetectedRole] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [tokenClient, setTokenClient] = useState(null);
+
+    const handleGoogleLogin = async (accessToken) => {
+        setError('');
+        setLoading(true);
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/google-login`, {
+                token: accessToken
+            });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            
+            if (res.data.user.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate(from);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Google login failed');
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        let timer;
+        const initializeGoogleClient = () => {
+            if (window.google) {
+                try {
+                    const client = window.google.accounts.oauth2.initTokenClient({
+                        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+                        scope: 'openid email profile',
+                        callback: async (tokenResponse) => {
+                            if (tokenResponse && tokenResponse.access_token) {
+                                await handleGoogleLogin(tokenResponse.access_token);
+                            }
+                        },
+                    });
+                    setTokenClient(client);
+                    if (timer) clearInterval(timer);
+                } catch (err) {
+                    console.error("Error initializing Google OAuth client:", err);
+                }
+            }
+        };
+
+        initializeGoogleClient();
+        timer = setInterval(initializeGoogleClient, 200);
+
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, []);
+
+    const handleGoogleClick = () => {
+        if (tokenClient) {
+            tokenClient.requestAccessToken();
+        } else {
+            setError("Google sign-in is not ready yet. Please try again.");
+        }
+    };
 
     useEffect(() => {
         if (error) {
@@ -213,16 +295,45 @@ const Login = () => {
                     </div>
 
                     <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: loading ? 1 : 1.02 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
                         type="submit"
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4"
+                        disabled={loading}
+                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Sign In Details <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        {loading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Processing...
+                            </>
+                        ) : (
+                            <>
+                                Sign In Details <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                            </>
+                        )}
                     </motion.button>
                 </form>
 
-                <p className="mt-10 text-slate-500 text-center text-sm">
+                <div className="mt-4 max-w-sm">
+                    <div className="flex items-center my-4">
+                        <div className="flex-grow border-t border-slate-800/60"></div>
+                        <span className="px-3 text-slate-500 text-xs uppercase tracking-wider">or</span>
+                        <div className="flex-grow border-t border-slate-800/60"></div>
+                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.02, boxShadow: '0 0 15px rgba(99, 102, 241, 0.15)' }}
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={handleGoogleClick}
+                        disabled={loading}
+                        className={`w-full bg-slate-800/40 hover:bg-slate-800/60 text-white font-semibold py-4 rounded-xl border border-slate-700/80 hover:border-slate-600 flex items-center justify-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <GoogleIcon />
+                        Continue with Google
+                    </motion.button>
+                </div>
+
+                <p className="mt-8 text-slate-500 text-center text-sm">
                     New to EduBoard?{' '}
                     <Link to="/signup" className="text-white hover:text-indigo-300 transition-colors font-medium border-b border-indigo-500/30 hover:border-indigo-500">
                         Create an account

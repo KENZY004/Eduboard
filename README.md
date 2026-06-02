@@ -237,6 +237,8 @@ RESEND_API_KEY=your_resend_api_key
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
 Notes:
@@ -244,13 +246,15 @@ Notes:
 - For local development, `USE_GMAIL=true` is the simplest email option.
 - If you use Resend instead, set `USE_GMAIL=false` and provide `RESEND_API_KEY`.
 - Cloudinary is required for teacher document uploads and whiteboard image uploads.
+- `GOOGLE_CLIENT_ID` is required for Google Sign-In (student accounts only).
 
 ### 3. 💻 Configure the client
 
-Create `client/.env` with the backend URL:
+Create `client/.env` with the backend URL and Google Client ID:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
 ### 4. ▶️ Install dependencies and start both apps
