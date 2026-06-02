@@ -16,7 +16,7 @@ const AdminPanel = () => {
         fetchTeachers();
     }, []);
 
-    const fetchTeachers = async () => {
+    async function fetchTeachers() {
         setLoading(true);
         try {
             const [pendingRes, allRes, studentsRes] = await Promise.all([
@@ -33,7 +33,7 @@ const AdminPanel = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const handleApprove = async (userId, username) => {
         if (!confirm(`Approve ${username} as a teacher?`)) return;

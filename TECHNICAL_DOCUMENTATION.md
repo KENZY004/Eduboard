@@ -17,6 +17,7 @@ EduBoard is a real-time collaborative whiteboard platform designed for education
 - **React Icons** - Icon library
 - **FontAwesome** - Additional icons
 - **Tailwind CSS** - Utility-first CSS (via inline classes)
+- **Google Identity Services SDK** - Student OAuth2 integration
 
 ### **Backend**
 - **Node.js** - Runtime environment
@@ -30,6 +31,7 @@ EduBoard is a real-time collaborative whiteboard platform designed for education
 - **Resend** - Alternative email service
 - **dotenv** - Environment variable management
 - **CORS** - Cross-origin resource sharing
+- **Google UserInfo API** - Auth verification for Google accounts
 
 ### **Development Tools**
 - **Git** - Version control
@@ -101,6 +103,15 @@ User Login:
 6. Token stored in localStorage
 7. User redirected based on role (admin/teacher/student)
 ```
+
+### **Google Sign-In Flow (Students Only)**
+
+1. User clicks "Continue with Google" → Google Identity Services SDK obtains ID token.
+2. Frontend sends token to `POST /api/auth/google-login`.
+3. Server verifies token via Google UserInfo API.
+4. If user exists with role `student`, generate JWT and return.
+5. If user does not exist, auto‑register as a new `student` account, save to MongoDB, generate JWT.
+6. JWT token returned to client, stored in localStorage, and user redirected to student dashboard.
 
 ### **2. Whiteboard Real-time Collaboration Flow**
 
