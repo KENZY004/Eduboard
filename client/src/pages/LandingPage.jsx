@@ -1,11 +1,25 @@
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const LandingPage = () => {
     const heroRef = useRef(null)
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.hash) {
+            const id = location.hash.substring(1);
+            const element = document.getElementById(id);
+            if (element) {
+                const timer = setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [location.hash]);
 
     useEffect(() => {
         // Smooth scroll behavior for in-page scrolling
@@ -464,7 +478,7 @@ const LandingPage = () => {
             </section>
 
             {/* How It Works */}
-            <section className="py-24 px-6 lg:px-8 bg-slate-900/50">
+            <section id="how-it-works" className="py-24 px-6 lg:px-8 bg-slate-900/50">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0 }}

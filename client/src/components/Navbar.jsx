@@ -42,9 +42,21 @@ const Navbar = () => {
         ? [
             { name: 'Home', path: '/' },
             { name: 'Features', path: '/features' },
+            { name: 'How It Works', path: '/#how-it-works' },
             { name: 'About', path: '/about' },
         ]
         : []; // Empty array for logged-in users - no Home/Features/About links
+
+    const isActiveLink = (linkPath) => {
+        if (linkPath.includes('#')) {
+            const [path, hash] = linkPath.split('#');
+            return location.pathname === path && location.hash === `#${hash}`;
+        }
+        if (linkPath === '/') {
+            return location.pathname === '/' && !location.hash;
+        }
+        return location.pathname === linkPath;
+    };
 
     return (
         <nav
@@ -79,7 +91,7 @@ const Navbar = () => {
                             <Link
                                 key={link.path}
                                 to={link.path}
-                                className={`text-sm font-medium transition-colors ${location.pathname === link.path
+                                className={`text-sm font-medium transition-colors ${isActiveLink(link.path)
                                     ? 'text-white'
                                     : 'text-slate-300 hover:text-white'
                                     }`}
@@ -164,7 +176,7 @@ const Navbar = () => {
                                     key={link.path}
                                     to={link.path}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`text-sm font-medium transition-colors ${location.pathname === link.path
+                                    className={`text-sm font-medium transition-colors ${isActiveLink(link.path)
                                         ? 'text-white'
                                         : 'text-slate-300 hover:text-white'
                                         }`}

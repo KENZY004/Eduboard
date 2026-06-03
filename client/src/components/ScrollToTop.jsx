@@ -57,6 +57,9 @@ export default function ScrollToTop() {
     const isExcludedPath = EXCLUDED_PATHS.includes(pathname);
 
     useEffect(() => {
+        if (window.location.hash) {
+            return;
+        }
         // Scroll immediately
         scrollEverythingToTop();
         setIsVisible(false);
