@@ -1,27 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import api from '../lib/api';
-import { FaPlus, FaSignInAlt, FaSignOutAlt, FaRocket, FaFolder, FaClock, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
-import { BsLightningChargeFill } from 'react-icons/bs';
-import { motion } from 'framer-motion';
-import CreateBoardModal from '../components/CreateBoardModal';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import api from "../lib/api";
+import {
+    FaSignInAlt,
+    FaSignOutAlt,
+    FaRocket,
+    FaFolder,
+    FaClock,
+    FaTrash,
+    FaCopy,
+    FaCheck,
+} from "react-icons/fa";
+import { BsLightningChargeFill } from "react-icons/bs";
+import { motion } from "framer-motion";
+import CreateBoardModal from "../components/CreateBoardModal";
+import {
+    FaPlus,
+    FaUsers,
+    FaBookOpen,
+    FaChartLine,
+    FaHistory,
+} from "react-icons/fa";
 
 const Dashboard = () => {
-    const [roomId, setRoomId] = useState('');
+    const [roomId, setRoomId] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [savedBoards, setSavedBoards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [copiedBoardId, setCopiedBoardId] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const user = JSON.parse(localStorage.getItem('user'));
-    const isTeacher = user?.role === 'teacher';
+    const user = JSON.parse(localStorage.getItem("user"));
+    const isTeacher = user?.role === "teacher";
 
     // Redirect admin to admin panel if they somehow reach this page
     useEffect(() => {
-        if (user?.role === 'admin') {
-            navigate('/admin', { replace: true });
+        if (user?.role === "admin") {
+            navigate("/admin", { replace: true });
         }
     }, [user, navigate]);
 
@@ -34,7 +50,7 @@ const Dashboard = () => {
         }
     }, [user?.id, location.pathname]);
 
-    const fetchSavedBoards = async () => {
+    async function fetchSavedBoards() {
         try {
             let res;
             if (isTeacher) {
@@ -46,15 +62,19 @@ const Dashboard = () => {
             }
             setSavedBoards(res.data);
         } catch (err) {
-            console.error('Error fetching boards:', err);
+            console.error("Error fetching boards:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const generateRoomId = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        const randomStr = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const randomStr = (len) =>
+            Array.from(
+                { length: len },
+                () => chars[Math.floor(Math.random() * chars.length)],
+            ).join("");
         return `EDU-${randomStr(4)}-${randomStr(4)}`;
     };
 
@@ -64,15 +84,15 @@ const Dashboard = () => {
             const payload = {
                 name: boardName,
                 userId: user.id,
-                roomId: newRoomId
+                roomId: newRoomId,
             };
-            const response = await api.post('/api/boards/create', payload);
+            const response = await api.post("/api/boards/create", payload);
             setIsModalOpen(false);
             navigate(`/board/${newRoomId}`);
         } catch (err) {
-            console.error('Error creating board:', err);
-            console.error('Error response:', err.response?.data);
-            alert('Failed to create board. Please try again.');
+            console.error("Error creating board:", err);
+            console.error("Error response:", err.response?.data);
+            alert("Failed to create board. Please try again.");
         }
     };
 
@@ -91,12 +111,15 @@ const Dashboard = () => {
             if (isTeacher) {
                 // Teachers: delete the actual board
                 try {
-                    console.log('[DELETE] Teacher deleting board by roomId:', roomId);
+                    console.log("[DELETE] Teacher deleting board by roomId:", roomId);
                     await api.delete(`/api/boards/${roomId}`);
                 } catch (err) {
                     // If delete by roomId fails, try by _id (for orphaned boards)
                     if (err.response?.status === 404) {
-                        console.log('[DELETE] Teacher deleting board by _id with force:', boardId);
+                        console.log(
+                            "[DELETE] Teacher deleting board by _id with force:",
+                            boardId,
+                        );
                         await api.delete(`/api/boards/by-id/${boardId}?force=true`);
                     } else {
                         throw err;
@@ -104,13 +127,16 @@ const Dashboard = () => {
                 }
             } else {
                 // Students: delete their saved copy
+                // Students: delete their saved copy
                 await api.delete(`/api/boards/saved/${boardId}`);
             }
             fetchSavedBoards();
         } catch (err) {
-            console.error('Error deleting board:', err);
-            console.error('Error response:', err.response?.data);
-            alert(`Failed to delete board: ${err.response?.data?.message || err.message}`);
+            console.error("Error deleting board:", err);
+            console.error("Error response:", err.response?.data);
+            alert(
+                `Failed to delete board: ${err.response?.data?.message || err.message}`,
+            );
         }
     };
 
@@ -123,10 +149,13 @@ const Dashboard = () => {
         // Validation - ensure either standard UUID or EDU-XXXX-XXXX format
         // (to remain backwards compatible with old boards while strictly checking new ones)
         const isEduPattern = /^EDU-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code);
-        const isUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+        const isUUIDPattern =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                code,
+            );
 
         if (!isEduPattern && !isUUIDPattern) {
-            alert('Invalid room code format. Expected format: EDU-XXXX-XXXX');
+            alert("Invalid room code format. Expected format: EDU-XXXX-XXXX");
             return;
         }
 
@@ -135,28 +164,31 @@ const Dashboard = () => {
             if (response.data) {
                 navigate(`/board/${code}`);
             } else {
-                alert('Room code is invalid or room no longer exists.');
+                alert("Room code is invalid or room no longer exists.");
             }
         } catch (err) {
-            alert('Room code is invalid or room no longer exists.');
+            alert("Room code is invalid or room no longer exists.");
         }
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
     };
 
     const handleCopyLink = (roomId, e) => {
         e.stopPropagation();
         const boardUrl = `${window.location.origin}/whiteboard/${roomId}`;
-        navigator.clipboard.writeText(boardUrl).then(() => {
-            setCopiedBoardId(roomId);
-            setTimeout(() => setCopiedBoardId(null), 2000);
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-        });
+        navigator.clipboard
+            .writeText(boardUrl)
+            .then(() => {
+                setCopiedBoardId(roomId);
+                setTimeout(() => setCopiedBoardId(null), 2000);
+            })
+            .catch((err) => {
+                console.error("Failed to copy:", err);
+            });
     };
 
     const formatDate = (dateString) => {
@@ -165,27 +197,45 @@ const Dashboard = () => {
         const diffTime = Math.abs(now - date);
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'Today';
-        if (diffDays === 1) return 'Yesterday';
+        if (diffDays === 0) return "Today";
+        if (diffDays === 1) return "Yesterday";
         if (diffDays < 7) return `${diffDays} days ago`;
         return date.toLocaleDateString();
     };
+    const statsCards = [
+        {
+            title: "Total Saved Boards",
+            value: savedBoards.length,
+            icon: <FaFolder />,
+            iconColor: "text-indigo-400",
+            glow: "from-indigo-500/20 to-purple-500/20",
+            border: "border-indigo-500/20",
+        },
+    ];
 
+    const recentBoards = savedBoards.slice(0, 4);
     return (
         <div className="min-h-screen p-4 sm:p-6 md:p-8 flex flex-col max-w-7xl mx-auto">
-
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 border-b border-white/5 pb-4 sm:pb-6 gap-4 sm:gap-0">
                 <div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight flex items-center gap-2 sm:gap-3">
-                        <BsLightningChargeFill className="text-indigo-500 text-xl sm:text-2xl" /> EduBoard <span className="text-xs px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 font-mono font-normal tracking-wide">PRO</span>
+                        <BsLightningChargeFill className="text-indigo-500 text-xl sm:text-2xl" />{" "}
+                        EduBoard{" "}
+                        <span className="text-xs px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 font-mono font-normal tracking-wide">
+                            PRO
+                        </span>
                     </h1>
-                    <p className="text-slate-400 font-light text-sm sm:text-base">Collaborative workspace & infinite canvas</p>
+                    <p className="text-slate-400 font-light text-sm sm:text-base">
+                        Collaborative workspace & infinite canvas
+                    </p>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-6 self-end sm:self-auto">
                     <div className="text-right hidden sm:block">
                         <p className="text-white font-medium">{user?.username}</p>
-                        <p className="text-xs text-slate-500 font-mono uppercase">{user?.role || 'Student'}</p>
+                        <p className="text-xs text-slate-500 font-mono uppercase">
+                            {user?.role || "Student"}
+                        </p>
                     </div>
                     <button
                         onClick={handleLogout}
@@ -195,13 +245,118 @@ const Dashboard = () => {
                     </button>
                 </div>
             </header>
+            {/* Dashboard Overview */}
+            <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8"
+            >
+                {/* Stats Cards */}
+                <div className="lg:col-span-1 space-y-4">
+                    {statsCards.map((card, index) => (
+                        <motion.div
+                            key={index}
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            transition={{ type: "spring", stiffness: 260 }}
+                            className={`relative overflow-hidden rounded-2xl border ${card.border} bg-white/[0.03] backdrop-blur-xl p-6 group`}
+                        >
+                            {/* Glow */}
+                            <div
+                                className={`absolute inset-0 bg-gradient-to-br ${card.glow} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                            />
 
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div>
+                                    <p className="text-slate-400 text-sm mb-2">{card.title}</p>
+
+                                    <h3 className="text-4xl font-bold text-white tracking-tight">
+                                        {card.value}
+                                    </h3>
+                                </div>
+
+                                <div
+                                    className={`w-14 h-14 rounded-2xl border border-white/10 flex items-center justify-center bg-black/20 text-2xl ${card.iconColor} group-hover:scale-110 transition-transform`}
+                                >
+                                    {card.icon}
+                                </div>
+                            </div>
+
+                            {/* Accent Line */}
+                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Recent Activity */}
+                <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    className="lg:col-span-2 surface-card rounded-3xl p-6 border border-white/10"
+                >
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                            <FaHistory className="text-indigo-400 text-lg" />
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+
+                            <p className="text-slate-500 text-sm">Recently accessed boards</p>
+                        </div>
+                    </div>
+
+                    {recentBoards.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-center">
+                            <FaFolder className="text-slate-600 text-4xl mb-3" />
+
+                            <p className="text-slate-400">No recent activity yet</p>
+
+                            <p className="text-slate-600 text-sm mt-1">
+                                Your recent boards will appear here
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {recentBoards.map((board) => (
+                                <motion.div
+                                    key={board.roomId}
+                                    whileHover={{ x: 4 }}
+                                    onClick={() => openBoard(board.roomId)}
+                                    className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 cursor-pointer transition-all group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                                            <FaFolder className="text-indigo-400 text-sm" />
+                                        </div>
+
+                                        <div>
+                                            <h4 className="text-white text-sm font-medium">
+                                                {isTeacher
+                                                    ? board.name || "Untitled Board"
+                                                    : board.boardName || "Untitled Board"}
+                                            </h4>
+
+                                            <p className="text-slate-500 text-xs mt-1">
+                                                {formatDate(board.updatedAt || board.createdAt)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-slate-500 group-hover:text-indigo-400 transition-colors">
+                                        →
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
+            </motion.div>
             {/* Bento Grid */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className={`grid grid-cols-1 ${isTeacher ? 'lg:grid-cols-3 lg:grid-rows-2' : 'md:grid-cols-1'} gap-4 sm:gap-6 ${isTeacher ? 'lg:h-[600px]' : 'h-auto'}`}
+                className={`grid grid-cols-1 ${isTeacher ? "lg:grid-cols-3 lg:grid-rows-2" : "md:grid-cols-1"} gap-4 sm:gap-6 ${isTeacher ? "lg:h-[600px]" : "h-auto"}`}
             >
                 {/* Main Action: New Board (Large) - Teachers Only */}
                 {isTeacher && (
@@ -216,9 +371,12 @@ const Dashboard = () => {
                             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/10 text-indigo-400 mb-4 sm:mb-6 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
                                 <FaPlus className="text-xl sm:text-2xl" />
                             </div>
-                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight">Create New <br className="hidden sm:block" /> Whiteboard</h2>
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight">
+                                Create New <br className="hidden sm:block" /> Whiteboard
+                            </h2>
                             <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-md font-light">
-                                Start a new session on an infinite high-performance canvas. Optimized for teaching and sketching.
+                                Start a new session on an infinite high-performance canvas.
+                                Optimized for teaching and sketching.
                             </p>
                         </div>
 
@@ -235,10 +393,13 @@ const Dashboard = () => {
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
                                 <FaSignInAlt className="text-cyan-400 text-lg sm:text-xl" />
                             </div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white">Student Access</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white">
+                                Student Access
+                            </h3>
                         </div>
                         <p className="text-slate-400 text-sm sm:text-base">
-                            As a student, you can join whiteboards shared by your teachers using the room code below.
+                            As a student, you can join whiteboards shared by your teachers
+                            using the room code below.
                         </p>
                     </div>
                 )}
@@ -250,7 +411,9 @@ const Dashboard = () => {
                         <h3 className="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
                             <FaSignInAlt className="text-cyan-400" /> Join Session
                         </h3>
-                        <p className="text-slate-500 text-xs sm:text-sm mb-4 sm:mb-6">Enter a room code to connect.</p>
+                        <p className="text-slate-500 text-xs sm:text-sm mb-4 sm:mb-6">
+                            Enter a room code to connect.
+                        </p>
 
                         <form onSubmit={joinMeeting} className="flex gap-2">
                             <input
@@ -272,10 +435,13 @@ const Dashboard = () => {
                     <div className="flex justify-between items-start mb-3 sm:mb-4">
                         <div>
                             <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
-                                <FaFolder className="text-indigo-400 text-base sm:text-lg" /> Saved Boards
+                                <FaFolder className="text-indigo-400 text-base sm:text-lg" />{" "}
+                                Saved Boards
                             </h3>
                             <p className="text-slate-500 text-xs">
-                                {isTeacher ? 'Your recent whiteboards' : 'Boards from classes you attended'}
+                                {isTeacher
+                                    ? "Your recent whiteboards"
+                                    : "Boards from classes you attended"}
                             </p>
                         </div>
                     </div>
@@ -291,7 +457,9 @@ const Dashboard = () => {
                                 <FaFolder className="text-slate-600 text-3xl mb-2" />
                                 <p className="text-slate-500 text-sm">No saved boards yet</p>
                                 <p className="text-slate-600 text-xs mt-1">
-                                    {isTeacher ? 'Create your first board to get started' : 'Join a class to see boards here'}
+                                    {isTeacher
+                                        ? "Create your first board to get started"
+                                        : "Join a class to see boards here"}
                                 </p>
                             </div>
                         ) : (
@@ -306,8 +474,8 @@ const Dashboard = () => {
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-white font-medium text-sm truncate group-hover:text-indigo-400 transition-colors">
                                                 {isTeacher
-                                                    ? (board.name || 'Untitled Board')
-                                                    : (board.boardName || 'Untitled Board')}
+                                                    ? board.name || "Untitled Board"
+                                                    : board.boardName || "Untitled Board"}
                                             </h4>
                                             {!isTeacher && board.teacherName && (
                                                 <p className="text-slate-500 text-xs mt-1">
@@ -320,31 +488,39 @@ const Dashboard = () => {
                                                 <button
                                                     onClick={(e) => handleCopyLink(board.roomId, e)}
                                                     className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all ${copiedBoardId === board.roomId
-                                                        ? 'bg-green-500/20 text-green-400'
-                                                        : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400'
+                                                            ? "bg-green-500/20 text-green-400"
+                                                            : "bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400"
                                                         }`}
                                                     title="Copy board link"
                                                 >
                                                     {copiedBoardId === board.roomId ? (
                                                         <>
                                                             <FaCheck className="text-xs sm:text-sm" />
-                                                            <span className="hidden sm:inline text-xs font-medium">Copied!</span>
+                                                            <span className="hidden sm:inline text-xs font-medium">
+                                                                Copied!
+                                                            </span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <FaCopy className="text-xs sm:text-sm" />
-                                                            <span className="hidden sm:inline text-xs font-medium">Copy Link</span>
+                                                            <span className="hidden sm:inline text-xs font-medium">
+                                                                Copy Link
+                                                            </span>
                                                         </>
                                                     )}
                                                 </button>
                                             )}
                                             <button
-                                                onClick={(e) => handleDeleteBoard(
-                                                    board.roomId,
-                                                    isTeacher ? (board.name || 'Untitled Board') : (board.boardName || 'Untitled Board'),
-                                                    board._id,
-                                                    e
-                                                )}
+                                                onClick={(e) =>
+                                                    handleDeleteBoard(
+                                                        board.roomId,
+                                                        isTeacher
+                                                            ? board.name || "Untitled Board"
+                                                            : board.boardName || "Untitled Board",
+                                                        board._id,
+                                                        e,
+                                                    )
+                                                }
                                                 className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
                                                 title={isTeacher ? "Delete board" : "Remove from saved"}
                                             >
@@ -360,8 +536,6 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
-
-
             </motion.div>
 
             {/* Create Board Modal */}

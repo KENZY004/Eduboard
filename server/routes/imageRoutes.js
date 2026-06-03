@@ -4,6 +4,7 @@ const multer = require('multer');
 const cloudinary = require('../config/cloudinaryConfig');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const verifyToken = require('../utils/verifyToken');
+const Image = require('../models/Image');
 
 // Apply authentication to ALL image routes
 router.use(verifyToken);
@@ -27,6 +28,14 @@ router.post('/upload', upload.single('image'), async (req, res) => {
             return res.status(400).json({ message: 'No image file provided' });
         }
 
+        // Track image ownership in database
+        const newImage = new Image({
+            publicId: req.file.filename,
+            url: req.file.path,
+            userId: req.user.id
+        });
+        await newImage.save();
+
         // Return the Cloudinary URL and metadata
         res.json({
             success: true,
@@ -45,7 +54,25 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 router.delete('/delete/:publicId', async (req, res) => {
     try {
         const { publicId } = req.params;
+        
+        // Find the image in the database to verify ownership
+        const image = await Image.findOne({ publicId });
+        
+        if (!image) {
+            return res.status(404).json({ message: 'Image not found' });
+        }
+        
+        // Ensure the user requesting deletion owns the image
+        if (image.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized to delete this image' });
+        }
+
         const result = await cloudinary.uploader.destroy(publicId);
+        
+        // Remove from database after successful cloudinary deletion
+        if (result.result === 'ok' || result.result === 'not found') {
+            await Image.deleteOne({ publicId });
+        }
 
         res.json({
             success: true,

@@ -25,7 +25,9 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyRegistrationOTP from "./pages/VerifyRegistrationOTP";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./context/ThemeContext";
+import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import NotFound from "./pages/NotFound";
 
 const PrivateRoute = ({ children }) => {
   // 🔒 SECURE: Bypass removed. Now it properly checks for login.
@@ -99,6 +101,7 @@ const AppLayout = () => {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           
           {/* Auth Routes */}
@@ -110,10 +113,42 @@ const AppLayout = () => {
           <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
 
           {/* Private Routes */}
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/board/:roomId" element={<PrivateRoute><Whiteboard /></PrivateRoute>} />
-          <Route path="/verification-pending" element={<PrivateRoute><VerificationPending /></PrivateRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/board/:roomId"
+            element={
+              <PrivateRoute>
+                <Whiteboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/verification-pending"
+            element={
+              <PrivateRoute>
+                <VerificationPending />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            }
+          />
+
+          <Route path="*" element={<NotFound />} />
+
+          
         </Routes>
       </div>
       {!isAuthRoute && <Footer />}
