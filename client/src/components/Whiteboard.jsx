@@ -41,9 +41,8 @@ const Whiteboard = () => {
         console.error('Error parsing user from localStorage:', error);
         user = null;
     }
-   // const [isHost, setIsHost] = useState(false);
+const [isHost, setIsHost] = useState(false);
     const isStudent = !isHost;
-const [isHost, setIsHost] = useState(true);
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('#ffffff');
     const [brushSize, setBrushSize] = useState(5);

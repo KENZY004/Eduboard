@@ -1,4 +1,5 @@
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -14,6 +15,8 @@ import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage"; // Re-added
+import FAQPage from "./pages/FAQPage"; // Re-added
 import VerificationPending from "./pages/VerificationPending";
 import AdminPanel from "./pages/AdminPanel";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -25,7 +28,19 @@ import { ThemeProvider } from "./context/ThemeContext";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const PrivateRoute = ({ children }) => {
-  // 🚀 BYPASS ENABLED: Ab yeh bina login check kiye direct andar jaane dega
+  // 🔒 SECURE: Bypass removed. Now it properly checks for login.
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location.pathname }} />;
+  }
+
+  if (user.role === "admin" && location.pathname === "/dashboard") {
+    return <Navigate to="/admin" />;
+  }
+
   return children;
 };
 
@@ -34,15 +49,12 @@ const PublicRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   if (token) {
-    // If user is verified, redirect to dashboard
     if (user.isVerified) {
-      // If admin, redirect to admin panel
       if (user.role === "admin") {
         return <Navigate to="/admin" />;
       }
       return <Navigate to="/dashboard" />;
     }
-    // If not verified, redirect to verification pending page
     return <Navigate to="/verification-pending" />;
   }
 
@@ -77,100 +89,34 @@ const AppLayout = () => {
   const isAuthRoute = authRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
       <Navbar />
-      <div className={isAuthRoute ? "" : "pt-14"}>
+      <div className={`flex-grow ${isAuthRoute ? "" : "pt-14"}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          
           {/* Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-otp"
-            element={
-              <PublicRoute>
-                <VerifyOTP />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={
-              <PublicRoute>
-                <ResetPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-email"
-            element={
-              <PublicRoute>
-                <VerifyRegistrationOTP />
-              </PublicRoute>
-            }
-          />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
 
           {/* Private Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/board/:roomId"
-            element={
-              <PrivateRoute>
-                <Whiteboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/verification-pending"
-            element={
-              <PrivateRoute>
-                <VerificationPending />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPanel />
-              </AdminRoute>
-            }
-          />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/board/:roomId" element={<PrivateRoute><Whiteboard /></PrivateRoute>} />
+          <Route path="/verification-pending" element={<PrivateRoute><VerificationPending /></PrivateRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
         </Routes>
       </div>
+      {!isAuthRoute && <Footer />}
     </div>
   );
 };
