@@ -12,7 +12,7 @@ router.post('/', async (req, res) => {
     try {
         // Owner ke existing email service ko use karke mail bhejna
         await sendEmail(
-            process.env.EMAIL_USER, // Admin (yaani tumhe) mail aayega
+            process.env.ADMIN_EMAIL, // Admin (yaani tumhe) mail aayega
             subject ? `[EduBoard Contact] ${subject}` : `[EduBoard Contact] New message from ${name}`,
             `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
         );

@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/LandingPage';
 import FeaturesPage from './pages/FeaturesPage';
 import AboutPage from './pages/AboutPage';
-import FAQPage from './pages/FAQPage';
+
 import ContactPage from './pages/ContactPage';
 import VerificationPending from './pages/VerificationPending';
 import AdminPanel from './pages/AdminPanel';
@@ -118,7 +118,7 @@ const AppLayout = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/faq" element={<FAQPage />} />
+
           <Route path="/contact" element={<ContactPage />} />
 
           <Route path="/terms" element={<TermsOfService />} />
