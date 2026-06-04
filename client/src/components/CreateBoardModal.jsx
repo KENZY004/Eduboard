@@ -16,15 +16,12 @@ const CreateBoardModal = ({ isOpen, onClose, onCreateBoard }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('boardName trimmed:', boardName.trim());
-        console.log('Is empty?:', !boardName.trim());
 
         if (!boardName.trim()) {
             setError('Board name is required');
             return;
         }
 
-        console.log('Calling onCreateBoard with:', boardName.trim());
         onCreateBoard(boardName.trim());
         setBoardName('');
         setError('');
