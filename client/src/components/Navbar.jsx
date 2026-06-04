@@ -43,6 +43,7 @@ const Navbar = () => {
             { name: 'Home', path: '/' },
             { name: 'Features', path: '/features' },
             { name: 'About', path: '/about' },
+          { name: 'Contact', path: '/contact' }
         ]
         : []; // Empty array for logged-in users - no Home/Features/About links
 

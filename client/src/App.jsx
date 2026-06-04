@@ -1,3 +1,25 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Whiteboard from './components/Whiteboard';
+import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/LandingPage';
+import FeaturesPage from './pages/FeaturesPage';
+import AboutPage from './pages/AboutPage';
+import FAQPage from './pages/FAQPage';
+import ContactPage from './pages/ContactPage';
+import VerificationPending from './pages/VerificationPending';
+import AdminPanel from './pages/AdminPanel';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyOTP from './pages/VerifyOTP';
+import ResetPassword from './pages/ResetPassword';
+import VerifyRegistrationOTP from './pages/VerifyRegistrationOTP';
+import ScrollToTop from './components/ScrollToTop';
+import { ThemeProvider } from './context/ThemeContext';
+
+// --- Route Protection Guards ---
 import Navbar from "./components/Navbar";
 import React from "react";
 import {
@@ -35,8 +57,7 @@ const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location.pathname }} />;
   }
 
-  // If admin tries to access dashboard, redirect to admin panel
-  if (user.role === "admin" && location.pathname === "/dashboard") {
+  if (user.role === 'admin' && location.pathname === '/dashboard') {
     return <Navigate to="/admin" />;
   }
 
@@ -48,15 +69,12 @@ const PublicRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   if (token) {
-    // If user is verified, redirect to dashboard
     if (user.isVerified) {
-      // If admin, redirect to admin panel
-      if (user.role === "admin") {
+      if (user.role === 'admin') {
         return <Navigate to="/admin" />;
       }
       return <Navigate to="/dashboard" />;
     }
-    // If not verified, redirect to verification pending page
     return <Navigate to="/verification-pending" />;
   }
 
@@ -78,6 +96,7 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// --- Main Layout Wrapper ---
 const AppLayout = () => {
   const location = useLocation();
   const authRoutes = [
@@ -99,6 +118,9 @@ const AppLayout = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* Auth Routes */}

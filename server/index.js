@@ -56,6 +56,10 @@ app.use('/api/admin', adminRoutes);
 const internalRoutes = require('./routes/internalRoutes');
 app.use('/api/internal', internalRoutes);
 
+// 🌟 NEW CONTACT ROUTE ADDED HERE 🌟
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contact', contactRoutes);
+
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
