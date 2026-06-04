@@ -1,26 +1,3 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Whiteboard from './components/Whiteboard';
-import Dashboard from './pages/Dashboard';
-import LandingPage from './pages/LandingPage';
-import FeaturesPage from './pages/FeaturesPage';
-import AboutPage from './pages/AboutPage';
-
-import ContactPage from './pages/ContactPage';
-import VerificationPending from './pages/VerificationPending';
-import AdminPanel from './pages/AdminPanel';
-import ForgotPassword from './pages/ForgotPassword';
-import VerifyOTP from './pages/VerifyOTP';
-import ResetPassword from './pages/ResetPassword';
-import VerifyRegistrationOTP from './pages/VerifyRegistrationOTP';
-import ScrollToTop from './components/ScrollToTop';
-import { ThemeProvider } from './context/ThemeContext';
-
-// --- Route Protection Guards ---
-import Navbar from "./components/Navbar";
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -29,6 +6,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Whiteboard from "./components/Whiteboard";
@@ -36,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 import VerificationPending from "./pages/VerificationPending";
 import AdminPanel from "./pages/AdminPanel";
 import ForgotPassword from "./pages/ForgotPassword";
