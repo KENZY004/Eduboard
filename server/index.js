@@ -56,6 +56,10 @@ app.use('/api/admin', adminRoutes);
 const internalRoutes = require('./routes/internalRoutes');
 app.use('/api/internal', internalRoutes);
 
+// 🌟 NEW CONTACT ROUTE ADDED HERE 🌟
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contact', contactRoutes);
+
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
@@ -293,6 +297,7 @@ app.delete('/api/boards/saved/:savedBoardId', verifyToken, async (req, res) => {
 
 // Track connected users per room
 const roomUsers = new Map(); // roomId -> Map of userId -> { username, socketId, role }
+const waitingRooms = new Map(); // roomId -> Map of socketId -> userData
 
 // Socket.IO Authentication Middleware
 const jwt = require('jsonwebtoken');
@@ -319,8 +324,44 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id, 'User ID:', socket.userId);
 
   socket.on('join-room', async (roomId, userData) => {
+    console.log(`User ${socket.id} trying to join room ${roomId}`, userData);
+
+    let isHost = false;
+    let board = null;
+    try {
+      board = await Board.findOne({ roomId });
+      if (board && userData && board.createdBy.toString() === userData.userId) {
+        isHost = true;
+      }
+    } catch (err) {
+      console.error('Error finding board for host check:', err);
+    }
+
+    if (userData && !isHost) {
+      if (!waitingRooms.has(roomId)) {
+        waitingRooms.set(roomId, new Map());
+      }
+      waitingRooms.get(roomId).set(socket.id, { ...userData, socketId: socket.id, isHost: false });
+      
+      // Notify host(s) in the room
+      socket.to(roomId).emit('participant-waiting', { ...userData, socketId: socket.id, isHost: false });
+      
+      // Tell participant they are waiting
+      socket.emit('waiting-for-approval');
+      return; // Stop here, wait for host approval
+    }
+
+    // For hosts, join immediately
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`, userData);
+    console.log(`Host ${socket.id} joined room ${roomId}`, userData);
+
+    // If host joins, send them the current waiting list
+    if (isHost && waitingRooms.has(roomId)) {
+      const waiting = Array.from(waitingRooms.get(roomId).values());
+      if (waiting.length > 0) {
+        socket.emit('waiting-participants-list', waiting);
+      }
+    }
 
     // Track user in room (only if userData is provided)
     if (userData && userData.userId) {
@@ -369,6 +410,7 @@ io.on('connection', (socket) => {
         socket.emit('load-board', {
           elements: board.elements,
           allowedStudents: board.allowedStudents || [],
+          allowStudentEditing: board.allowStudentEditing || false, // FIX #95: send persisted toggle state to client
           boardName: board.name,
           teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
@@ -382,6 +424,91 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.error('Error loading board:', err);
+    }
+  });
+
+  socket.on('accept-participant', async ({ roomId, socketId, userData }) => {
+    if (waitingRooms.has(roomId)) {
+      waitingRooms.get(roomId).delete(socketId);
+    }
+
+    const studentSocket = io.sockets.sockets.get(socketId);
+    if (studentSocket) {
+      studentSocket.join(roomId);
+      studentSocket.emit('join-accepted');
+
+      // Track user in room
+      if (userData && userData.userId) {
+        if (!roomUsers.has(roomId)) {
+          roomUsers.set(roomId, new Map());
+        }
+        roomUsers.get(roomId).set(userData.userId, {
+          userId: userData.userId,
+          username: userData.username,
+          socketId: studentSocket.id,
+          role: userData.role
+        });
+
+        // Broadcast updated user list to all users in room
+        const users = Array.from(roomUsers.get(roomId).values());
+        io.to(roomId).emit('room-users-updated', users);
+
+        // Add user as participant in board
+        try {
+          await Board.findOneAndUpdate(
+            { roomId },
+            {
+              $addToSet: {
+                participants: {
+                  userId: userData.userId,
+                  role: userData.role,
+                  joinedAt: new Date()
+                }
+              }
+            },
+            { upsert: false }
+          );
+        } catch (err) {
+          console.error('Error adding participant:', err);
+        }
+      }
+
+      // Load Board History for the accepted participant
+      try {
+        let board = await Board.findOne({ roomId })
+          .populate('allowedStudents', 'username email')
+          .populate('createdBy', 'username');
+
+        if (board) {
+          studentSocket.emit('load-board', {
+            elements: board.elements,
+            allowedStudents: board.allowedStudents || [],
+            allowStudentEditing: board.allowStudentEditing || false,
+            boardName: board.name,
+            teacherName: board.createdBy?.username || 'Unknown Teacher'
+          });
+        } else {
+          studentSocket.emit('load-board', {
+            elements: [],
+            allowedStudents: [],
+            allowStudentEditing: false,
+            boardName: 'Untitled Board',
+            teacherName: 'Unknown Teacher'
+          });
+        }
+      } catch (err) {
+        console.error('Error loading board:', err);
+      }
+    }
+  });
+
+  socket.on('decline-participant', ({ roomId, socketId }) => {
+    if (waitingRooms.has(roomId)) {
+      waitingRooms.get(roomId).delete(socketId);
+    }
+    const studentSocket = io.sockets.sockets.get(socketId);
+    if (studentSocket) {
+      studentSocket.emit('join-declined');
     }
   });
 
@@ -517,14 +644,16 @@ io.on('connection', (socket) => {
   });
 
   socket.on('clear-canvas', async (roomId) => {
-    // Broadcast to ALL users in room (including sender)
-    io.to(roomId).emit('clear-canvas');
-    // Clear DB
     try {
+      // FIX #94: verify the emitting user is the board owner before clearing
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can clear the canvas' });
+      }
+      io.to(roomId).emit('clear-canvas');
       await Board.findOneAndUpdate(
         { roomId },
-        { $set: { elements: [] } },
-        { upsert: true }
+        { $set: { elements: [] } }
       );
     } catch (err) {
       console.error('Error clearing board:', err);
@@ -548,8 +677,13 @@ io.on('connection', (socket) => {
   });
 
   // Grant editing permission to specific student
-  socket.on('grant-student-permission', async ({ roomId, studentId }) => {
+  socket.on('grant-participant-permission', async ({ roomId, studentId }) => {
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can grant permissions' });
+      }
       await Board.findOneAndUpdate(
         { roomId },
         { $addToSet: { allowedStudents: studentId } }
@@ -569,8 +703,13 @@ io.on('connection', (socket) => {
   });
 
   // Revoke editing permission from specific student
-  socket.on('revoke-student-permission', async ({ roomId, studentId }) => {
+  socket.on('revoke-participant-permission', async ({ roomId, studentId }) => {
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can revoke permissions' });
+      }
       await Board.findOneAndUpdate(
         { roomId },
         { $pull: { allowedStudents: studentId } }
@@ -591,11 +730,13 @@ io.on('connection', (socket) => {
 
   // Toggle student editing permission
   socket.on('toggle-student-editing', async ({ roomId, allowEditing }) => {
-    // Broadcast to all users in room
-    socket.to(roomId).emit('student-editing-changed', allowEditing);
-
-    // Update database
     try {
+      // FIX #94: verify the emitting user is the board owner
+      const board = await Board.findOne({ roomId });
+      if (!board || board.createdBy.toString() !== socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized: only the board teacher can toggle student editing' });
+      }
+      socket.to(roomId).emit('student-editing-changed', allowEditing);
       await Board.findOneAndUpdate(
         { roomId },
         { $set: { allowStudentEditing: allowEditing } }
@@ -608,15 +749,21 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
 
-    // Remove user from all rooms
+    // Remove user from all rooms and waiting rooms
     roomUsers.forEach((users, roomId) => {
       for (const [userId, userData] of users.entries()) {
         if (userData.socketId === socket.id) {
           users.delete(userId);
-          // Broadcast updated user list
           io.to(roomId).emit('room-users-updated', Array.from(users.values()));
           break;
         }
+      }
+    });
+
+    waitingRooms.forEach((waitingList, roomId) => {
+      if (waitingList.has(socket.id)) {
+        waitingList.delete(socket.id);
+        // Could notify teacher that student left the waiting room, but not strictly necessary
       }
     });
   });

@@ -6,6 +6,7 @@ const boardSchema = new mongoose.Schema({
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     elements: { type: Array, default: [] },
     allowedStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    allowStudentEditing: { type: Boolean, default: false }, // FIX #95: persist toggle state to DB
     participants: [{
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         role: { type: String, enum: ['teacher', 'student'] },

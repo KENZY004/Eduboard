@@ -8,9 +8,12 @@ const {
   registerValidation,
   validate,
 } = require("../middlewares/auth.validator");
-
+const { authLimiter, otpLimiter, globalAuthLimiter } = require('../middlewares/rateLimiter'); // ← NEW
+                                                                                            // ← NEW
+router.use(globalAuthLimiter); // ← NEW
+                                                                                            // ← NEW
 // REGISTER
-router.post('/register',registerValidation, validate, async (req, res) => {
+router.post('/register', authLimiter, registerValidation, validate, async (req, res) => { // ← NEW
     try {
         const { username, email, password, role } = req.body;
 
@@ -151,7 +154,7 @@ router.post('/register',registerValidation, validate, async (req, res) => {
 });
 
 // LOGIN
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => { // ← NEW
     try {
         const { email, password } = req.body;
 
@@ -225,7 +228,7 @@ router.post('/login', async (req, res) => {
 });
 
 // FORGOT PASSWORD
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', otpLimiter, async (req, res) => { // ← NEW
     try {
         const { email } = req.body;
         if (!email) {
@@ -276,7 +279,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // VERIFY OTP
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', otpLimiter, async (req, res) => { // ← NEW
     try {
         const { email, otp } = req.body;
 
@@ -451,6 +454,174 @@ router.post('/resend-registration-otp', async (req, res) => {
     } catch (error) {
         console.error('Resend registration OTP error:', error);
         res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// CHECK ROLE
+router.post('/check-role', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ message: 'A valid email string is required' });
+        }
+
+        // Escape regex special characters to prevent regex injection or parsing crash
+        const escapedEmail = email.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+        // Find user by email (case-insensitive and trimmed)
+        const user = await User.findOne({ email: { $regex: new RegExp(`^${escapedEmail}$`, 'i') } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ role: user.role });
+    } catch (err) {
+        console.error('Check role error:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Helper to verify Google Access Token supporting older Node.js versions
+const verifyGoogleAccessToken = (token) => {
+    return new Promise((resolve, reject) => {
+        if (typeof fetch === 'function') {
+            fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return reject(new Error('Invalid Google access token'));
+                    }
+                    return response.json();
+                })
+                .then(data => resolve(data))
+                .catch(err => reject(err));
+        } else {
+            const https = require('https');
+            https.get(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`, (res) => {
+                let data = '';
+                res.on('data', (chunk) => { data += chunk; });
+                res.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (res.statusCode !== 200) {
+                            reject(new Error(parsed.error_description || 'Invalid Google access token'));
+                        } else {
+                            resolve(parsed);
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            }).on('error', (err) => {
+                reject(err);
+            });
+        }
+    });
+};
+
+// GOOGLE LOGIN & SIGNUP (STUDENTS ONLY)
+router.post('/google-login', authLimiter, async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                message: 'Google token is required',
+                error: 'MISSING_TOKEN'
+            });
+        }
+
+        // Verify token with Google's API (using access token helper)
+        const payload = await verifyGoogleAccessToken(token);
+
+        // Check email verification status in the Google token
+        const isGoogleEmailVerified = payload.email_verified === 'true' || payload.email_verified === true;
+        if (!isGoogleEmailVerified) {
+            return res.status(400).json({
+                message: 'Google account email is not verified',
+                error: 'EMAIL_NOT_VERIFIED'
+            });
+        }
+
+        const email = payload.email;
+
+        // Check if user already exists
+        let user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+
+        if (user) {
+            // User exists. Google auth is ONLY for students!
+            if (user.role !== 'student') {
+                return res.status(403).json({
+                    message: 'Google login is only available for student accounts.',
+                    error: 'STUDENTS_ONLY'
+                });
+            }
+
+            // Ensure isEmailVerified is true, as Google has verified it
+            if (!user.isEmailVerified) {
+                user.isEmailVerified = true;
+                await user.save();
+            }
+        } else {
+            // Create user (Sign-up flow)
+            // Generate unique username
+            let baseUsername = payload.name 
+                ? payload.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() 
+                : '';
+            
+            if (baseUsername.length < 3) {
+                baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            }
+            if (baseUsername.length < 3) {
+                baseUsername = 'student';
+            }
+
+            let username = baseUsername;
+            let userExists = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+            while (userExists) {
+                username = baseUsername + Math.floor(1000 + Math.random() * 9000);
+                userExists = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+            }
+
+            // Generate secure random password
+            const crypto = require('crypto');
+            const tempPassword = crypto.randomBytes(16).toString('hex') + 'Aa1!';
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(tempPassword, salt);
+
+            user = new User({
+                username,
+                email,
+                password: hashedPassword,
+                role: 'student', // Students only
+                isVerified: true, // Students are auto-verified
+                verificationStatus: 'approved',
+                isEmailVerified: true // Already verified by Google
+            });
+
+            await user.save();
+        }
+
+        // Create JWT login token
+        const loginToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
+
+        res.json({
+            token: loginToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified,
+                verificationStatus: user.verificationStatus
+            }
+        });
+
+    } catch (err) {
+        console.error('Google Auth Error:', err);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: err.message
+        });
     }
 });
 
