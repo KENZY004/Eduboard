@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import api from '../lib/api';
 import { useTheme } from '../context/ThemeContext';
 import Footer from '../components/Footer';
 
@@ -30,7 +30,7 @@ const ContactPage = () => {
 
         try {
             // Backend endpoint par data bhej rahe hain (Vite proxy config ke mutabik url handle ho jayega)
-            const response = await axios.post('/api/contact', {
+            const response = await api.post('/api/contact', {
                 name: formData.name,
                 email: formData.email,
                 message: formData.message
