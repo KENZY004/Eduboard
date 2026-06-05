@@ -507,13 +507,11 @@ router.post('/google-login', authLimiter, async (req, res) => {
         let user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
 
         if (user) {
-            // User exists. If teacher, check verification status.
-            if (user.role === 'teacher' && !user.isVerified) {
+            // User exists. Google auth is ONLY for students!
+            if (user.role !== 'student') {
                 return res.status(403).json({
-                    message: 'Your account is pending verification. Please wait for admin approval.',
-                    error: 'ACCOUNT_NOT_VERIFIED',
-                    verificationStatus: user.verificationStatus,
-                    rejectionReason: user.rejectionReason
+                    message: 'Google login is only available for student accounts.',
+                    error: 'STUDENTS_ONLY'
                 });
             }
 

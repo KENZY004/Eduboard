@@ -1,5 +1,3 @@
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -8,6 +6,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Whiteboard from "./components/Whiteboard";
@@ -39,7 +38,7 @@ const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location.pathname }} />;
   }
 
-  if (user.role === "admin" && location.pathname === "/dashboard") {
+  if (user.role === 'admin' && location.pathname === '/dashboard') {
     return <Navigate to="/admin" />;
   }
 
@@ -52,7 +51,7 @@ const PublicRoute = ({ children }) => {
 
   if (token) {
     if (user.isVerified) {
-      if (user.role === "admin") {
+      if (user.role === 'admin') {
         return <Navigate to="/admin" />;
       }
       return <Navigate to="/dashboard" />;
@@ -78,6 +77,7 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// --- Main Layout Wrapper ---
 const AppLayout = () => {
   const location = useLocation();
   const authRoutes = [

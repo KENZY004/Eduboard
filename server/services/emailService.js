@@ -510,6 +510,68 @@ const sendDirectRegistrationVerificationEmail = async (userEmail, userName, otp)
     return await sendRegistrationVerificationEmail(userEmail, userName, otp);
 };
 
+const sendContactFormEmail = async (adminEmail, subject, textContent) => {
+    if (SHOULD_RELAY) {
+        return await relayEmailRequest('contact', { adminEmail, subject, textContent });
+    }
+    return await sendDirectContactFormEmail(adminEmail, subject, textContent);
+};
+
+const sendDirectContactFormEmail = async (adminEmail, subject, textContent) => {
+    // Basic formatting for contact form text
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+            <div style="background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">⚡ EduBoard</h1>
+                <p style="color: #e0f2fe; margin: 10px 0 0 0;">New Contact Form Submission</p>
+            </div>
+            
+            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #1e293b; margin-top: 0;">${subject}</h2>
+                
+                <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0; white-space: pre-wrap; color: #475569; line-height: 1.6;">
+${textContent}
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+                <p>This is an automated notification from EduBoard Contact Form</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        if (USE_GMAIL) {
+            const info = await transporter.sendMail({
+                from: `"EduBoard Contact" <${process.env.SMTP_USER}>`,
+                to: adminEmail,
+                subject: subject,
+                html: htmlContent
+            });
+            console.log('✅ Contact email sent via Gmail to:', adminEmail);
+            return { success: true, messageId: info.messageId };
+        } else {
+            const { data, error } = await resend.emails.send({
+                from: 'EduBoard <onboarding@resend.dev>',
+                to: [adminEmail],
+                subject: subject,
+                html: htmlContent
+            });
+
+            if (error) {
+                console.error('❌ Failed to send contact email:', error);
+                return { success: false, error: error.message };
+            }
+
+            console.log('✅ Contact email sent via Resend to:', adminEmail);
+            return { success: true, messageId: data.id };
+        }
+    } catch (error) {
+        console.error('❌ Failed to send contact email:', error.message);
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     sendTeacherRegistrationNotification,
     sendDirectTeacherRegistrationNotification,
@@ -521,4 +583,6 @@ module.exports = {
     sendDirectPasswordResetEmail,
     sendRegistrationVerificationEmail,
     sendDirectRegistrationVerificationEmail,
+    sendContactFormEmail,
+    sendDirectContactFormEmail,
 };

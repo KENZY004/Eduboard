@@ -4,26 +4,26 @@ import { Link } from "react-router-dom";
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  const footerLinks = {
-    Product: [
-      { name: "Features", path: "/features" },
-      { name: "About", path: "/about" },
-      { name: "Dashboard", path: "/dashboard" },
-    ],
-    Company: [
-      { name: "About Us", path: "/about" },
-      { name: "Contact", path: "#contact" },
-    ],
-    Resources: [
-      { name: "Documentation", path: "#docs" },
-      { name: "Support", path: "#support" },
-      { name: "FAQ", path: "#faq" },
-    ],
-    Legal: [
-      { name: "Privacy Policy", path: "/privacy-policy" },
-      { name: "Terms of Service", path: "/terms" },
-    ],
-  };
+    const footerLinks = {
+        Product: [
+            { name: 'Features', path: '/features' },
+            { name: 'About', path: '/about' },
+            { name: 'Dashboard', path: '/dashboard' },
+        ],
+        Company: [
+            { name: 'About Us', path: '/about' },
+            { name: 'Contact', path: '/contact' }, // Fixed: Changed '#contact' to '/contact'
+        ],
+        Resources: [
+    { name: 'Documentation', path: '/docs' },
+    { name: 'Support', path: '/support' },
+    { name: 'FAQ', path: '/faq' },
+  ],
+        Legal: [
+            { name: 'Privacy Policy', path: '#privacy' },
+            { name: 'Terms of Service', path: '#terms' },
+        ],
+    };
 
   const socialLinks = [
     {
