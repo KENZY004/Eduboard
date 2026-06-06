@@ -20,7 +20,8 @@ router.get('/pending-teachers', async (req, res) => {
         // Find all teachers with pending verification
         const pendingTeachers = await User.find({
             role: 'teacher',
-            verificationStatus: 'pending'
+            verificationStatus: 'pending',
+            isEmailVerified: { $ne: false }
         }).select('username email createdAt');
 
         // Get verification details for each teacher
@@ -51,7 +52,10 @@ router.get('/pending-teachers', async (req, res) => {
  */
 router.get('/all-teachers', async (req, res) => {
     try {
-        const teachers = await User.find({ role: 'teacher' })
+        const teachers = await User.find({ 
+            role: 'teacher',
+            isEmailVerified: { $ne: false }
+        })
             .select('username email verificationStatus isVerified verificationDate createdAt')
             .sort({ createdAt: -1 });
 
@@ -96,7 +100,10 @@ router.delete('/teacher/:userId', async (req, res) => {
  */
 router.get('/all-students', async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' })
+        const students = await User.find({ 
+            role: 'student',
+            isEmailVerified: { $ne: false }
+        })
             .select('username email createdAt')
             .sort({ createdAt: -1 });
 
