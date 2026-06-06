@@ -15,6 +15,203 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 
+const recognizeShape = (points) => {
+    if (points.length < 15) return null;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    points.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    });
+
+    const width = Math.max(maxX - minX, 1);
+    const height = Math.max(maxY - minY, 1);
+    const diagonal = Math.hypot(width, height);
+    if (diagonal < 30) return null;
+
+    const start = points[0];
+    const end = points[points.length - 1];
+    const gap = Math.hypot(start.x - end.x, start.y - end.y);
+    const isClosed = gap < diagonal * 0.35 || gap < 50;
+
+    // Line detection
+    if (!isClosed) {
+        let lineErr = 0;
+        points.forEach(p => {
+            const num = Math.abs(
+                (end.y - start.y) * p.x -
+                (end.x - start.x) * p.y +
+                end.x * start.y - end.y * start.x
+            );
+            lineErr += (num / (gap || 1)) / diagonal;
+        });
+        if (lineErr / points.length < 0.05) {
+            return { type: 'line', x: start.x, y: start.y, endX: end.x, endY: end.y };
+        }
+        return null;
+    }
+
+    // Resample points to fixed 128 points for consistent detection
+    const resample = (pts, n) => {
+        const total = pts.reduce((acc, p, i) => {
+            if (i === 0) return acc;
+            return acc + Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y);
+        }, 0);
+        const interval = total / (n - 1);
+        const resampled = [pts[0]];
+        let dist = 0;
+        for (let i = 1; i < pts.length; i++) {
+            const d = Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+            if (dist + d >= interval) {
+                const t = (interval - dist) / d;
+                const x = pts[i-1].x + t * (pts[i].x - pts[i-1].x);
+                const y = pts[i-1].y + t * (pts[i].y - pts[i-1].y);
+                resampled.push({ x, y });
+                dist = 0;
+            } else {
+                dist += d;
+            }
+        }
+        while (resampled.length < n) resampled.push(pts[pts.length - 1]);
+        return resampled.slice(0, n);
+    };
+
+    const resampled = resample(points, 128);
+
+    // Smooth
+    const smoothed = [];
+    const w = 3;
+    for (let i = 0; i < resampled.length; i++) {
+        let sx = 0, sy = 0, count = 0;
+        for (let j = Math.max(0, i - w); j <= Math.min(resampled.length - 1, i + w); j++) {
+            sx += resampled[j].x;
+            sy += resampled[j].y;
+            count++;
+        }
+        smoothed.push({ x: sx / count, y: sy / count });
+    }
+
+    // Calculate curvature at each point
+    const curvatures = [];
+    for (let i = 2; i < smoothed.length - 2; i++) {
+        const p1 = smoothed[i - 2];
+        const p2 = smoothed[i];
+        const p3 = smoothed[i + 2];
+
+        const dx1 = p2.x - p1.x, dy1 = p2.y - p1.y;
+        const dx2 = p3.x - p2.x, dy2 = p3.y - p2.y;
+        const len1 = Math.hypot(dx1, dy1);
+        const len2 = Math.hypot(dx2, dy2);
+
+        if (len1 < 0.5 || len2 < 0.5) {
+            curvatures.push(1);
+            continue;
+        }
+
+        const dot = (dx1 * dx2 + dy1 * dy2) / (len1 * len2);
+        curvatures.push(Math.max(-1, Math.min(1, dot)));
+    }
+
+    // Find corners - local minima in curvature below threshold
+    const CORNER_THRESHOLD = 0.85; // cos(60deg) - 60 degree se zyada turn = corner
+    const MIN_GAP = 3; // Resampled 128 points mein minimum gap
+
+    const corners = [];
+    for (let i = MIN_GAP; i < curvatures.length - MIN_GAP; i++) {
+        if (curvatures[i] > CORNER_THRESHOLD) continue;
+
+        // Local minimum check
+        let isLocalMin = true;
+        for (let j = i - 4; j <= i + 4; j++) {
+            if (j !== i && j >= 0 && j < curvatures.length) {
+                if (curvatures[j] < curvatures[i]) {
+                    isLocalMin = false;
+                    break;
+                }
+            }
+        }
+
+        if (isLocalMin) {
+            // Too close to previous corner?
+            if (corners.length === 0 || i - corners[corners.length - 1] > MIN_GAP) {
+                corners.push(i);
+            }
+        }
+    }
+
+    const n = corners.length;
+    console.log(`[ShapeDetect] corners=${n}, diagonal=${Math.round(diagonal)}, gap=${Math.round(gap)}`);
+
+    const cx = minX + width / 2;
+    const cy = minY + height / 2;
+    const avgRadius = (width + height) / 4;
+
+    // Circle: 0 corners
+    if (n === 0) {
+        return {
+            type: 'circle', x: cx, y: cy,
+            width: avgRadius / Math.SQRT2,
+            height: avgRadius / Math.SQRT2
+        };
+    }
+
+    if (n === 2) {
+        return { type: 'triangle', x: minX, y: minY, width, height };
+    }
+
+    if (n === 3) {
+        // Triangle aur rectangle dono 3 corners pe aate hain
+        // Triangle = elongated/pointy, Rectangle = boxy
+        // Convex hull area ratio se check karo
+        const aspect = width / height;
+        
+        // Points ka distribution check karo
+        // Rectangle mein points corners pe concentrate hote hain
+        // Triangle mein ek corner alag hota hai
+        const centerX = points.reduce((s, p) => s + p.x, 0) / points.length;
+        const centerY = points.reduce((s, p) => s + p.y, 0) / points.length;
+        
+        // Center kitna off-center hai bounding box se
+        const offsetX = Math.abs((centerX - minX) / width - 0.5);
+        const offsetY = Math.abs((centerY - minY) / height - 0.5);
+        const centerOffset = offsetX + offsetY;
+
+        // Agar center zyada off-center hai = triangle (pointed shape)
+        // Agar center near middle = rectangle
+        if (centerOffset > 0.15) {
+            return { type: 'triangle', x: minX, y: minY, width, height };
+        }
+        return { type: 'rect', x: minX, y: minY, width, height };
+    }
+
+    if (n === 4 || n === 5) {
+        return { type: 'rect', x: minX, y: minY, width, height };
+    }
+
+    // Pentagon: 5 corners
+    if (n === 5) {
+        return { type: 'pentagon', x: minX, y: minY, width, height };
+    }
+
+    // Hexagon: 6 corners
+    if (n === 6) {
+        return { type: 'hexagon', x: minX, y: minY, width, height };
+    }
+
+    // Octagon: 8 corners
+    if (n === 7 || n === 8) {
+        return { type: 'octagon', x: minX, y: minY, width, height };
+    }
+
+    // Star: 10 corners
+    if (n >= 9) {
+        return { type: 'star', x: minX, y: minY, width, height };
+    }
+
+    return null;
+};
 const Whiteboard = () => {
     const canvasRef = useRef(null);
     const [socket, setSocket] = useState(null);
@@ -40,6 +237,7 @@ const Whiteboard = () => {
         console.error('Error parsing user from localStorage:', error);
         user = null;
     }
+    
     const isStudent = user?.role === 'student';
 
     const [isDrawing, setIsDrawing] = useState(false);
@@ -1297,30 +1495,36 @@ const Whiteboard = () => {
         setIsDrawing(false);
         setAction('none');
 
+
+
         // Commit Stroke
         if (currentStrokeRef.current) {
-            const newElement = currentStrokeRef.current;
+            let newElement = currentStrokeRef.current;
+
+            if (tool === 'pen') {
+                const recognizedShape = recognizeShape(newElement.points);
+                if (recognizedShape) {
+                    newElement = {
+                        ...newElement,
+                        ...recognizedShape,
+                        points: []
+                    };
+                }
+            }
+
             setElements(prev => [...prev, newElement]);
             if (user?.role === 'teacher') {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
-
-            // Emit to socket
             if (socket) {
                 socket.emit('draw-element', { roomId, ...newElement });
             }
-
             currentStrokeRef.current = null;
         } else if (currentElement) {
-            // Commit Shape
-            // Ensure it has size
             if (currentElement.width === 0 && currentElement.height === 0 && currentElement.type !== 'text') {
-                // Too small, ignore? Or Default size?
-                // Ignore
                 setCurrentElement(null);
                 return;
             }
-
             setElements(prev => [...prev, currentElement]);
             if (user?.role === 'teacher') {
                 setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
@@ -1334,6 +1538,8 @@ const Whiteboard = () => {
 
     // Actions
     const handleUndo = () => {
+
+   
         if (history.length === 0) return;
         const newHistory = [...history];
         const lastAction = newHistory.pop();
@@ -2367,5 +2573,6 @@ const Whiteboard = () => {
         </div >
     );
 };
+
 
 export default Whiteboard;

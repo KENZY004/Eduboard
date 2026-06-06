@@ -22,7 +22,6 @@ const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location.pathname }} />;
   }
 
-  // If admin tries to access dashboard, redirect to admin panel
   if (user.role === 'admin' && location.pathname === '/dashboard') {
     return <Navigate to="/admin" />;
   }
@@ -35,15 +34,12 @@ const PublicRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   if (token) {
-    // If user is verified, redirect to dashboard
     if (user.isVerified) {
-      // If admin, redirect to admin panel
       if (user.role === 'admin') {
         return <Navigate to="/admin" />;
       }
       return <Navigate to="/dashboard" />;
     }
-    // If not verified, redirect to verification pending page
     return <Navigate to="/verification-pending" />;
   }
 
@@ -65,59 +61,73 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// ✅ Navbar sirf whiteboard ke bahar dikhega
+const AppLayout = ({ children }) => {
+  const location = useLocation();
+  const isWhiteboard = location.pathname.startsWith('/board/');
+
+  return (
+    <>
+      {!isWhiteboard && <Navbar />}
+      <div className={!isWhiteboard ? "pt-16" : ""}>
+        {children}
+      </div>
+    </>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <ScrollToTop />
         <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
-        <Navbar /> 
-          <div className="pt-16">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/features" element={<FeaturesPage />} />
-            <Route path="/about" element={<AboutPage />} />
+          <AppLayout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/about" element={<AboutPage />} />
 
-            {/* Auth Routes */}
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+              {/* Auth Routes */}
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-            {/* Private Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/board/:roomId"
-              element={
-                <PrivateRoute>
-                  <Whiteboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/verification-pending"
-              element={
-                <PrivateRoute>
-                  <VerificationPending />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              }
-            />
-          </Routes>
-        </div>
+              {/* Private Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/board/:roomId"
+                element={
+                  <PrivateRoute>
+                    <Whiteboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/verification-pending"
+                element={
+                  <PrivateRoute>
+                    <VerificationPending />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminPanel />
+                  </AdminRoute>
+                }
+              />
+            </Routes>
+          </AppLayout>
         </div>
       </Router>
     </ThemeProvider>
