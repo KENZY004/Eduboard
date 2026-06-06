@@ -140,12 +140,27 @@ app.get('/api/boards/user/:userId', verifyToken, verifyOwnership('userId'), asyn
 app.get('/api/boards/:roomId', verifyToken, async (req, res) => {
   try {
     const { roomId } = req.params;
+    // Find the board first by roomId, then explicitly check authorization
     const board = await Board.findOne({ roomId });
 
     if (!board) {
       return res.status(404).json({ message: 'Board not found' });
     }
 
+    const userId = req.user.id;
+    const isCreator = board.createdBy?.toString() === userId;
+    const isParticipant = board.participants?.some(
+      p => p.userId?.toString() === userId
+    );
+    const isAllowedStudent = board.allowedStudents?.some(
+      id => id.toString() === userId
+    );
+
+    if (!isCreator && !isParticipant && !isAllowedStudent) {
+      return res.status(403).json({ message: 'Access denied. You are not authorized to view this board.' });
+    }
+
+    // Authorized: return full board details
     res.json({
       roomId: board.roomId,
       name: board.name,
@@ -318,54 +333,72 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id, 'User ID:', socket.userId);
 
+  // Helper: check if a user is authorized to edit a board
+  const isAuthorizedToEdit = async (roomId, userId) => {
+    try {
+      const board = await Board.findOne({ roomId });
+      if (!board) return false;
+      const isCreator = board.createdBy?.toString() === userId;
+      const isTeacher = board.participants?.some(p => p.userId?.toString() === userId && p.role === 'teacher');
+      const isParticipant = board.participants?.some(p => p.userId?.toString() === userId);
+      const isAllowedStudent = board.allowedStudents?.some(id => id.toString() === userId);
+
+      if (isCreator || isTeacher) return true;
+      if (board.allowStudentEditing && (isParticipant || isAllowedStudent)) return true;
+      return false;
+    } catch (err) {
+      console.error('Error checking edit authorization:', err);
+      return false;
+    }
+  };
+
   socket.on('join-room', async (roomId, userData) => {
+    // Authoritative user ID from verified token
+    const joiningUserId = socket.userId;
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`, userData);
+    console.log(`User ${socket.id} joined room ${roomId}`, { joiningUserId, userData });
 
-    // Track user in room (only if userData is provided)
-    if (userData && userData.userId) {
-      if (!roomUsers.has(roomId)) {
-        roomUsers.set(roomId, new Map());
-      }
-      roomUsers.get(roomId).set(userData.userId, {
-        userId: userData.userId,
-        username: userData.username,
-        socketId: socket.id,
-        role: userData.role
-      });
-
-      // Broadcast updated user list to all users in room
-      const users = Array.from(roomUsers.get(roomId).values());
-      io.to(roomId).emit('room-users-updated', users);
-
-      // Add user as participant in board (so it appears in their dashboard)
-      try {
-        await Board.findOneAndUpdate(
-          { roomId },
-          {
-            $addToSet: {
-              participants: {
-                userId: userData.userId,
-                role: userData.role,
-                joinedAt: new Date()
-              }
-            }
-          },
-          { upsert: false } // Don't create board if it doesn't exist
-        );
-        console.log(`[PARTICIPANT] Added ${userData.username} (${userData.role}) to board ${roomId}`);
-      } catch (err) {
-        console.error('Error adding participant:', err);
-      }
+    // Track presence server-side only (do NOT trust client-supplied userId)
+    if (!roomUsers.has(roomId)) {
+      roomUsers.set(roomId, new Map());
     }
 
-    // Load Board History with allowed students
+    const username = (userData && userData.username) || 'Unknown';
+    const roleHint = (userData && userData.role) || 'student';
+
+    roomUsers.get(roomId).set(joiningUserId, {
+      userId: joiningUserId,
+      username,
+      socketId: socket.id,
+      role: roleHint
+    });
+
+    // Broadcast presence (no DB changes)
+    const users = Array.from(roomUsers.get(roomId).values());
+    io.to(roomId).emit('room-users-updated', users);
+
+    // Load board and only send elements after server-side authorization
     try {
-      let board = await Board.findOne({ roomId })
+      const board = await Board.findOne({ roomId })
         .populate('allowedStudents', 'username email')
         .populate('createdBy', 'username');
 
-      if (board) {
+      if (!board) {
+        socket.emit('load-board', {
+          elements: [],
+          allowedStudents: [],
+          boardName: 'Untitled Board',
+          teacherName: 'Unknown Teacher'
+        });
+        return;
+      }
+
+      const isCreator = board.createdBy?.toString() === joiningUserId;
+      const isParticipant = board.participants?.some(p => p.userId?.toString() === joiningUserId);
+      const isAllowedStudent = board.allowedStudents?.some(id => id.toString() === joiningUserId);
+
+      if (isCreator || isParticipant || isAllowedStudent) {
+        // Authorized: send full board elements
         socket.emit('load-board', {
           elements: board.elements,
           allowedStudents: board.allowedStudents || [],
@@ -373,30 +406,44 @@ io.on('connection', (socket) => {
           teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
       } else {
+        // Not authorized: do not send elements
         socket.emit('load-board', {
           elements: [],
           allowedStudents: [],
-          boardName: 'Untitled Board',
-          teacherName: 'Unknown Teacher'
+          boardName: board.name,
+          teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
+        socket.emit('board-access-denied', { roomId, message: 'You are not authorized to view board contents' });
       }
     } catch (err) {
-      console.error('Error loading board:', err);
+      console.error('Error loading board on join:', err);
     }
   });
 
   // Real-time stroke updates (while drawing) - no DB save, just broadcast
-  socket.on('drawing-stroke', (strokeData) => {
+  socket.on('drawing-stroke', async (strokeData) => {
+    // Only broadcast drawing strokes if the user is authorized to edit
+    const authorized = await isAuthorizedToEdit(strokeData.roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'drawing-stroke', message: 'Not authorized' });
+      return;
+    }
     socket.to(strokeData.roomId).emit('drawing-stroke', strokeData);
   });
 
   socket.on('draw-element', async (element) => {
+    const roomId = element.roomId;
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'draw-element', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast element to room
-    socket.to(element.roomId).emit('draw-element', element);
+    socket.to(roomId).emit('draw-element', element);
 
     // Save to DB (Update if exists, Push if new)
     try {
-      const roomId = element.roomId;
       // Try to update existing element in the array
       const updatedMatch = await Board.findOneAndUpdate(
         { roomId: roomId, "elements.id": element.id },
@@ -428,6 +475,13 @@ io.on('connection', (socket) => {
   // Delete element (for undo synchronization)
   socket.on('delete-element', async ({ roomId, elementId }) => {
     console.log(`[DELETE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
+    // Authorization: ensure user can edit
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'delete-element', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast deletion to room
     socket.to(roomId).emit('delete-element', elementId);
     console.log(`[DELETE-ELEMENT] Broadcasted to room ${roomId}`);
@@ -450,6 +504,13 @@ io.on('connection', (socket) => {
   // Update element (for eraser redo synchronization)
   socket.on('update-element', async ({ roomId, elementId, updates }) => {
     console.log(`[UPDATE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
+    // Authorization: ensure user can edit
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'update-element', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast update to room
     socket.to(roomId).emit('update-element', { elementId, updates });
     console.log(`[UPDATE-ELEMENT] Broadcasted to room ${roomId}`);
@@ -474,6 +535,12 @@ io.on('connection', (socket) => {
   // Sync elements (for redo to maintain correct order)
   socket.on('sync-elements', async ({ roomId, elements }) => {
     console.log(`[SYNC-ELEMENTS] Received from ${socket.id}, syncing ${elements.length} elements`);
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'sync-elements', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast full element array to all other users
     socket.to(roomId).emit('sync-elements', elements);
 
@@ -497,6 +564,12 @@ io.on('connection', (socket) => {
   // Sync state (for redo to maintain exact element order)
   socket.on('sync-state', async ({ roomId, elements }) => {
     console.log(`[SYNC-STATE] Broadcasting ${elements.length} elements to room ${roomId}`);
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'sync-state', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast to all other users
     socket.to(roomId).emit('sync-state', elements);
 
@@ -517,6 +590,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('clear-canvas', async (roomId) => {
+    // Only allow clearing if authorized
+    const authorized = await isAuthorizedToEdit(roomId, socket.userId);
+    if (!authorized) {
+      socket.emit('action-denied', { action: 'clear-canvas', message: 'Not authorized' });
+      return;
+    }
+
     // Broadcast to ALL users in room (including sender)
     io.to(roomId).emit('clear-canvas');
     // Clear DB
@@ -550,12 +630,25 @@ io.on('connection', (socket) => {
   // Grant editing permission to specific student
   socket.on('grant-student-permission', async ({ roomId, studentId }) => {
     try {
+      // Only board creator or teacher participant may grant permissions
+      const board = await Board.findOne({ roomId }).populate('participants.userId');
+      if (!board) return;
+
+      const requesterId = socket.userId;
+      const isCreator = board.createdBy?.toString() === requesterId;
+      const isTeacherParticipant = board.participants?.some(p => p.userId?.toString() === requesterId && p.role === 'teacher');
+
+      if (!isCreator && !isTeacherParticipant) {
+        socket.emit('action-denied', { action: 'grant-student-permission', message: 'Not authorized' });
+        return;
+      }
+
       await Board.findOneAndUpdate(
         { roomId },
         { $addToSet: { allowedStudents: studentId } }
       );
 
-      // Notify specific student
+      // Notify specific student if present
       const roomUsersList = roomUsers.get(roomId);
       if (roomUsersList) {
         const student = roomUsersList.get(studentId);
@@ -571,6 +664,19 @@ io.on('connection', (socket) => {
   // Revoke editing permission from specific student
   socket.on('revoke-student-permission', async ({ roomId, studentId }) => {
     try {
+      // Only board creator or teacher participant may revoke permissions
+      const board = await Board.findOne({ roomId }).populate('participants.userId');
+      if (!board) return;
+
+      const requesterId = socket.userId;
+      const isCreator = board.createdBy?.toString() === requesterId;
+      const isTeacherParticipant = board.participants?.some(p => p.userId?.toString() === requesterId && p.role === 'teacher');
+
+      if (!isCreator && !isTeacherParticipant) {
+        socket.emit('action-denied', { action: 'revoke-student-permission', message: 'Not authorized' });
+        return;
+      }
+
       await Board.findOneAndUpdate(
         { roomId },
         { $pull: { allowedStudents: studentId } }
@@ -591,11 +697,24 @@ io.on('connection', (socket) => {
 
   // Toggle student editing permission
   socket.on('toggle-student-editing', async ({ roomId, allowEditing }) => {
-    // Broadcast to all users in room
-    socket.to(roomId).emit('student-editing-changed', allowEditing);
-
-    // Update database
     try {
+      // Only board creator or teacher may toggle student editing
+      const board = await Board.findOne({ roomId }).populate('participants.userId');
+      if (!board) return;
+
+      const requesterId = socket.userId;
+      const isCreator = board.createdBy?.toString() === requesterId;
+      const isTeacherParticipant = board.participants?.some(p => p.userId?.toString() === requesterId && p.role === 'teacher');
+
+      if (!isCreator && !isTeacherParticipant) {
+        socket.emit('action-denied', { action: 'toggle-student-editing', message: 'Not authorized' });
+        return;
+      }
+
+      // Broadcast to all users in room
+      socket.to(roomId).emit('student-editing-changed', allowEditing);
+
+      // Update database
       await Board.findOneAndUpdate(
         { roomId },
         { $set: { allowStudentEditing: allowEditing } }
