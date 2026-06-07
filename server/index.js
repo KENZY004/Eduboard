@@ -65,6 +65,10 @@ app.use('/api/admin', adminRoutes);
 const internalRoutes = require('./routes/internalRoutes');
 app.use('/api/internal', internalRoutes);
 
+// 🌟 NEW CONTACT ROUTE ADDED HERE 🌟
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contact', contactRoutes);
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'public/uploads');
 if (!fs.existsSync(uploadsDir)) {
