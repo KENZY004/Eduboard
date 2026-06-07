@@ -6,6 +6,13 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set.');
+  process.exit(1);
+}
+
+const { JWT_SECRET } = require('./config/jwt');
 const authRoutes = require('./routes/auth');
 const Board = require('./models/Board');
 const SavedBoard = require('./models/SavedBoard');
@@ -325,7 +332,6 @@ const waitingRooms = new Map(); // roomId -> Map of socketId -> userData
 
 // Socket.IO Authentication Middleware
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
