@@ -32,6 +32,9 @@ router.post('/send-email', async (req, res) => {
             case 'registration-verification':
                 result = await emailService.sendDirectRegistrationVerificationEmail(payload.userEmail, payload.userName, payload.otp);
                 break;
+            case 'contact':
+                result = await emailService.sendDirectContactFormEmail(payload.adminEmail, payload.subject, payload.textContent);
+                break;
             default:
                 return res.status(400).json({ success: false, error: 'Invalid emailType' });
         }

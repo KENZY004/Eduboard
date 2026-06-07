@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { sendPasswordResetEmail, sendRegistrationVerificationEmail } = require('../services/emailService');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'; // Use env in prod!
+const { JWT_SECRET } = require('../config/jwt');
 const {
   registerValidation,
   validate,

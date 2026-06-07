@@ -1607,10 +1607,27 @@ const Whiteboard = () => {
 
     const fileInputRef = useRef(null);
 
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+
+    const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // MIME type validation
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        alert('Invalid file type. Please upload a JPEG, PNG, GIF, or WEBP image.');
+        e.target.value = null;
+        return;
+    }
+
+    // File size validation
+    if (file.size > MAX_FILE_SIZE) {
+        alert('File too large. Maximum allowed size is 5MB.');
+        e.target.value = null;
+        return;
+    }
         // Create local preview URL for immediate display
         const localURL = URL.createObjectURL(file);
 
@@ -1663,7 +1680,7 @@ const Whiteboard = () => {
             canvas.height = tempImg.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(tempImg, 0, 0);
-            const base64URL = canvas.toDataURL('image/jpeg', 0.7); // Compressed for faster transmission
+            const base64URL = canvas.toDataURL('image/jpeg', 0.5); // Compressed for faster transmission
 
             // Update element with base64 for immediate display
             const previewElement = { ...newElement, dataURL: base64URL };
