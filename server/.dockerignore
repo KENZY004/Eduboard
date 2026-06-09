@@ -1,0 +1,7 @@
+# ← NEW
+node_modules
+.env
+dist
+build
+.git
+npm-debug.log

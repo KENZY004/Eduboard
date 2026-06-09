@@ -273,23 +273,14 @@ const LandingPage = () => {
             projects: ["Admin Dashboard", "User Management System"],
             gradient: "from-fuchsia-600 to-pink-500",
         },
-        {
-            id: 3,
-            name: "Mansi Singh",
-            role: "Developer",
-            bio: "Focused on real-time collaboration technology and database optimization.",
-            image: "/team/mansi.jpeg",
-            skills: ["MongoDB", "Express", "Socket.io", "Data Modeling"],
-            projects: ["Real-time Collaboration", "Database Architecture"],
-            gradient: "from-emerald-600 to-teal-500",
-        },
+
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white pt-16 overflow-hidden ">
+        <div className="min-h-screen bg-slate-950 text-white overflow-hidden ">
 
             {/* Hero Section */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
                 {/* Grid Background */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
@@ -347,7 +338,7 @@ const LandingPage = () => {
                 />
                 </div>
 
-                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center -mt-24">
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

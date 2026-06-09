@@ -16,28 +16,52 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isMobileMenuOpen]);
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/');
     };
 
-    const navLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Features', path: '/features' },
-        { name: 'About', path: '/about' },
-    ];
+    const hiddenRoutes = ['/login', '/signup', '/forgot-password', '/verify-otp', '/reset-password', '/verify-email'];
+    if (hiddenRoutes.includes(location.pathname)) {
+        return null;
+    }
+
+    // Different nav links based on authentication status
+    const navLinks = !token 
+        ? [
+            { name: 'Home', path: '/' },
+            { name: 'Features', path: '/features' },
+            { name: 'About', path: '/about' },
+          { name: 'Contact', path: '/contact' }
+        ]
+        : []; // Empty array for logged-in users - no Home/Features/About links
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
-                : 'bg-slate-950/70 backdrop-blur-md '
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+                isMobileMenuOpen
+                    ? 'bottom-0 bg-slate-950'
+                    : (isScrolled
+                        ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg overflow-hidden'
+                        : 'bg-slate-950/70 backdrop-blur-md '
+                      )
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-14">
                     {/* Logo */}
-                    <Link to="/" className="flex items-center space-x-2 group">
+                    <Link to={!token ? "/" : "/dashboard"} className="flex items-center space-x-2 group">
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
                             <svg
                                 className="w-5 h-5 text-white"
@@ -50,7 +74,7 @@ const Navbar = () => {
                         <span className="text-xl font-bold text-white">EduBoard</span>
                     </Link>
 
-                    {/* Desktop Navigation */}
+                    {/* Desktop Navigation - Only show Home/Features/About when NOT logged in */}
                     <div className="hidden md:flex items-center space-x-8">
                         {navLinks.map((link) => (
                             <Link
@@ -72,7 +96,7 @@ const Navbar = () => {
                             <>
                                 <Link
                                     to="/dashboard"
-                                    className="px-4 py-2 text-sm font-medium text-white hover:text-indigo-300 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600/20 rounded-lg hover:bg-indigo-600/30 transition-colors"
                                 >
                                     Dashboard
                                 </Link>
@@ -133,9 +157,10 @@ const Navbar = () => {
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-white/10">
+                    <div className="md:hidden fixed inset-0 top-16 z-40 bg-slate-950 px-6 py-4 border-t border-white/10 overflow-y-auto">
                         <div className="flex flex-col space-y-4">
-                            {navLinks.map((link) => (
+                            {/* Only show Home/Features/About when NOT logged in */}
+                            {!token && navLinks.map((link) => (
                                 <Link
                                     key={link.path}
                                     to={link.path}

@@ -259,11 +259,16 @@ const isStudent = !isHost;
     const [allowedStudents, setAllowedStudents] = useState([]); // Students with permission
     const [hasEditPermission, setHasEditPermission] = useState(false); // Current student's permission
     const [showStudentPanel, setShowStudentPanel] = useState(false); // Panel visibility
+    
+    // Waiting room state
+    const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
+    const [waitingStudents, setWaitingStudents] = useState([]);
 
     const [currentElement, setCurrentElement] = useState(null);
     const [selectedElement, setSelectedElement] = useState(null); // { index, offsetX, offsetY, initialWidth, initialHeight }
     const [editingElement, setEditingElement] = useState(null); // { index, text, x, y, width, height }
     const [action, setAction] = useState('none'); // 'drawing', 'moving', 'resizing'
+    const [showShortcutsHelp, setShowShortcutsHelp] = useState(false); // ← NEW
     const textAreaRef = useRef(null);
     const draggedElementRef = useRef(null); // Fix for stale state in history
     const currentStrokeRef = useRef(null); // Optimization: Mutable ref for drawing to bypass React Render Cycle
@@ -294,24 +299,15 @@ const isStudent = !isHost;
             try {
                 const response = await api.get(`/api/boards/${roomId}`);
                 if (!response.data) {
-                    // Board doesn't exist, clear everything
-                    setElements([]);
-                    setHistory([]);
-                    setRedoStack([]);
+                    alert('This board does not exist or has been deleted');
+                    navigate('/dashboard', { replace: true });
                 }
             } catch (error) {
                 if (error.response?.status === 404) {
                     // Board was deleted, clear everything
                     console.log('[BOARD-CHECK] Board was deleted (404), clearing state');
-                    setElements([]);
-                    setHistory([]);
-                    setRedoStack([]);
-
-                    // Clear canvas
-                    if (canvasRef.current) {
-                        const ctx = canvasRef.current.getContext('2d');
-                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                    }
+                    alert('This board does not exist or has been deleted');
+                    navigate('/dashboard', { replace: true });
                 }
             }
         };
@@ -343,6 +339,32 @@ const isStudent = !isHost;
             if (window.remoteStrokes && element.userId) {
                 delete window.remoteStrokes[element.userId];
             }
+        });
+
+        // Waiting Room Listeners
+        socket.on('waiting-for-approval', () => {
+            setIsWaitingForApproval(true);
+        });
+
+        socket.on('participant-waiting', (student) => {
+            if (isHost) {
+                setWaitingStudents(prev => [...prev.filter(s => s.socketId !== student.socketId), student]);
+            }
+        });
+
+        socket.on('waiting-participants-list', (students) => {
+            if (isHost) {
+                setWaitingStudents(students);
+            }
+        });
+
+        socket.on('join-accepted', () => {
+            setIsWaitingForApproval(false);
+        });
+
+        socket.on('join-declined', () => {
+            alert('Your request to join the board was declined by the teacher.');
+            navigate('/dashboard', { replace: true });
         });
 
         // Real-time stroke updates (while drawing)
@@ -386,7 +408,9 @@ const isStudent = !isHost;
         socket.on('load-board', async (boardData) => {
             // Handle both old format (array) and new format (object)
             const loadedElements = Array.isArray(boardData) ? boardData : (boardData.elements || []);
-            const allowedStudentsList = boardData.allowedStudents || [];
+            const allowedStudentsList = boardData.allowedParticipants || [];
+            const isCurrentUserHost = user?.id === boardData.hostId;
+            setIsHost(isCurrentUserHost);
 
             // Deduplicate loaded elements (Fix for "ghost" images from previous bug)
             const uniqueMap = new Map();
@@ -397,7 +421,7 @@ const isStudent = !isHost;
             setAllowedStudents(allowedStudentsList);
 
             // Check if current student has permission
-            if (user?.role === 'student') {
+            if (!isCurrentUserHost) {
                 const hasPermission = allowedStudentsList.some(s => s._id === user.id);
                 setHasEditPermission(hasPermission);
 
@@ -406,7 +430,7 @@ const isStudent = !isHost;
                     await api.post('/api/boards/save', {
                         roomId: roomId,
                         boardName: boardData.boardName || 'Untitled Board',
-                        teacherName: boardData.teacherName || 'Unknown Teacher',
+                        teacherName: boardData.hostName || 'Unknown Host',
                         elements: loadedElements
                     });
                 } catch (err) {
@@ -456,14 +480,14 @@ const isStudent = !isHost;
 
         // Student editing permission changed (for individual students)
         socket.on('editing-permission-changed', (hasPermission) => {
-            if (user?.role === 'student') {
+            if (!isHost) {
                 setHasEditPermission(hasPermission);
             }
         });
 
         // Theme synchronization (students follow teacher's theme)
         socket.on('theme-changed', (isDark) => {
-            if (user?.role === 'student') {
+            if (!isHost) {
                 setDarkMode(isDark);
             } else {
                 console.log('[THEME-SYNC] Ignoring theme change (not a student)');
@@ -521,23 +545,6 @@ const isStudent = !isHost;
             });
         });
 
-        // Draw element (receive new elements from other users)
-        socket.on('draw-element', (element) => {
-            setElements(prev => {
-                // Check if element already exists (by ID)
-                const existingIndex = prev.findIndex(el => el.id === element.id);
-                if (existingIndex !== -1) {
-                    // Update existing element
-                    const updated = [...prev];
-                    updated[existingIndex] = element;
-                    return updated;
-                } else {
-                    // Add new element
-                    return [...prev, element];
-                }
-            });
-        });
-
         return () => {
             socket.off('draw-element');
             socket.off('drawing-stroke');
@@ -551,6 +558,11 @@ const isStudent = !isHost;
             socket.off('delete-element');
             socket.off('update-element');
             socket.off('sync-state');
+            socket.off('waiting-for-approval');
+            socket.off('participant-waiting');
+            socket.off('waiting-participants-list');
+            socket.off('join-accepted');
+            socket.off('join-declined');
         };
     }, [socket]);
 
@@ -1018,7 +1030,7 @@ const isStudent = !isHost;
         updateElement(index, newProps);
 
         // Ensure students receive the final state for sticky notes
-        if (editingElement.type === 'sticky' && socket && user?.role === 'teacher') {
+        if (editingElement.type === 'sticky' && socket && isHost) {
             socket.emit('update-element', {
                 roomId,
                 elementId: elements[index].id,
@@ -1026,7 +1038,7 @@ const isStudent = !isHost;
             });
         }
 
-        if (user?.role === 'teacher') {
+        if (isHost) {
             setHistory(prev => [...prev, {
                 type: 'UPDATE',
                 id: elements[index].id,
@@ -1131,7 +1143,7 @@ const isStudent = !isHost;
 
     const startDrawing = (e) => {
         // Check if user can edit (teacher always can, student needs permission)
-        const canEdit = user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission);
+        const canEdit = isHost || (!isHost && hasEditPermission);
         if (!canEdit) return;
 
         // Spacebar Panning Logic
@@ -1272,7 +1284,7 @@ const isStudent = !isHost;
             };
 
             setElements(prev => [...prev, newElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
 
@@ -1474,7 +1486,7 @@ const isStudent = !isHost;
                 // But for this specific task (Optimizing DRAWING), we focus on strokes.
                 // Optimization for drag/resize: Leave as is (React state) for now unless requested.
 
-                if (user?.role === 'teacher') {
+                if (isHost) {
                     setHistory(prev => [...prev, {
                         type: 'UPDATE',
                         id: finalElement.id,
@@ -1514,7 +1526,7 @@ const isStudent = !isHost;
             }
 
             setElements(prev => [...prev, newElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
             if (socket) {
@@ -1527,7 +1539,7 @@ const isStudent = !isHost;
                 return;
             }
             setElements(prev => [...prev, currentElement]);
-            if (user?.role === 'teacher') {
+            if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
             }
             if (socket) {
@@ -1573,7 +1585,7 @@ const isStudent = !isHost;
         const action = newRedoStack.pop();
         setRedoStack(newRedoStack);
 
-        if (user?.role === 'teacher') {
+        if (isHost) {
             setHistory(prev => [...prev, action]);
         }
 
@@ -1581,7 +1593,7 @@ const isStudent = !isHost;
             setElements(prev => {
                 const newElements = [...prev, action.element];
                 // Sync full state to students after redo to maintain order
-                if (socket && user?.role === 'teacher') {
+                if (socket && isHost) {
                     socket.emit('sync-state', { roomId, elements: newElements });
                 }
                 return newElements;
@@ -1594,7 +1606,7 @@ const isStudent = !isHost;
                         idx === targetIndex ? { ...el, ...action.newProps } : el
                     );
                     // Sync full state after update
-                    if (socket && user?.role === 'teacher') {
+                    if (socket && isHost) {
                         socket.emit('sync-state', { roomId, elements: updatedElements });
                     }
                     return updatedElements;
@@ -1605,6 +1617,24 @@ const isStudent = !isHost;
             });
         }
     };
+
+    const handleDeleteSelected = () => { // ← NEW
+        if (!selectedElement) return; // ← NEW
+        const index = selectedElement.index; // ← NEW
+        const el = elements[index]; // ← NEW
+        if (!el) return; // ← NEW
+        
+        const newElements = [...elements]; // ← NEW
+        newElements.splice(index, 1); // ← NEW
+        setElements(newElements); // ← NEW
+        setSelectedElement(null); // ← NEW
+        
+        setHistory(prev => [...prev, { type: 'DELETE', element: el }]); // ← NEW
+        
+        if (socket) { // ← NEW
+            socket.emit('delete-element', { roomId, elementId: el.id }); // ← NEW
+        } // ← NEW
+    }; // ← NEW
 
     const handleClear = () => {
         setElements([]);
@@ -1846,7 +1876,7 @@ const isStudent = !isHost;
             setElements(prev => prev.map((el, idx) => idx === newIndex ? previewElement : el));
 
             // Emit base64 preview to students immediately
-            if (socket && user?.role === 'teacher') {
+            if (socket && isHost) {
                 socket.emit('draw-element', { roomId, ...previewElement });
             }
 
@@ -1865,7 +1895,7 @@ const isStudent = !isHost;
                 const updatedElement = { ...newElement, dataURL: url, uploading: false };
                 setElements(prev => prev.map((el, idx) => idx === newIndex ? updatedElement : el));
 
-                if (user?.role === 'teacher') {
+                if (isHost) {
                     setHistory(prev => [...prev, { type: 'ADD', element: updatedElement }]);
                 }
                 setRedoStack([]);
@@ -2045,8 +2075,64 @@ const isStudent = !isHost;
         ctx.restore();
     };
 
+    // ← NEW
+    useEffect(() => { // ← NEW
+        const handleKeyDown = (e) => { // ← NEW
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; // ← NEW
+            
+            if (e.key === '?') { // ← NEW
+                setShowShortcutsHelp(prev => !prev); // ← NEW
+                return; // ← NEW
+            } // ← NEW
+
+            if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) { // ← NEW
+                e.preventDefault(); // ← NEW
+            } // ← NEW
+            if (e.key === 'Delete' || e.key === 'Backspace') { // ← NEW
+                if (e.key === 'Backspace') e.preventDefault(); // ← NEW
+            } // ← NEW
+
+            switch (e.key.toLowerCase()) { // ← NEW
+                case 'p': case '1': setTool('pen'); break; // ← NEW
+                case 'e': case '2': setTool('eraser'); break; // ← NEW
+                case 'l': case '3': setTool('line'); break; // ← NEW
+                case 'r': case '4': setTool('rect'); break; // ← NEW
+                case 'c': case '5': setTool('circle'); break; // ← NEW
+                case 't': case '6': setTool('text'); break; // ← NEW
+                case 'delete': case 'backspace': // ← NEW
+                    handleDeleteSelected(); // ← NEW
+                    break; // ← NEW
+                case 'escape': // ← NEW
+                    setSelectedElement(null); // ← NEW
+                    setTool('select'); // ← NEW
+                    if (isDrawing) { // ← NEW
+                        setIsDrawing(false); // ← NEW
+                        currentStrokeRef.current = null; // ← NEW
+                        setCurrentElement(null); // ← NEW
+                    } // ← NEW
+                    break; // ← NEW
+                case 'z': // ← NEW
+                    if (e.ctrlKey || e.metaKey) { // ← NEW
+                        if (e.shiftKey) handleRedo(); // ← NEW
+                        else handleUndo(); // ← NEW
+                    } // ← NEW
+                    break; // ← NEW
+                case 'y': // ← NEW
+                    if (e.ctrlKey || e.metaKey) handleRedo(); // ← NEW
+                    break; // ← NEW
+                default: break; // ← NEW
+            } // ← NEW
+        }; // ← NEW
+        window.addEventListener('keydown', handleKeyDown); // ← NEW
+        return () => window.removeEventListener('keydown', handleKeyDown); // ← NEW
+    }, [isDrawing, selectedElement, elements, socket, roomId]); // ← NEW
+
     return (
-        <div className={`relative w-full h-screen overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}>
+        <div 
+            className={`relative w-full h-[calc(100vh-3.5rem)] overflow-hidden cursor-crosshair transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-gray-100'}`}
+            role="application" // ← NEW
+            aria-label="Whiteboard Canvas" // ← NEW
+        >
 
             <input
                 type="file"
@@ -2056,8 +2142,61 @@ const isStudent = !isHost;
                 onChange={handleImageUpload}
             />
 
-            {/* Cursors Overlay */}
-            {/* Cursors Overlay */}
+            {/* Waiting For Approval Overlay */}
+            <AnimatePresence>
+                {isWaitingForApproval && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md"
+                    >
+                        <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+                            <div className="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <h2 className="text-xl font-bold text-white mb-2">Waiting for Approval</h2>
+                            <p className="text-slate-400 text-sm">Please wait while the teacher reviews your request to join the room.</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Waiting Students Notifications (Teacher) */}
+            <div className="absolute top-20 left-4 z-[90] flex flex-col gap-2">
+                <AnimatePresence>
+                    {isHost && waitingStudents.map((student) => (
+                        <motion.div
+                            key={student.socketId}
+                            initial={{ x: -50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -50, opacity: 0 }}
+                            className="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-xl w-72 pointer-events-auto"
+                        >
+                            <h4 className="text-white font-medium mb-1">{student.username} wants to join</h4>
+                            <p className="text-xs text-slate-400 mb-3">Role: {student.role}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        socket.emit('accept-participant', { roomId, socketId: student.socketId, userData: student });
+                                        setWaitingStudents(prev => prev.filter(s => s.socketId !== student.socketId));
+                                    }}
+                                    className="flex-1 bg-green-500/20 text-green-400 py-1.5 rounded text-sm hover:bg-green-500/30 transition-colors"
+                                >
+                                    Admit
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        socket.emit('decline-participant', { roomId, socketId: student.socketId });
+                                        setWaitingStudents(prev => prev.filter(s => s.socketId !== student.socketId));
+                                    }}
+                                    className="flex-1 bg-red-500/20 text-red-400 py-1.5 rounded text-sm hover:bg-red-500/30 transition-colors"
+                                >
+                                    Decline
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
 
             {/* Cursors Overlay */}
             {Object.entries(cursors).map(([userId, cursor]) => (
@@ -2089,7 +2228,7 @@ const isStudent = !isHost;
                 </div>
 
                 {/* Theme Toggle - Teacher Only */}
-                {user?.role === 'teacher' && (
+                {isHost && (
                     <div className="flex items-center gap-2 pointer-events-auto">
                         <button
                             onClick={() => {
@@ -2277,7 +2416,7 @@ const isStudent = !isHost;
             )}
 
             {/* Student Management Panel for Teachers */}
-            {user?.role === 'teacher' && (
+            {isHost && (
                 <AnimatePresence>
                     {showStudentPanel && (
                         <motion.div
@@ -2331,10 +2470,10 @@ const isStudent = !isHost;
                                                     <button
                                                         onClick={() => {
                                                             if (hasPermission) {
-                                                                socket.emit('revoke-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit('revoke-participant-permission', { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => prev.filter(s => s._id !== student.userId));
                                                             } else {
-                                                                socket.emit('grant-student-permission', { roomId, studentId: student.userId });
+                                                                socket.emit('grant-participant-permission', { roomId, studentId: student.userId });
                                                                 setAllowedStudents(prev => [...prev, { _id: student.userId, username: student.username }]);
                                                             }
                                                         }}
@@ -2357,7 +2496,7 @@ const isStudent = !isHost;
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('grant-student-permission', { roomId, studentId: id });
+                                            socket.emit('grant-participant-permission', { roomId, studentId: id });
                                         });
                                         const students = connectedUsers.filter(u => u.role === 'student').map(s => ({ _id: s.userId, username: s.username }));
                                         setAllowedStudents(students);
@@ -2370,7 +2509,7 @@ const isStudent = !isHost;
                                     onClick={() => {
                                         const studentIds = connectedUsers.filter(u => u.role === 'student').map(s => s.userId);
                                         studentIds.forEach(id => {
-                                            socket.emit('revoke-student-permission', { roomId, studentId: id });
+                                            socket.emit('revoke-participant-permission', { roomId, studentId: id });
                                         });
                                         setAllowedStudents([]);
                                     }}
@@ -2385,18 +2524,41 @@ const isStudent = !isHost;
             )}
 
             {/* Main Toolbar - Hidden for Students unless editing is enabled */}
-            {(user?.role === 'teacher' || (user?.role === 'student' && hasEditPermission)) && (
+            {(isHost || (!isHost && hasEditPermission)) && (
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
                         {/* Undo/Redo - Teacher Only */}
-                        {user?.role === 'teacher' && (
+                        {isHost && (
                             <>
-                                <button onClick={handleUndo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Undo"><FaUndo className="text-sm sm:text-base" /></button>
-                                <button onClick={handleRedo} className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors" title="Redo"><FaRedo className="text-sm sm:text-base" /></button>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={handleUndo} aria-label="Undo (Shortcut: Ctrl+Z)" aria-keyshortcuts="Control+Z" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Undo">
+                                        <FaUndo className="text-sm sm:text-base" />
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Undo <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">Ctrl+Z</span>
+                                    </div>
+                                </div>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={handleRedo} aria-label="Redo (Shortcut: Ctrl+Y)" aria-keyshortcuts="Control+Y" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Redo">
+                                        <FaRedo className="text-sm sm:text-base" />
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Redo <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">Ctrl+Y</span>
+                                    </div>
+                                </div>
+                                <div className="w-px h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+                                <div className="relative group flex items-center justify-center">
+                                    <button onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard Shortcuts Help" aria-keyshortcuts="?" className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" title="Keyboard Shortcuts">
+                                        <span className="text-sm sm:text-base font-bold">?</span>
+                                    </button>
+                                    <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                        Shortcuts <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">?</span>
+                                    </div>
+                                </div>
                             </>
                         )}
-                        {user?.role === 'teacher' && (
+                        {isHost && (
                             <>
                                 <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
                                 <button onClick={handleClear} className="p-2 sm:p-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors" title="Clear All"><FaTrash className="text-sm sm:text-base" /></button>
@@ -2421,32 +2583,49 @@ const isStudent = !isHost;
                     </div>
 
                     {/* Primary Tools Dock */}
-                    <div className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full">
+                    <div 
+                        className="flex items-center gap-1 sm:gap-2 bg-[#020617] border border-white/10 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-2xl shadow-black/50 ring-1 ring-white/5 overflow-visible max-w-full"
+                        role="toolbar" // ← NEW
+                        aria-label="Whiteboard Tools" // ← NEW
+                    >
 
                         {/* Tools */}
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
                             {[
-                                { id: 'pen', icon: FaPen },
-                                { id: 'highlighter', icon: FaHighlighter },
-                                { id: 'eraser', icon: FaEraser },
-                                { id: 'line', icon: FaSlash },
+                                { id: 'pen', icon: FaPen, label: 'Pen Tool', shortcut: 'P' }, // ← NEW
+                                { id: 'highlighter', icon: FaHighlighter, label: 'Highlighter', shortcut: '' }, // ← NEW
+                                { id: 'eraser', icon: FaEraser, label: 'Eraser Tool', shortcut: 'E' }, // ← NEW
+                                { id: 'line', icon: FaSlash, label: 'Line Tool', shortcut: 'L' }, // ← NEW
+                                { id: 'text', icon: FaFont, label: 'Text Tool', shortcut: 'T' } // ← NEW
                             ].map((t) => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => setTool(t.id)}
-                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${tool === t.id
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                                >
-                                    <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
-                                </button>
+                                <div key={t.id} className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                    <button
+                                        onClick={() => setTool(t.id)}
+                                        aria-label={`${t.label} ${t.shortcut ? `(Shortcut: ${t.shortcut})` : ''}`} // ← NEW
+                                        aria-pressed={tool === t.id} // ← NEW
+                                        aria-keyshortcuts={t.shortcut || undefined} // ← NEW
+                                        className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${tool === t.id // ← NEW
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        <t.icon className={`text-sm sm:text-base ${t.id === 'line' ? 'transform -rotate-45' : ''}`} />
+                                    </button>
+                                    {t.shortcut && ( // ← NEW
+                                        <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50"> {/* ← NEW */}
+                                            {t.label} <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">{t.shortcut}</span> {/* ← NEW */}
+                                        </div> // ← NEW
+                                    )}
+                                </div>
                             ))}
                             <div className="relative">
                                 <button
                                     onClick={() => {
                                         setShowShapeMenu(!showShapeMenu);
                                     }}
-                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star')
+                                    aria-label="Shapes Menu" // ← NEW
+                                    aria-expanded={showShapeMenu} // ← NEW
+                                    aria-haspopup="true" // ← NEW
+                                    className={`p-2 sm:p-3 rounded-md sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${(tool === 'rect' || tool === 'circle' || tool === 'triangle' || tool === 'pentagon' || tool === 'hexagon' || tool === 'octagon' || tool === 'star') // ← NEW
                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                                     title="Shapes"
@@ -2462,22 +2641,31 @@ const isStudent = !isHost;
                                             className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 bg-[#0f172a] border border-white/10 rounded-xl p-2 grid grid-cols-4 gap-1 shadow-2xl z-50"
                                         >
                                             {[
-                                                { id: 'rect', icon: BsSquare, label: 'Square' },
-                                                { id: 'circle', icon: BsCircle, label: 'Circle' },
-                                                { id: 'triangle', icon: BsTriangle, label: 'Triangle' },
-                                                { id: 'star', icon: BsStar, label: 'Star' },
-                                                { id: 'pentagon', icon: BsPentagon, label: 'Pentagon' },
-                                                { id: 'hexagon', icon: BsHexagon, label: 'Hexagon' },
-                                                { id: 'octagon', icon: BsOctagon, label: 'Octagon' },
+                                                { id: 'rect', icon: BsSquare, label: 'Rectangle', shortcut: 'R' }, // ← NEW
+                                                { id: 'circle', icon: BsCircle, label: 'Circle', shortcut: 'C' }, // ← NEW
+                                                { id: 'triangle', icon: BsTriangle, label: 'Triangle', shortcut: '' }, // ← NEW
+                                                { id: 'star', icon: BsStar, label: 'Star', shortcut: '' }, // ← NEW
+                                                { id: 'pentagon', icon: BsPentagon, label: 'Pentagon', shortcut: '' }, // ← NEW
+                                                { id: 'hexagon', icon: BsHexagon, label: 'Hexagon', shortcut: '' }, // ← NEW
+                                                { id: 'octagon', icon: BsOctagon, label: 'Octagon', shortcut: '' }, // ← NEW
                                             ].map(s => (
-                                                <button
-                                                    key={s.id}
-                                                    onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
-                                                    className={`p-2.5 rounded-lg flex items-center justify-center transition-all ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
-                                                    title={s.label}
-                                                >
-                                                    <s.icon className="text-xl" />
-                                                </button>
+                                                <div key={s.id} className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                                    <button
+                                                        onClick={() => { setTool(s.id); setShowShapeMenu(false); }}
+                                                        aria-label={`${s.label} ${s.shortcut ? `(Shortcut: ${s.shortcut})` : ''}`} // ← NEW
+                                                        aria-pressed={tool === s.id} // ← NEW
+                                                        aria-keyshortcuts={s.shortcut || undefined} // ← NEW
+                                                        className={`p-2.5 rounded-lg flex w-full items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f172a] ${tool === s.id ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`} // ← NEW
+                                                        title={s.label}
+                                                    >
+                                                        <s.icon className="text-xl" />
+                                                    </button>
+                                                    {s.shortcut && ( // ← NEW
+                                                        <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50"> {/* ← NEW */}
+                                                            {s.label} <span className="text-gray-400 border border-gray-600 rounded px-1 ml-1">{s.shortcut}</span> {/* ← NEW */}
+                                                        </div> // ← NEW
+                                                    )}
+                                                </div>
                                             ))}
                                         </motion.div>
                                     )}
@@ -2487,12 +2675,26 @@ const isStudent = !isHost;
 
                         {/* Quick Insert */}
                         <div className="flex items-center gap-0.5 sm:gap-1">
-                            <button onClick={addStickyNote} className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="Add Sticky Note">
-                                <FaStickyNote className="text-sm sm:text-base" />
-                            </button>
-                            <button onClick={() => fileInputRef.current.click()} className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Upload Image">
-                                <FaImage className="text-sm sm:text-base" />
-                            </button>
+                            <div className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                <button 
+                                    onClick={addStickyNote} 
+                                    aria-label="Add Sticky Note"
+                                    className="p-2 sm:p-3 rounded-lg text-yellow-400 hover:bg-yellow-400/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" // ← NEW
+                                    title="Add Sticky Note"
+                                >
+                                    <FaStickyNote className="text-sm sm:text-base" />
+                                </button>
+                            </div> {/* ← NEW */}
+                            <div className="relative group flex items-center justify-center"> {/* ← NEW */}
+                                <button 
+                                    onClick={() => fileInputRef.current.click()} 
+                                    aria-label="Upload Image"
+                                    className="p-2 sm:p-3 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617]" // ← NEW
+                                    title="Upload Image"
+                                >
+                                    <FaImage className="text-sm sm:text-base" />
+                                </button>
+                            </div> {/* ← NEW */}
                         </div>
 
                         {/* Properties */}
@@ -2571,6 +2773,45 @@ const isStudent = !isHost;
                     </div>
                 </div >
             )}
+
+            {/* ← NEW */}
+            {/* Keyboard Shortcuts Help Panel */}
+            <AnimatePresence>
+                {showShortcutsHelp && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className={`absolute bottom-24 right-4 sm:right-8 w-80 p-5 rounded-2xl shadow-2xl border backdrop-blur-xl z-[100] ${darkMode ? 'bg-slate-900/90 border-slate-700 text-slate-200' : 'bg-white/90 border-gray-200 text-gray-800'}`}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                ⌨️ Keyboard Shortcuts
+                            </h3>
+                            <button onClick={() => setShowShortcutsHelp(false)} className="text-gray-400 hover:text-white transition-colors">
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-2 gap-2 border-b border-white/10 pb-2">
+                                <span className="opacity-70">Pen Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">P / 1</kbd>
+                                <span className="opacity-70">Eraser Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">E / 2</kbd>
+                                <span className="opacity-70">Line Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">L / 3</kbd>
+                                <span className="opacity-70">Rectangle</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">R / 4</kbd>
+                                <span className="opacity-70">Circle</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">C / 5</kbd>
+                                <span className="opacity-70">Text Tool</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">T / 6</kbd>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <span className="opacity-70">Undo</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Ctrl+Z</kbd>
+                                <span className="opacity-70">Redo</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Ctrl+Y</kbd>
+                                <span className="opacity-70">Delete selected</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Del/Bksp</kbd>
+                                <span className="opacity-70">Cancel/Deselect</span><kbd className="justify-self-end bg-black/30 px-2 py-1 rounded text-xs border border-white/20">Esc</kbd>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* ← NEW END */}
         </div >
     );
 };
