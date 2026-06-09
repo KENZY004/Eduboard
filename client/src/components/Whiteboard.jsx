@@ -238,7 +238,8 @@ const Whiteboard = () => {
         user = null;
     }
     
-    const isStudent = user?.role === 'student';
+const [isHost, setIsHost] = useState(false);
+const isStudent = !isHost;
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('#ffffff');
