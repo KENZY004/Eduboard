@@ -46,7 +46,6 @@ const ResetPassword = () => {
                 resetToken,
                 newPassword: formData.newPassword
             });
-            // Password reset successful, navigate to login
             navigate('/login', { state: { message: 'Password reset successfully. Please log in with your new password.' } });
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong');
@@ -99,8 +98,11 @@ const ResetPassword = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
+                    {/* New Password */}
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">New Password</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            New Password
+                        </label>
                         <div className="relative">
                             <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
@@ -112,15 +114,22 @@ const ResetPassword = () => {
                                 placeholder="••••••••"
                                 required
                             />
-                            {showPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
-                            ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                className="absolute top-4 right-4 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
                         </div>
                     </div>
+
+                    {/* Confirm Password */}
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Confirm Password</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+                            Confirm Password
+                        </label>
                         <div className="relative">
                             <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
@@ -132,11 +141,14 @@ const ResetPassword = () => {
                                 placeholder="••••••••"
                                 required
                             />
-                            {showConfirmPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowConfirmPassword(false)} />
-                            ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowConfirmPassword(true)} />
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                className="absolute top-4 right-4 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer"
+                                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                            >
+                                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
                         </div>
                     </div>
 

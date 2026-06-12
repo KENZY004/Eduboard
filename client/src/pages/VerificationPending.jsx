@@ -17,7 +17,7 @@ const VerificationPending = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const checkVerificationStatus = async () => {
+    async function checkVerificationStatus() {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -38,7 +38,7 @@ const VerificationPending = () => {
             console.error('Failed to check verification status:', err);
             setLoading(false);
         }
-    };
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('token');
