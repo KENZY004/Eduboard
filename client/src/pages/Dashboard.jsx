@@ -316,37 +316,55 @@ const Dashboard = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {recentBoards.map((board) => (
-                                <motion.div
-                                    key={board.roomId}
-                                    whileHover={{ x: 4 }}
-                                    onClick={() => openBoard(board.roomId)}
-                                    className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 cursor-pointer transition-all group"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                            <FaFolder className="text-indigo-400 text-sm" />
-                                        </div>
+                        <div className="relative">
+                            {/* Timeline vertical line */}
+                            <div className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-indigo-500/40 via-indigo-400/20 to-transparent" />
+                            <div className="space-y-0">
+                                {recentBoards.map((board, idx) => {
+                                    const isRecent = Date.now() - new Date(board.updatedAt || board.createdAt).getTime() < 3600000;
+                                    return (
+                                        <motion.div
+                                            key={board.roomId}
+                                            whileHover={{ x: 4 }}
+                                            onClick={() => openBoard(board.roomId)}
+                                            className="relative flex items-center justify-between p-4 pl-12 rounded-2xl hover:bg-white/[0.06] border-transparent hover:border-white/5 cursor-pointer transition-all group"
+                                        >
+                                            {/* Timeline dot */}
+                                            <div className={`absolute left-[13px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 ${isRecent ? 'bg-indigo-400 border-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]' : 'bg-gray-700 border-gray-600'}`} />
 
-                                        <div>
-                                            <h4 className="text-white text-sm font-medium">
-                                                {isTeacher
-                                                    ? board.name || "Untitled Board"
-                                                    : board.boardName || "Untitled Board"}
-                                            </h4>
+                                            {/* Recency badge */}
+                                            {isRecent && (
+                                                <div className="absolute top-1 right-0">
+                                                    <span className="text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">Now</span>
+                                                </div>
+                                            )}
 
-                                            <p className="text-slate-500 text-xs mt-1">
-                                                {formatDate(board.updatedAt || board.createdAt)}
-                                            </p>
-                                        </div>
-                                    </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                                                    <FaFolder className="text-indigo-400 text-sm" />
+                                                </div>
 
-                                    <div className="text-slate-500 group-hover:text-indigo-400 transition-colors">
-                                        →
-                                    </div>
-                                </motion.div>
-                            ))}
+                                                <div>
+                                                    <h4 className="text-white text-sm font-medium">
+                                                        {isTeacher
+                                                            ? board.name || "Untitled Board"
+                                                            : board.boardName || "Untitled Board"}
+                                                    </h4>
+
+                                                    <p className="text-slate-500 text-xs mt-1 flex items-center gap-1.5">
+                                                        <FaClock className="text-[10px]" />
+                                                        {formatDate(board.updatedAt || board.createdAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-slate-500 group-hover:text-indigo-400 transition-colors">
+                                                →
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </motion.div>
