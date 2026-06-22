@@ -195,21 +195,25 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen lg:h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
 
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="auth-panel-bg flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-5 sm:py-8 lg:py-5 relative z-10 backdrop-blur-sm bg-slate-900/90 border-r border-white/5"
             >
+                {/* Decorative ambient glows */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 right-8 w-48 h-48 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
+
                 <div>
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center justify-between mb-8 sm:mb-12"
+                        className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-3"
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -222,11 +226,12 @@ const Login = () => {
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
-                        Welcome back to <br className="hidden sm:block" />
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 sm:mb-3 tracking-tight leading-tight">
+                        Welcome back to <br className="hidden sm:block lg:hidden" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Infinity.</span>
                     </h2>
-                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Login to access your high-performance workspace.</p>
+                    <div className="w-10 h-0.5 bg-linear-to-r from-indigo-500 to-transparent rounded-full mb-3 sm:mb-4" />
+                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-3 sm:mb-5">Login to access your high-performance workspace.</p>
                 </div>
 
                 {error && (
@@ -251,7 +256,7 @@ const Login = () => {
                     </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
+                <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
                     <div className="group">
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
                         <div className="relative">
@@ -299,7 +304,7 @@ const Login = () => {
                         whileTap={{ scale: loading ? 1 : 0.98 }}
                         type="submit"
                         disabled={loading}
-                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 group transition-all mt-3 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {loading ? (
                             <>
@@ -314,8 +319,8 @@ const Login = () => {
                     </motion.button>
                 </form>
 
-                <div className="mt-4 max-w-sm">
-                    <div className="flex items-center my-4">
+                <div className="mt-3 max-w-sm">
+                    <div className="flex items-center my-3">
                         <div className="flex-grow border-t border-slate-800/60"></div>
                         <span className="px-3 text-slate-500 text-xs uppercase tracking-wider">or</span>
                         <div className="flex-grow border-t border-slate-800/60"></div>
@@ -326,14 +331,14 @@ const Login = () => {
                         type="button"
                         onClick={handleGoogleClick}
                         disabled={loading}
-                        className={`w-full bg-slate-800/40 hover:bg-slate-800/60 text-white font-semibold py-4 rounded-xl border border-slate-700/80 hover:border-slate-600 flex items-center justify-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-slate-800/40 hover:bg-slate-800/60 text-white font-semibold py-3.5 rounded-xl border border-slate-700/80 hover:border-slate-600 flex items-center justify-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         <GoogleIcon />
                         Continue with Google
                     </motion.button>
                 </div>
 
-                <p className="mt-8 text-slate-500 text-center text-sm">
+                <p className="mt-4 text-slate-500 text-center text-sm">
                     New to EduBoard?{' '}
                     <Link to="/signup" className="text-white hover:text-indigo-300 transition-colors font-medium border-b border-indigo-500/30 hover:border-indigo-500">
                         Create an account
@@ -408,7 +413,7 @@ const Login = () => {
                                 className="flex flex-col items-center"
                             >
                                 <StudentCharacter className="w-full h-auto" />
-                                <div className="mt-8 text-center">
+                                <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
                                         Welcome Back, Scholar! 🚀
                                     </h3>
@@ -427,7 +432,7 @@ const Login = () => {
                                 className="flex flex-col items-center"
                             >
                                 <TeacherCharacter className="w-full h-auto" />
-                                <div className="mt-8 text-center">
+                                <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
                                         Welcome Back, Educator! 🎓
                                     </h3>
@@ -446,7 +451,7 @@ const Login = () => {
                                 className="flex flex-col items-center"
                             >
                                 <TeacherCharacter className="w-full h-auto" />
-                                <div className="mt-8 text-center">
+                                <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
                                         Welcome to EduBoard! 👋
                                     </h3>

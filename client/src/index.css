@@ -239,3 +239,18 @@ html::-webkit-scrollbar {
   display: none !important;
   width: 0px !important
 }
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Auth left panel dot grid texture */
+.auth-panel-bg {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
