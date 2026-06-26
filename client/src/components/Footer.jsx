@@ -19,10 +19,13 @@ const Footer = () => {
     { name: 'Support', path: '/support' },
     { name: 'FAQ', path: '/faq' },
   ],
-        Legal: [
-            { name: 'Privacy Policy', path: '#privacy' },
-            { name: 'Terms of Service', path: '#terms' },
-        ],
+       Legal: [
+        
+  { name: "Privacy Policy", path: "/privacy-policy" },
+  { name: "Terms of Service", path: "/terms" },
+
+],
+
     };
 
   const socialLinks = [
