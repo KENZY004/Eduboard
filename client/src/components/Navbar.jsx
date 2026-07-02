@@ -63,7 +63,7 @@ const Navbar = () => {
                     {/* Logo */}
 <Link
     to={!token ? "/" : "/dashboard"}
-    className="flex items-center space-x-3 group"
+    className="flex items-center space-x-1 group"
 >
     <img
         src="/logo.png"
