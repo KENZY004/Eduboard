@@ -172,21 +172,25 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
+        <div className="min-h-screen lg:h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden relative">
 
             {/* Left: Form */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-8 sm:py-12 relative z-10 backdrop-blur-sm bg-slate-900/90"
+                className="auth-panel-bg scrollbar-none flex flex-col justify-center px-6 sm:px-8 lg:px-24 py-4 sm:py-8 lg:py-3 relative z-10 backdrop-blur-sm bg-slate-900/90 border-r border-white/5 lg:overflow-y-auto"
             >
+                {/* Decorative ambient glows */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-cyan-600/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 right-8 w-48 h-48 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+
                 <div>
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center justify-between mb-8 sm:mb-12"
+                        className="flex items-center justify-between mb-3 sm:mb-5 lg:mb-2"
                     >
                     
                     <div className="flex items-center gap-1">
@@ -205,85 +209,86 @@ const Signup = () => {
                         </Link>
                     </motion.div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
-                        Start your <br className="hidden sm:block" />
+                    <h2 className="text-3xl sm:text-4xl lg:text-3xl font-bold text-white mb-1 tracking-tight leading-tight">
+                        Start your <br className="hidden sm:block lg:hidden" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Journey.</span>
                     </h2>
-                    <p className="text-slate-400 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">Join the platform redefining digital collaboration.</p>
+                    <div className="w-10 h-0.5 bg-linear-to-r from-cyan-500 to-transparent rounded-full mb-2" />
+                    <p className="text-slate-400 text-sm sm:text-base mb-2 sm:mb-3">Join the platform redefining digital collaboration.</p>
                 </div>
 
                 {error && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
-                        className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2"
+                        className="mb-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2"
                     >
                         <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
                         {error}
                     </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5 max-w-sm">
+                <form onSubmit={handleSubmit} className="space-y-2 max-w-sm">
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Username</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 ml-1">Username</label>
                         <div className="relative">
-                            <FaUser className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaUser className="absolute top-3.5 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type="text"
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full input-glass pl-12 pr-4 py-3 rounded-xl focus:outline-none"
                                 placeholder={formData.role === 'teacher' ? 'Teacher Name' : 'Student Name'}
                                 required
                             />
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Email Address</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 ml-1">Email Address</label>
                         <div className="relative">
-                            <FaEnvelope className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaEnvelope className="absolute top-3.5 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full input-glass pl-12 pr-4 py-3 rounded-xl focus:outline-none"
                                 placeholder="name@example.com"
                                 required
                             />
                         </div>
                     </div>
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Password</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 ml-1">Password</label>
                         <div className="relative">
-                            <FaLock className="absolute top-4 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                            <FaLock className="absolute top-3.5 left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="w-full input-glass pl-12 pr-12 py-3.5 rounded-xl focus:outline-none"
+                                className="w-full input-glass pl-12 pr-12 py-3 rounded-xl focus:outline-none"
                                 placeholder="••••••••"
                                 maxLength={64}
                                 required
                             />
                             {showPassword ? (
-                                <FaEyeSlash className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
+                                <FaEyeSlash className="absolute top-3.5 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(false)} />
                             ) : (
-                                <FaEye className="absolute top-4 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
+                                <FaEye className="absolute top-3.5 right-4 text-slate-500 cursor-pointer" onClick={() => setShowPassword(true)} />
                             )}
                         </div>
-                        <p className="text-sm text-gray-400 mt-1.5">
-                            Password must contain at least 8 characters with a number, uppercase letter, and special character.
+                        <p className="text-xs text-gray-400 mt-1">
+                            Min. 8 chars with a number, uppercase &amp; special character.
                         </p>
                     </div>
 
                     {/* Role Selection */}
                     <div className="group">
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 ml-1">I am a</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 ml-1">I am a</label>
                         <div className="grid grid-cols-2 gap-3">
-                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'student'
+                            <label className={`relative flex items-center justify-center p-3 rounded-xl cursor-pointer transition-all ${formData.role === 'student'
                                 ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
                                 : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
                                 }`}>
@@ -296,11 +301,11 @@ const Signup = () => {
                                     className="sr-only"
                                 />
                                 <div className="text-center">
-                                    <div className="text-2xl mb-1">🎓</div>
+                                    <div className="text-lg mb-0.5">🎓</div>
                                     <div className="font-semibold text-white">Student</div>
                                 </div>
                             </label>
-                            <label className={`relative flex items-center justify-center p-4 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
+                            <label className={`relative flex items-center justify-center p-3 rounded-xl cursor-pointer transition-all ${formData.role === 'teacher'
                                 ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500'
                                 : 'bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600'
                                 }`}>
@@ -313,7 +318,7 @@ const Signup = () => {
                                     className="sr-only"
                                 />
                                 <div className="text-center">
-                                    <div className="text-2xl mb-1">👨‍🏫</div>
+                                    <div className="text-lg mb-0.5">👨‍🏫</div>
                                     <div className="font-semibold text-white">Teacher</div>
                                 </div>
                             </label>
@@ -400,7 +405,7 @@ const Signup = () => {
                         whileTap={{ scale: loading ? 1 : 0.98 }}
                         type="submit"
                         disabled={loading}
-                        className={`w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                        className={`w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group transition-all mt-1 ${loading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                     >
                         {loading ? (
@@ -418,8 +423,8 @@ const Signup = () => {
                 </form>
 
                 {formData.role === 'student' && (
-                    <div className="mt-4 max-w-sm">
-                        <div className="flex items-center my-4">
+                    <div className="mt-1 max-w-sm">
+                        <div className="flex items-center my-1">
                             <div className="flex-grow border-t border-slate-800/60"></div>
                             <span className="px-3 text-slate-500 text-xs uppercase tracking-wider">or</span>
                             <div className="flex-grow border-t border-slate-800/60"></div>
@@ -430,7 +435,7 @@ const Signup = () => {
                             type="button"
                             onClick={handleGoogleClick}
                             disabled={loading}
-                            className={`w-full bg-slate-800/40 hover:bg-slate-800/60 text-white font-semibold py-4 rounded-xl border border-slate-700/80 hover:border-slate-600 flex items-center justify-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full bg-slate-800/40 hover:bg-slate-800/60 text-white font-semibold py-3 rounded-xl border border-slate-700/80 hover:border-slate-600 flex items-center justify-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <GoogleIcon />
                             Continue with Google
@@ -438,7 +443,7 @@ const Signup = () => {
                     </div>
                 )}
 
-                <p className="mt-8 text-slate-500 text-center text-sm">
+                <p className="mt-2 text-slate-500 text-center text-sm">
                     Already have an account?{' '}
                     <Link to="/login" className="text-white hover:text-cyan-300 transition-colors font-medium border-b border-cyan-500/30 hover:border-cyan-500">
                         Sign In
@@ -496,7 +501,7 @@ const Signup = () => {
                                 className="flex flex-col items-center"
                             >
                                 <StudentCharacter className="w-full h-auto" />
-                                <div className="mt-8 text-center">
+                                <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
                                         Start Your Learning Journey! 🚀
                                     </h3>
@@ -515,7 +520,7 @@ const Signup = () => {
                                 className="flex flex-col items-center"
                             >
                                 <TeacherCharacter className="w-full h-auto" />
-                                <div className="mt-8 text-center">
+                                <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
                                         Empower the Next Generation! 🎓
                                     </h3>

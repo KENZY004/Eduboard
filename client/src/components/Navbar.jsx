@@ -81,18 +81,19 @@ const Navbar = () => {
 
                     {/* Desktop Navigation - Only show Home/Features/About when NOT logged in */}
                     <div className="hidden md:flex items-center space-x-8">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                    ? 'text-white'
-                                    : 'text-slate-300 hover:text-white'
-                                    }`}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
+                       {navLinks.map((link) => (
+  <Link
+    key={link.path}
+    to={link.path}
+    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+      location.pathname === link.path
+        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/10"
+        : "text-slate-300 hover:text-white hover:bg-white/5"
+    }`}
+  >
+    {link.name}
+  </Link>
+))}
                     </div>
 
                     {/* Auth Buttons */}
@@ -100,11 +101,15 @@ const Navbar = () => {
                         {token ? (
                             <>
                                 <Link
-                                    to="/dashboard"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600/20 rounded-lg hover:bg-indigo-600/30 transition-colors"
-                                >
-                                    Dashboard
-                                </Link>
+  to="/dashboard"
+  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+    location.pathname === "/dashboard"
+      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/10"
+      : "text-white bg-indigo-600/20 hover:bg-indigo-600/30"
+  }`}
+>
+  Dashboard
+</Link>
                                 <button
                                     onClick={handleLogout}
                                     className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
@@ -170,10 +175,11 @@ const Navbar = () => {
                                     key={link.path}
                                     to={link.path}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`text-sm font-medium transition-colors ${location.pathname === link.path
-                                        ? 'text-white'
-                                        : 'text-slate-300 hover:text-white'
-                                        }`}
+                                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+  location.pathname === link.path
+    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+    : "text-slate-300 hover:text-white hover:bg-white/5"
+}`}
                                 >
                                     {link.name}
                                 </Link>
@@ -184,7 +190,11 @@ const Navbar = () => {
                                         <Link
                                             to="/dashboard"
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600/20 rounded-lg hover:bg-indigo-600/30 transition-colors text-center"
+                                           className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 text-center ${
+  location.pathname === "/dashboard"
+    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+    : "text-white bg-indigo-600/20 hover:bg-indigo-600/30"
+}`}
                                         >
                                             Dashboard
                                         </Link>

@@ -65,6 +65,10 @@ app.use('/api/admin', adminRoutes);
 const internalRoutes = require('./routes/internalRoutes');
 app.use('/api/internal', internalRoutes);
 
+// 🌟 NEW CONTACT ROUTE ADDED HERE 🌟
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contact', contactRoutes);
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'public/uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -217,6 +221,7 @@ app.get('/api/boards/:roomId', verifyToken, async (req, res) => {
       roomId: board.roomId,
       name: board.name,
       elements: board.elements,
+      hostId: board.createdBy,
       createdAt: board.createdAt,
       updatedAt: board.updatedAt
     });
@@ -506,6 +511,7 @@ io.on('connection', (socket) => {
           allowedStudents: board.allowedStudents || [],
           allowStudentEditing: board.allowStudentEditing || false, // FIX #95: send persisted toggle state to client
           boardName: board.name,
+          hostId: board.createdBy?._id?.toString(),
           teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
       } else {
@@ -513,6 +519,7 @@ io.on('connection', (socket) => {
           elements: [],
           allowedStudents: [],
           boardName: 'Untitled Board',
+          hostId: null,
           teacherName: 'Unknown Teacher'
         });
       }
@@ -579,6 +586,7 @@ io.on('connection', (socket) => {
             allowedStudents: board.allowedStudents || [],
             allowStudentEditing: board.allowStudentEditing || false,
             boardName: board.name,
+            hostId: board.createdBy?._id?.toString(),
             teacherName: board.createdBy?.username || 'Unknown Teacher'
           });
         } else {
@@ -587,6 +595,7 @@ io.on('connection', (socket) => {
             allowedStudents: [],
             allowStudentEditing: false,
             boardName: 'Untitled Board',
+            hostId: null,
             teacherName: 'Unknown Teacher'
           });
         }
