@@ -1,11 +1,13 @@
 import Navbar from "./components/Navbar";
 import React from "react";
 import {
-  BrowserRouter as Router,
-  Routes,
+  createBrowserRouter,
+  RouterProvider,
   Route,
   Navigate,
   useLocation,
+  createRoutesFromElements,
+  Outlet,
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -92,115 +94,117 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+      <ScrollToTop />
       <Navbar />
       <div className={isAuthRoute ? "" : "pt-14"}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          {/* Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-otp"
-            element={
-              <PublicRoute>
-                <VerifyOTP />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={
-              <PublicRoute>
-                <ResetPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-email"
-            element={
-              <PublicRoute>
-                <VerifyRegistrationOTP />
-              </PublicRoute>
-            }
-          />
-
-          {/* Private Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/board/:roomId"
-            element={
-              <PrivateRoute>
-                <Whiteboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/verification-pending"
-            element={
-              <PrivateRoute>
-                <VerificationPending />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPanel />
-              </AdminRoute>
-            }
-          />
-
-          <Route path="*" element={<NotFound />} />
-
-          
-        </Routes>
+        <Outlet />
       </div>
     </div>
   );
 };
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<AppLayout />}>
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/features" element={<FeaturesPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      {/* Auth Routes */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <Signup />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/verify-otp"
+        element={
+          <PublicRoute>
+            <VerifyOTP />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <PublicRoute>
+            <ResetPassword />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          <PublicRoute>
+            <VerifyRegistrationOTP />
+          </PublicRoute>
+        }
+      />
+
+      {/* Private Routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/board/:roomId"
+        element={
+          <PrivateRoute>
+            <Whiteboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/verification-pending"
+        element={
+          <PrivateRoute>
+            <VerificationPending />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPanel />
+          </AdminRoute>
+        }
+      />
+
+      <Route path="*" element={<NotFound />} />
+    </Route>
+  )
+);
+
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <ScrollToTop />
-        <AppLayout />
-      </Router>
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 }
