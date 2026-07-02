@@ -11,7 +11,7 @@ import {
     BsSquare, BsCircle, BsTriangle, BsPentagon, BsHexagon, BsOctagon, BsStar,
     BsZoomIn, BsZoomOut
 } from 'react-icons/bs';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 
@@ -71,6 +71,7 @@ const Whiteboard = () => {
     const [editingElement, setEditingElement] = useState(null); // { index, text, x, y, width, height }
     const [action, setAction] = useState('none'); // 'drawing', 'moving', 'resizing'
     const [showShortcutsHelp, setShowShortcutsHelp] = useState(false); // ← NEW
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const textAreaRef = useRef(null);
     const draggedElementRef = useRef(null); // Fix for stale state in history
     const currentStrokeRef = useRef(null); // Optimization: Mutable ref for drawing to bypass React Render Cycle
@@ -78,6 +79,34 @@ const Whiteboard = () => {
 
     const navigate = useNavigate();
     const { roomId } = useParams();
+
+    // Prevent navigation away with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    const blocker = useBlocker(
+        ({ currentValue, nextLocation }) =>
+            hasUnsavedChanges && currentValue.pathname !== nextLocation.pathname
+    );
+
+    useEffect(() => {
+        if (blocker.state === 'blocked') {
+            const confirmLeave = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+            if (confirmLeave) {
+                blocker.proceed();
+            } else {
+                blocker.reset();
+            }
+        }
+    }, [blocker]);
 
     // Socket Init + Board Existence Check
     useEffect(() => {
@@ -221,6 +250,7 @@ const Whiteboard = () => {
             });
             setElements(Array.from(uniqueMap.values()));
             setAllowedStudents(allowedStudentsList);
+            setHasUnsavedChanges(false);
 
             // Check if current student has permission
             if (!isCurrentUserHost) {
@@ -772,6 +802,7 @@ const Whiteboard = () => {
         const updated = [...elements];
         updated[index] = { ...updated[index], ...newProps };
         setElements(updated);
+        setHasUnsavedChanges(true);
         // Note: For real-time sync of resize/move, we need unique IDs. 
         // Current index-based approach is fragile for collaboration but works for local MVP.
         if (socket) socket.emit('draw-element', { roomId, ...updated[index] });
@@ -1314,6 +1345,7 @@ const Whiteboard = () => {
         if (currentStrokeRef.current) {
             const newElement = currentStrokeRef.current;
             setElements(prev => [...prev, newElement]);
+            setHasUnsavedChanges(true);
             if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: newElement }]);
             }
@@ -1335,6 +1367,7 @@ const Whiteboard = () => {
             }
 
             setElements(prev => [...prev, currentElement]);
+            setHasUnsavedChanges(true);
             if (isHost) {
                 setHistory(prev => [...prev, { type: 'ADD', element: currentElement }]);
             }
@@ -1352,6 +1385,7 @@ const Whiteboard = () => {
         const lastAction = newHistory.pop();
         setHistory(newHistory);
         setRedoStack(prev => [...prev, lastAction]);
+        setHasUnsavedChanges(true);
 
         if (lastAction.type === 'ADD') {
             // Remove the added element
@@ -1378,6 +1412,7 @@ const Whiteboard = () => {
         const newRedoStack = [...redoStack];
         const action = newRedoStack.pop();
         setRedoStack(newRedoStack);
+        setHasUnsavedChanges(true);
 
         if (isHost) {
             setHistory(prev => [...prev, action]);
@@ -1422,6 +1457,7 @@ const Whiteboard = () => {
         newElements.splice(index, 1); // ← NEW
         setElements(newElements); // ← NEW
         setSelectedElement(null); // ← NEW
+        setHasUnsavedChanges(true);
         
         setHistory(prev => [...prev, { type: 'DELETE', element: el }]); // ← NEW
         
@@ -1433,7 +1469,14 @@ const Whiteboard = () => {
     const handleClear = () => {
         setElements([]);
         setHistory([]);
+        setHasUnsavedChanges(true);
         if (socket) socket.emit('clear-canvas', roomId);
+    };
+
+    const handleSave = () => {
+        setHasUnsavedChanges(false);
+        setShowCopied('saved');
+        setTimeout(() => setShowCopied(false), 2000);
     };
 
     const exportImage = async (fileName) => {
@@ -1665,6 +1708,7 @@ const Whiteboard = () => {
 
             const newIndex = elements.length;
             setElements(prev => [...prev, newElement]);
+            setHasUnsavedChanges(true);
 
             // Auto-switch to select mode
             setTool('select');
@@ -2339,6 +2383,26 @@ const Whiteboard = () => {
                 <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 sm:gap-4 max-w-[95vw]">
                     {/* Secondary Actions (Undo, Redo, Clear) */}
                     <div className="flex items-center gap-1 bg-[#0f172a] border border-white/5 rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/50">
+                        {/* Save Button */}
+                        <div className="relative group flex items-center justify-center">
+                            <button
+                                onClick={handleSave}
+                                aria-label="Save Board"
+                                className={`p-2 sm:p-2.5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#020617] ${
+                                    hasUnsavedChanges
+                                        ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 animate-pulse'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                                title="Save Board"
+                            >
+                                <FaSave className="text-sm sm:text-base" />
+                            </button>
+                            <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-50">
+                                Save Board
+                            </div>
+                        </div>
+                        <div className="w-px h-4 bg-white/10 mx-0.5 sm:mx-1"></div>
+
                         {/* Undo/Redo - Teacher Only */}
                         {isHost && (
                             <>
