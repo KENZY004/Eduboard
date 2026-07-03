@@ -104,6 +104,16 @@ const AppLayout = () => {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           
+
+          <Route
+           path="/terms-of-service"
+           element={<TermsOfService />}
+          />
+          <Route 
+           path="/privacy-policy"
+           element={<PrivacyPolicy />} 
+           />
+           
           {/* Auth Routes */}
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />

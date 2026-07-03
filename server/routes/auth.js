@@ -2,9 +2,16 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'; // Use env in prod!
-
+const { sendPasswordResetEmail, sendRegistrationVerificationEmail } = require('../services/emailService');
+const { JWT_SECRET } = require('../config/jwt');
+const {
+  registerValidation,
+  validate,
+} = require("../middlewares/auth.validator");
+const { authLimiter, otpLimiter, globalAuthLimiter } = require('../middlewares/rateLimiter'); // ← NEW
+                                                                                            // ← NEW
+router.use(globalAuthLimiter); // ← NEW
+                                                                                            // ← NEW
 // REGISTER
 router.post('/register', async (req, res) => {
     try {
@@ -187,50 +194,42 @@ router.post('/login', async (req, res) => {
 });
 
 // FORGOT PASSWORD
-router.post('/forgot-password', otpLimiter, async (req, res) => { // ← NEW
+router.post('/forgot-password', otpLimiter, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
             return res.status(400).json({ message: 'Email is required' });
         }
 
+        // Find user but do not reveal existence in the response
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'No account found with this email address.' });
+
+        // Only send OTP email internally when user exists and email is verified
+        if (user && user.isEmailVerified) {
+            try {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const salt = await bcrypt.genSalt(10);
+                const hashedOtp = await bcrypt.hash(otp, salt);
+
+                user.resetPasswordOTP = hashedOtp;
+                user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+                await user.save();
+
+                const emailResult = await sendPasswordResetEmail(user.email, user.username, otp);
+                if (!emailResult.success) {
+                    user.resetPasswordOTP = undefined;
+                    user.resetPasswordExpire = undefined;
+                    await user.save();
+                    console.error('Forgot password: failed to send reset email for', user.email);
+                }
+            } catch (err) {
+                // Do not reveal internal errors to the client. Log and continue.
+                console.error('Forgot password internal error:', err);
+            }
         }
 
-        // Check if email is verified
-        if (user.isEmailVerified === false) {
-            return res.status(403).json({
-                message: 'This email address is not verified yet. Please verify it first.',
-                error: 'EMAIL_NOT_VERIFIED',
-                email: user.email
-            });
-        }
-
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Hash the OTP
-        const salt = await bcrypt.genSalt(10);
-        const hashedOtp = await bcrypt.hash(otp, salt);
-
-        // Save hashed OTP and expiration (10 minutes)
-        user.resetPasswordOTP = hashedOtp;
-        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-        await user.save();
-
-        // Send email
-        const emailResult = await sendPasswordResetEmail(user.email, user.username, otp);
-
-        if (!emailResult.success) {
-            user.resetPasswordOTP = undefined;
-            user.resetPasswordExpire = undefined;
-            await user.save();
-            return res.status(500).json({ message: 'Email could not be sent' });
-        }
-
-        res.status(200).json({ message: 'If an account with that email exists, an OTP has been sent.' });
+        // Always return a generic success message so callers cannot probe registered emails
+        return res.status(200).json({ message: 'If an account with that email exists, an OTP has been sent.' });
     } catch (error) {
         console.error('Forgot password error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -507,11 +506,14 @@ router.post('/google-login', authLimiter, async (req, res) => {
         let user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
 
         if (user) {
-            // User exists. Google auth is ONLY for students!
-            if (user.role !== 'student') {
+            // User exists. 
+            // If they are a teacher, they must be verified by admin.
+            if (user.role === 'teacher' && !user.isVerified) {
                 return res.status(403).json({
-                    message: 'Google login is only available for student accounts.',
-                    error: 'STUDENTS_ONLY'
+                    message: 'Your account is pending verification. Please wait for admin approval.',
+                    error: 'ACCOUNT_NOT_VERIFIED',
+                    verificationStatus: user.verificationStatus,
+                    rejectionReason: user.rejectionReason
                 });
             }
 

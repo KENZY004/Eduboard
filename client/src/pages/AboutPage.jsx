@@ -188,35 +188,48 @@ const AboutPage = () => {
                     </motion.h2>
 
                     <div className="relative">
-                        {/* Timeline line */}
-                        <div className={`absolute left-1/2 top-0 bottom-0 w-1 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'
-                            }`} />
+                        {/* Timeline gradient line */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-lg shadow-purple-500/30" />
 
                         <div className="space-y-12">
                             {timeline.map((item, i) => (
                                 <motion.div
                                     key={i}
-                                    initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.2 }}
-                                    className={`flex items-center ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}
+                                    initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50, scale: 0.95 }}
+                                    whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                                    viewport={{ once: true, margin: "-100px" }}
+                                    transition={{ delay: i * 0.2, duration: 0.6, ease: "easeOut" }}
+                                    className={`flex items-center ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'} group`}
                                 >
                                     <div className="flex-1" />
                                     <div className="relative z-10">
-                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-500 to-purple-500`}>
-                                            {i + 1}
-                                        </div>
+                                        <motion.div
+                                            whileHover={{ scale: 1.15, rotate: 5 }}
+                                            className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-lg shadow-purple-500/40 transition-shadow duration-300`}
+                                        >
+                                            <span className="relative z-10">{i + 1}</span>
+                                        </motion.div>
+                                        <div className="absolute inset-0 w-16 h-16 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
                                     </div>
                                     <div className="flex-1 px-8">
-                                        <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'
-                                            }`}>
-                                            <div className="text-sm font-semibold text-blue-500 mb-2">{item.year}</div>
+                                        <motion.div
+                                            whileHover={{ y: -6, scale: 1.02 }}
+                                            className={`p-6 rounded-2xl backdrop-blur-md border transition-all duration-300 ${theme === 'dark'
+                                                    ? 'bg-gray-900/70 border-gray-700/50 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10'
+                                                    : 'bg-white/80 border-gray-200/80 hover:border-purple-400/40 hover:shadow-xl hover:shadow-purple-500/10'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse" />
+                                                <div className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                                                    {item.year}
+                                                </div>
+                                            </div>
                                             <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                                            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                                            <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                                                 {item.desc}
                                             </p>
-                                        </div>
+                                        </motion.div>
                                     </div>
                                 </motion.div>
                             ))}
