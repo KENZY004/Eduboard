@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import Navbar from "../components/Navbar";
+import { Link } from "react-router-dom"; // FIX: internal links ke liye Link import
+import { FiSearch } from "react-icons/fi"; // FIX 3 & 4: react-icons se search icon
 
 export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -190,7 +191,8 @@ export default function FAQPage() {
             <li>Check your inbox for a password reset link (valid for 24 hours).</li>
             <li>Click the link and set a new password.</li>
           </ul>
-          If you don't receive the email, check your spam folder or contact our <a href="/contact" className="text-blue-400 hover:underline">support team</a>.
+          If you don't receive the email, check your spam folder or contact our{" "}
+          <Link to="/contact" className="text-blue-400 hover:underline">support team</Link>.
         </>
       ),
     },
@@ -212,7 +214,8 @@ export default function FAQPage() {
       question: "How do I delete my account?",
       answer: (
         <>
-          You can delete your account from <strong>Profile Settings &gt; Danger Zone &gt; Delete Account</strong>. This action is permanent and will remove all your boards and data. We recommend exporting important boards before deletion. For assistance, contact our <a href="/contact" className="text-blue-400 hover:underline">support team</a>.
+          You can delete your account from <strong>Profile Settings &gt; Danger Zone &gt; Delete Account</strong>. This action is permanent and will remove all your boards and data. We recommend exporting important boards before deletion. For assistance, contact our{" "}
+          <Link to="/contact" className="text-blue-400 hover:underline">support team</Link>.
         </>
       ),
     },
@@ -230,7 +233,8 @@ export default function FAQPage() {
             <li>Boards are private to your account by default.</li>
             <li>We comply with standard data protection practices.</li>
           </ul>
-          For details, see our <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>.
+          For details, see our{" "}
+          <Link to="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</Link>.
         </>
       ),
     },
@@ -238,12 +242,23 @@ export default function FAQPage() {
 
   // Filter and Search logic
   const filteredFaqs = faqData.filter((faq) => {
-    const matchesCategory = activeCategory === "all" || faq.category === activeCategory;
-    const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      activeCategory === "all" || faq.category === activeCategory;
+    const matchesSearch = faq.question
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const uniqueCategories = [{ id: "all", label: "All" }, ...new Map(faqData.map(item => [item.category, { id: item.category, label: item.categoryLabel }])).values()];
+  const uniqueCategories = [
+    { id: "all", label: "All" },
+    ...new Map(
+      faqData.map((item) => [
+        item.category,
+        { id: item.category, label: item.categoryLabel },
+      ])
+    ).values(),
+  ];
 
   const toggleQuestion = (index) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -258,11 +273,9 @@ export default function FAQPage() {
 
   return (
     <div className="bg-slate-950 text-white min-h-screen selection:bg-purple-500 selection:text-white pb-20">
-      <Navbar />
-      
+
       {/* HERO SECTION */}
       <section className="text-center pt-32 pb-16 px-4 relative overflow-hidden">
-        {/* Glow effect matching Eduboard dark mode */}
         <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-950/0 to-transparent pointer-events-none"></div>
 
         <h1 className="font-bold text-[clamp(2.5rem,5vw,4rem)] bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent leading-[1.15] tracking-tight mb-6 relative z-10">
@@ -270,18 +283,22 @@ export default function FAQPage() {
         </h1>
 
         <p className="text-slate-400 text-lg max-w-[620px] mx-auto mb-10 leading-relaxed relative z-10">
-          Everything you need to know about Eduboard. Can't find an answer? Reach out to our support team.
+          Everything you need to know about Eduboard. Can't find an answer?
+          Reach out to our support team.
         </p>
 
-        {/* SEARCH BAR */}
+        {/* SEARCH BAR — FIX 3: FiSearch icon added */}
         <div className="max-w-[600px] mx-auto relative z-10">
-          <input
-            type="text"
-            placeholder="Search questions..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-6 py-4 text-white outline-none transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 placeholder:text-slate-500 shadow-xl shadow-black/20"
-          />
+          <div className="relative">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search questions..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-12 pr-6 py-4 text-white outline-none transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 placeholder:text-slate-500 shadow-xl shadow-black/20"
+            />
+          </div>
         </div>
       </section>
 
@@ -308,11 +325,18 @@ export default function FAQPage() {
       {/* FAQ LIST */}
       <div className="max-w-[800px] mx-auto px-4 space-y-4">
         {filteredFaqs.length === 0 ? (
+          // FIX 4: emoji 🔍 hataya, FiSearch icon lagaya
           <div className="text-center py-16 px-4 bg-slate-900/50 rounded-2xl border border-slate-800">
-            <span className="text-4xl block mb-4">🔍</span>
-            <h3 className="text-xl font-semibold mb-2">No questions found matching your search.</h3>
+            <FiSearch className="text-4xl text-slate-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">
+              No questions found matching your search.
+            </h3>
             <p className="text-slate-400">
-              Try different keywords or <a href="/contact" className="text-blue-400 hover:underline">contact support</a>.
+              Try different keywords or{" "}
+              <Link to="/contact" className="text-blue-400 hover:underline">
+                contact support
+              </Link>
+              .
             </p>
           </div>
         ) : (
@@ -322,7 +346,9 @@ export default function FAQPage() {
               <div
                 key={faq.id}
                 className={`bg-slate-900 border rounded-xl overflow-hidden transition-all duration-300 ${
-                  isOpen ? "border-purple-500/50 shadow-lg shadow-purple-500/10" : "border-slate-800 hover:border-slate-700"
+                  isOpen
+                    ? "border-purple-500/50 shadow-lg shadow-purple-500/10"
+                    : "border-slate-800 hover:border-slate-700"
                 }`}
               >
                 <button
@@ -330,7 +356,13 @@ export default function FAQPage() {
                   aria-expanded={isOpen}
                   className="w-full flex items-center justify-between gap-4 bg-transparent border-none p-5 sm:p-6 text-left cursor-pointer transition-colors duration-300 group"
                 >
-                  <span className={`text-base sm:text-lg font-semibold transition-colors ${isOpen ? "text-purple-400" : "text-slate-200 group-hover:text-white"}`}>
+                  <span
+                    className={`text-base sm:text-lg font-semibold transition-colors ${
+                      isOpen
+                        ? "text-purple-400"
+                        : "text-slate-200 group-hover:text-white"
+                    }`}
+                  >
                     {faq.question}
                   </span>
                   <span
@@ -347,7 +379,7 @@ export default function FAQPage() {
                   className="transition-[max-height] duration-300 ease-in-out overflow-hidden"
                   style={{ maxHeight: isOpen ? "1000px" : "0px" }}
                 >
-                  <div className="px-5 sm:px-6 pb-6 pt-0 text-slate-400 text-sm sm:text-base leading-relaxed border-t border-slate-800/50 mt-2 pt-4">
+                  <div className="px-5 sm:px-6 pb-6 pt-4 text-slate-400 text-sm sm:text-base leading-relaxed border-t border-slate-800/50">
                     {faq.answer}
                   </div>
                 </div>
@@ -360,14 +392,20 @@ export default function FAQPage() {
       {/* CTA SECTION */}
       <section className="max-w-[800px] mx-auto mt-20 p-8 sm:p-12 text-center bg-slate-900/50 border border-slate-800 rounded-3xl relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-white">Still have questions?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-white">
+            Still have questions?
+          </h2>
           <p className="text-slate-400 text-lg mb-8 max-w-lg mx-auto">
             Our support team is happy to help you get started with Eduboard.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <a href="/contact" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 border-none text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg shadow-purple-500/25 hover:-translate-y-1">
+            {/* FIX: <a> ki jagah <Link> use kiya */}
+            <Link
+              to="/contact"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg shadow-purple-500/25 hover:-translate-y-1"
+            >
               Contact Support
-            </a>
+            </Link>
           </div>
         </div>
       </section>
