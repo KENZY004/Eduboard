@@ -384,3 +384,13 @@ Contributions are welcome. If you want to work on EduBoard:
 <div>
 	<a href="https://eduboard01.vercel.app/"><strong>Open the live EduBoard app</strong></a>
 </div>
+
+---
+
+## 👥 Contributors
+
+A heartfelt thank you to all the amazing contributors who help improve and grow Eduboard! ❤️
+
+[![Contributors](https://contrib.rocks/image?repo=KENZY004/Eduboard)](https://github.com/KENZY004/Eduboard/graphs/contributors)
+
+🌟 Every contribution, no matter how small, helps make this project better.

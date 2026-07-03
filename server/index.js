@@ -5,10 +5,19 @@ const http = require('http');
 const { Server } = require('socket.io');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set.');
+  process.exit(1);
+}
+
+const { JWT_SECRET } = require('./config/jwt');
 const authRoutes = require('./routes/auth');
 const Board = require('./models/Board');
 const SavedBoard = require('./models/SavedBoard');
+const User = require('./models/User');
 const verifyToken = require('./utils/verifyToken');
 const verifyOwnership = require('./utils/verifyOwnership');
 
@@ -60,28 +69,72 @@ app.use('/api/internal', internalRoutes);
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api/contact', contactRoutes);
 
-// Static Uploads
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// Multer Config
+// Static Uploads
+app.use('/uploads', express.static(uploadsDir));
+
+// Allowed MIME types for file uploads
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml'
+];
+
+// Multer Config with file type validation, size limit, and sanitized filenames
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/uploads');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    const safeName = file.originalname
+      .replace(/\.\.\//g, '')
+      .replace(/[^a-zA-Z0-9._-]/g, '_');
+    const ext = path.extname(safeName);
+    const baseName = path.basename(safeName, ext).slice(0, 100);
+    cb(null, Date.now() + '-' + baseName + ext);
   }
 });
 
-const upload = multer({ storage });
+const fileFilter = (req, file, cb) => {
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB limit
+});
 
 // Upload Endpoint
-app.post('/api/upload', upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded' });
-  }
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+app.post('/api/upload', (req, res) => {
+  upload.single('image')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: 'File too large. Maximum size is 5 MB.' });
+      }
+      return res.status(400).json({ message: err.message });
+    } else if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({ imageUrl });
+  });
 });
 
 // Board Management Endpoints
@@ -89,19 +142,33 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // Create a new named board (requires authentication)
 app.post('/api/boards/create', verifyToken, async (req, res) => {
   try {
-    const { name, userId, roomId } = req.body;
+    const { name, roomId } = req.body;
+    const authUserId = req.user?.id;
 
-    if (!name || !userId || !roomId) {
-      return res.status(400).json({ message: 'Name, userId, and roomId are required' });
+    if (!authUserId) {
+      return res.status(401).json({ message: 'Invalid authentication state' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(authUserId)) {
+      return res.status(400).json({ message: 'Invalid authenticated user ID' });
+    }
+
+    if (!name || !roomId) {
+      return res.status(400).json({ message: 'Name and roomId are required' });
+    }
+
+    const userExists = await User.exists({ _id: authUserId });
+    if (!userExists) {
+      return res.status(404).json({ message: 'Authenticated user not found' });
     }
 
     const newBoard = new Board({
       roomId,
       name,
-      createdBy: userId,
+      createdBy: authUserId,
       elements: [],
       participants: [{
-        userId: userId,
+        userId: authUserId,
         role: 'teacher', // Creator is assumed to be teacher
         joinedAt: new Date()
       }],
@@ -154,6 +221,7 @@ app.get('/api/boards/:roomId', verifyToken, async (req, res) => {
       roomId: board.roomId,
       name: board.name,
       elements: board.elements,
+      hostId: board.createdBy,
       createdAt: board.createdAt,
       updatedAt: board.updatedAt
     });
@@ -198,19 +266,28 @@ app.delete('/api/boards/by-id/:boardId', verifyToken, async (req, res) => {
     const { boardId } = req.params;
     const { force } = req.query;
     const userId = req.user.id; // Get userId from JWT token
-
-    let query = { _id: boardId };
-
-    // If not force delete, check ownership
-    if (force !== 'true') {
-      query.createdBy = userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Authenticated user not found' });
     }
 
-    const result = await Board.findOneAndDelete(query);
-
-    if (!result) {
+    const board = await Board.findById(boardId);
+    if (!board) {
       return res.status(404).json({ message: 'Board not found' });
     }
+
+    const isAdmin = user.role === 'admin';
+    const isOwner = board.createdBy && board.createdBy.toString() === userId;
+
+    if (force === 'true') {
+      if (!isAdmin) {
+        return res.status(403).json({ message: 'Forbidden: force delete requires admin privileges' });
+      }
+    } else if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Forbidden: not authorized to delete this board' });
+    }
+
+    const result = await Board.findByIdAndDelete(boardId);
 
     // Notify all users in the room that the board was deleted
     if (result.roomId) {
@@ -301,7 +378,6 @@ const waitingRooms = new Map(); // roomId -> Map of socketId -> userData
 
 // Socket.IO Authentication Middleware
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -318,6 +394,29 @@ io.use((socket, next) => {
     return next(new Error('Invalid token'));
   }
 });
+
+// Helper functions for Socket.IO Authorization
+const isTeacher = async (roomId, userId) => {
+  try {
+    const board = await Board.findOne({ roomId });
+    return board && board.createdBy.toString() === userId;
+  } catch (err) {
+    return false;
+  }
+};
+
+const isAuthorizedToEdit = async (roomId, userId) => {
+  try {
+    const board = await Board.findOne({ roomId });
+    if (!board) return false;
+    if (board.createdBy.toString() === userId) return true;
+    if (board.allowStudentEditing) return true;
+    if (board.allowedStudents && board.allowedStudents.some(id => id.toString() === userId)) return true;
+    return false;
+  } catch (err) {
+    return false;
+  }
+};
 
 // Socket.io Logic
 io.on('connection', (socket) => {
@@ -412,6 +511,7 @@ io.on('connection', (socket) => {
           allowedStudents: board.allowedStudents || [],
           allowStudentEditing: board.allowStudentEditing || false, // FIX #95: send persisted toggle state to client
           boardName: board.name,
+          hostId: board.createdBy?._id?.toString(),
           teacherName: board.createdBy?.username || 'Unknown Teacher'
         });
       } else {
@@ -419,6 +519,7 @@ io.on('connection', (socket) => {
           elements: [],
           allowedStudents: [],
           boardName: 'Untitled Board',
+          hostId: null,
           teacherName: 'Unknown Teacher'
         });
       }
@@ -485,6 +586,7 @@ io.on('connection', (socket) => {
             allowedStudents: board.allowedStudents || [],
             allowStudentEditing: board.allowStudentEditing || false,
             boardName: board.name,
+            hostId: board.createdBy?._id?.toString(),
             teacherName: board.createdBy?.username || 'Unknown Teacher'
           });
         } else {
@@ -493,6 +595,7 @@ io.on('connection', (socket) => {
             allowedStudents: [],
             allowStudentEditing: false,
             boardName: 'Untitled Board',
+            hostId: null,
             teacherName: 'Unknown Teacher'
           });
         }
@@ -513,11 +616,13 @@ io.on('connection', (socket) => {
   });
 
   // Real-time stroke updates (while drawing) - no DB save, just broadcast
-  socket.on('drawing-stroke', (strokeData) => {
+  socket.on('drawing-stroke', async (strokeData) => {
+    if (!(await isAuthorizedToEdit(strokeData.roomId, socket.userId))) return;
     socket.to(strokeData.roomId).emit('drawing-stroke', strokeData);
   });
 
   socket.on('draw-element', async (element) => {
+    if (!(await isAuthorizedToEdit(element.roomId, socket.userId))) return;
     // Broadcast element to room
     socket.to(element.roomId).emit('draw-element', element);
 
@@ -554,6 +659,7 @@ io.on('connection', (socket) => {
 
   // Delete element (for undo synchronization)
   socket.on('delete-element', async ({ roomId, elementId }) => {
+    if (!(await isAuthorizedToEdit(roomId, socket.userId))) return;
     console.log(`[DELETE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
     // Broadcast deletion to room
     socket.to(roomId).emit('delete-element', elementId);
@@ -576,6 +682,7 @@ io.on('connection', (socket) => {
 
   // Update element (for eraser redo synchronization)
   socket.on('update-element', async ({ roomId, elementId, updates }) => {
+    if (!(await isAuthorizedToEdit(roomId, socket.userId))) return;
     console.log(`[UPDATE-ELEMENT] Received from ${socket.id}, roomId: ${roomId}, elementId: ${elementId}`);
     // Broadcast update to room
     socket.to(roomId).emit('update-element', { elementId, updates });
@@ -600,6 +707,7 @@ io.on('connection', (socket) => {
 
   // Sync elements (for redo to maintain correct order)
   socket.on('sync-elements', async ({ roomId, elements }) => {
+    if (!(await isAuthorizedToEdit(roomId, socket.userId))) return;
     console.log(`[SYNC-ELEMENTS] Received from ${socket.id}, syncing ${elements.length} elements`);
     // Broadcast full element array to all other users
     socket.to(roomId).emit('sync-elements', elements);
@@ -623,6 +731,7 @@ io.on('connection', (socket) => {
 
   // Sync state (for redo to maintain exact element order)
   socket.on('sync-state', async ({ roomId, elements }) => {
+    if (!(await isAuthorizedToEdit(roomId, socket.userId))) return;
     console.log(`[SYNC-STATE] Broadcasting ${elements.length} elements to room ${roomId}`);
     // Broadcast to all other users
     socket.to(roomId).emit('sync-state', elements);
@@ -661,7 +770,8 @@ io.on('connection', (socket) => {
   });
 
   // Theme synchronization
-  socket.on('change-theme', ({ roomId, isDark }) => {
+  socket.on('change-theme', async ({ roomId, isDark }) => {
+    if (!(await isTeacher(roomId, socket.userId))) return;
     console.log(`[THEME-SYNC] Received change-theme from ${socket.id} for room ${roomId}, isDark: ${isDark}`);
     // Broadcast theme change to all students in room
     socket.to(roomId).emit('theme-changed', isDark);
@@ -669,14 +779,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('cursor-move', (data) => {
+    // Optional: could protect cursor-move, but usually non-destructive
     socket.to(data.roomId).emit('cursor-move', data);
   });
 
   socket.on('viewport-change', (data) => {
+    // Optional: non-destructive
     socket.to(data.roomId).emit('viewport-change', data);
   });
 
-  // Grant editing permission to specific student
   socket.on('grant-participant-permission', async ({ roomId, studentId }) => {
     try {
       // FIX #94: verify the emitting user is the board owner
