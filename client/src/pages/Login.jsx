@@ -453,7 +453,7 @@ const Login = () => {
                                 <TeacherCharacter className="w-full h-auto" />
                                 <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
-                                        Welcome to EduBoard! 👋
+                                        Welcome to EduBoard! 
                                     </h3>
                                     <p className="text-slate-300 text-lg">
                                         Access your high-performance collaborative digital workspace.
