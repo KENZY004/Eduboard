@@ -15,6 +15,7 @@ import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import FAQPage from "./pages/FAQPage"; // FIX 1: Import add kiya
 import VerificationPending from "./pages/VerificationPending";
 import AdminPanel from "./pages/AdminPanel";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -36,7 +37,7 @@ const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location.pathname }} />;
   }
 
-  if (user.role === 'admin' && location.pathname === '/dashboard') {
+  if (user.role === "admin" && location.pathname === "/dashboard") {
     return <Navigate to="/admin" />;
   }
 
@@ -49,7 +50,7 @@ const PublicRoute = ({ children }) => {
 
   if (token) {
     if (user.isVerified) {
-      if (user.role === 'admin') {
+      if (user.role === "admin") {
         return <Navigate to="/admin" />;
       }
       return <Navigate to="/dashboard" />;
@@ -97,8 +98,12 @@ const AppLayout = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
-
           <Route path="/contact" element={<ContactPage />} />
+          {/* FIX 2: /faq route add kiya, duplicate /contact remove kiya */}
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
 
           <Route
            path="/terms-of-service"
@@ -194,8 +199,6 @@ const AppLayout = () => {
           />
 
           <Route path="*" element={<NotFound />} />
-
-          
         </Routes>
       </div>
     </div>
