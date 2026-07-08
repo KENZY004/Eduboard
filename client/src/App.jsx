@@ -14,7 +14,8 @@ import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
+import ContactPage from "./pages/ContactPage"; // Re-added
+import FAQPage from "./pages/FAQPage"; // Re-added
 import VerificationPending from "./pages/VerificationPending";
 import AdminPanel from "./pages/AdminPanel";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -28,6 +29,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const PrivateRoute = ({ children }) => {
+  // 🔒 SECURE: Bypass removed. Now it properly checks for login.
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const location = useLocation();
@@ -89,16 +91,19 @@ const AppLayout = () => {
   const isAuthRoute = authRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-x-hidden font-sans selection:bg-purple-500/30">
       <Navbar />
-      <div className={isAuthRoute ? "" : "pt-14"}>
+      <div className={`flex-grow ${isAuthRoute ? "" : "pt-14"}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
-
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          
 
           <Route
            path="/terms-of-service"
@@ -110,54 +115,12 @@ const AppLayout = () => {
            />
            
           {/* Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-otp"
-            element={
-              <PublicRoute>
-                <VerifyOTP />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={
-              <PublicRoute>
-                <ResetPassword />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/verify-email"
-            element={
-              <PublicRoute>
-                <VerifyRegistrationOTP />
-              </PublicRoute>
-            }
-          />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/verify-otp" element={<PublicRoute><VerifyOTP /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/verify-email" element={<PublicRoute><VerifyRegistrationOTP /></PublicRoute>} />
 
           {/* Private Routes */}
           <Route
@@ -198,6 +161,7 @@ const AppLayout = () => {
           
         </Routes>
       </div>
+      {!isAuthRoute && <Footer />}
     </div>
   );
 };

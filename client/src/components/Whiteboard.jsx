@@ -5,7 +5,8 @@ import api from '../lib/api';
 import {
     FaEraser, FaPen, FaTrash, FaSignOutAlt, FaShareAlt, FaCopy,
     FaSlash, FaUndo, FaRedo, FaSave, FaMoon, FaSun, FaDownload, FaFilePdf, FaFont,
-    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes
+    FaHighlighter, FaImage, FaStickyNote, FaMousePointer, FaDrawPolygon, FaUserEdit, FaUsers, FaTimes,FaCrosshairs
+    
 } from 'react-icons/fa';
 import {
     BsSquare, BsCircle, BsTriangle, BsPentagon, BsHexagon, BsOctagon, BsStar,
@@ -40,13 +41,14 @@ const Whiteboard = () => {
         console.error('Error parsing user from localStorage:', error);
         user = null;
     }
-    const [isHost, setIsHost] = useState(false);
+const [isHost, setIsHost] = useState(false);
     const isStudent = !isHost;
-
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('#ffffff');
     const [brushSize, setBrushSize] = useState(5);
     const [tool, setTool] = useState('pen'); // pen, eraser, rect, circle, line
+    const laserPointsRef = useRef([]);
+const laserAnimFrameRef = useRef(null);
     const [darkMode, setDarkMode] = useState(true);
     const [showCopied, setShowCopied] = useState(false);
     const [showSaveMenu, setShowSaveMenu] = useState(false);
@@ -534,6 +536,29 @@ const Whiteboard = () => {
         // CRITICAL: Reset all canvas state before restore to prevent contamination
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = 'source-over';
+        // Laser Trail Rendering
+if (laserPointsRef.current.length > 0) {
+    const now = Date.now();
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 1; i < laserPointsRef.current.length; i++) {
+        const p = laserPointsRef.current[i];
+        const prev = laserPointsRef.current[i - 1];
+        if (p.newStroke) continue;
+        const age = now - p.t;
+        const alpha = Math.max(0, 1 - age / 2000);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#ff2d78';
+        ctx.lineWidth = (brushSize / scale) * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
         ctx.restore();
     };
 
@@ -1105,7 +1130,12 @@ const Whiteboard = () => {
         // ... new drawing logic ...
         setIsDrawing(true);
         setAction('drawing');
-
+        if (tool === 'laser') {
+    laserPointsRef.current.push({ x: offsetX, y: offsetY, t: Date.now(), newStroke: true });
+    setIsDrawing(true);
+    setAction('drawing');
+    return;
+}
         if (tool === 'pen' || tool === 'eraser' || tool === 'highlighter') {
             // Optimization: Use Ref instead of State for strokes
             currentStrokeRef.current = {
@@ -1230,7 +1260,30 @@ const Whiteboard = () => {
         if (!isDrawing) return;
 
         const ctx = canvasRef.current.getContext('2d');
+        if (tool === 'laser') {
+    laserPointsRef.current.push({ x: offsetX, y: offsetY, t: Date.now(), newStroke: false });
+    
+    // Fade loop start karo
+    if (!laserAnimFrameRef.current) {
+        const fadeLoop = () => {
+            const now = Date.now();
+            laserPointsRef.current = laserPointsRef.current.filter(p => now - p.t < 2000);
+            renderCanvas();
+            if (laserPointsRef.current.length > 0) {
+                laserAnimFrameRef.current = requestAnimationFrame(fadeLoop);
+            } else {
+                laserAnimFrameRef.current = null;
+            }
+        };
+        laserAnimFrameRef.current = requestAnimationFrame(fadeLoop);
+    }
 
+    // WebSocket broadcast (no DB save)
+    if (socket) {
+        socket.emit('laser-trail', { roomId, userId: user?.id, x: offsetX, y: offsetY });
+    }
+    return;
+}
         if (tool === 'pen' || tool === 'eraser' || tool === 'highlighter') {
             if (currentStrokeRef.current) {
                 const newPoint = { x: offsetX, y: offsetY };
@@ -1305,7 +1358,11 @@ const Whiteboard = () => {
             document.body.style.cursor = 'default';
             return;
         }
-
+        if (tool === 'laser') {
+    setIsDrawing(false);
+    setAction('none');
+    return;
+}
         if (!isDrawing) return;
         setIsDrawing(false);
         setAction('none');
@@ -1889,6 +1946,7 @@ const Whiteboard = () => {
     // ← NEW
     useEffect(() => { // ← NEW
         const handleKeyDown = (e) => { // ← NEW
+            
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; // ← NEW
             
             if (e.key === '?') { // ← NEW
@@ -1905,6 +1963,7 @@ const Whiteboard = () => {
 
             switch (e.key.toLowerCase()) { // ← NEW
                 case 'p': case '1': setTool('pen'); break; // ← NEW
+                case '0': setTool('laser'); break;
                 case 'e': case '2': setTool('eraser'); break; // ← NEW
                 case 'l': case '3': setTool('line'); break; // ← NEW
                 case 'r': case '4': setTool('rect'); break; // ← NEW
@@ -2404,6 +2463,7 @@ const Whiteboard = () => {
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-[#0f172a] rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-white/5">
                             {[
                                 { id: 'pen', icon: FaPen, label: 'Pen Tool', shortcut: 'P' }, // ← NEW
+                                { id: 'laser', icon: FaCrosshairs, label: 'Laser Pointer', shortcut: '0' },
                                 { id: 'highlighter', icon: FaHighlighter, label: 'Highlighter', shortcut: '' }, // ← NEW
                                 { id: 'eraser', icon: FaEraser, label: 'Eraser Tool', shortcut: 'E' }, // ← NEW
                                 { id: 'line', icon: FaSlash, label: 'Line Tool', shortcut: 'L' }, // ← NEW

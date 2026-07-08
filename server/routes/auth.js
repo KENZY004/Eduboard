@@ -13,7 +13,7 @@ const { authLimiter, otpLimiter, globalAuthLimiter } = require('../middlewares/r
 router.use(globalAuthLimiter); // ← NEW
                                                                                             // ← NEW
 // REGISTER
-router.post('/register', authLimiter, registerValidation, validate, async (req, res) => { // ← NEW
+router.post('/register', async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
 
@@ -42,29 +42,22 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
         });
 
         if (existingUser) {
-            // If the user exists but their email is not verified, delete them so they can register again
-            if (!existingUser.isEmailVerified) {
-                const TeacherVerification = require('../models/TeacherVerification');
-                await TeacherVerification.deleteMany({ userId: existingUser._id });
-                await User.deleteOne({ _id: existingUser._id });
-            } else {
-                // Determine which field is duplicate
-                const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
-                const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
+            // Determine which field is duplicate
+            const isDuplicateEmail = existingUser.email.toLowerCase() === email.toLowerCase();
+            const isDuplicateUsername = existingUser.username.toLowerCase() === username.toLowerCase();
 
-                let message = 'User already exists';
-                if (isDuplicateEmail && isDuplicateUsername) {
-                    message = 'A user with that email and username already exists';
-                } else if (isDuplicateEmail) {
-                    message = 'A user with that email already exists';
-                } else if (isDuplicateUsername) {
-                    message = 'A user with that username already exists';
-                }
-                return res.status(400).json({
-                    message,
-                    error: 'USER_EXISTS'
-                });
+            let message = 'User already exists';
+            if (isDuplicateEmail && isDuplicateUsername) {
+                message = 'A user with that email and username already exists';
+            } else if (isDuplicateEmail) {
+                message = 'A user with that email already exists';
+            } else if (isDuplicateUsername) {
+                message = 'A user with that username already exists';
             }
+            return res.status(400).json({
+                message,
+                error: 'USER_EXISTS'
+            });
         }
 
         // Hash password
@@ -77,37 +70,18 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
         // Only teachers need verification, admins and students are auto-verified
         const needsVerification = userRole === 'teacher';
 
-        // Generate 6-digit verification OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpSalt = await bcrypt.genSalt(10);
-        const hashedOtp = await bcrypt.hash(otp, otpSalt);
-
         const newUser = new User({
             username,
             email,
             password: hashedPassword,
             role: userRole,
             isVerified: !needsVerification, // true for admin/student, false for teacher
-            verificationStatus: needsVerification ? 'pending' : 'approved',
-            isEmailVerified: false,
-            emailVerificationOTP: hashedOtp,
-            emailVerificationExpire: Date.now() + 10 * 60 * 1000 // 10 minutes
+            verificationStatus: needsVerification ? 'pending' : 'approved'
         });
 
         const savedUser = await newUser.save();
 
-        // Send verification email
-        const emailResult = await sendRegistrationVerificationEmail(savedUser.email, savedUser.username, otp);
-        if (!emailResult.success) {
-            // Cleanup user if email failed on registration
-            await User.findByIdAndDelete(savedUser._id);
-            return res.status(500).json({
-                message: 'Failed to send verification email. Please check your email and try again.',
-                error: 'EMAIL_SEND_FAILED'
-            });
-        }
-
-        // Create temporary token for document upload / session tracking
+        // Create token
         const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: '1d' });
 
         res.status(201).json({
@@ -118,10 +92,11 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
                 email: savedUser.email,
                 role: savedUser.role,
                 isVerified: savedUser.isVerified,
-                verificationStatus: savedUser.verificationStatus,
-                isEmailVerified: savedUser.isEmailVerified
+                verificationStatus: savedUser.verificationStatus
             },
-            message: 'Registration successful! A verification code has been sent to your email.'
+            message: savedUser.role === 'teacher'
+                ? 'Registration successful! Please upload your verification documents.'
+                : 'Registration successful!'
         });
     } catch (err) {
         console.error('Registration error:', err);
@@ -154,7 +129,7 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
 });
 
 // LOGIN
-router.post('/login', authLimiter, async (req, res) => { // ← NEW
+router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -181,15 +156,6 @@ router.post('/login', authLimiter, async (req, res) => { // ← NEW
             return res.status(400).json({
                 message: 'Invalid credentials',
                 error: 'INVALID_CREDENTIALS'
-            });
-        }
-
-        // Check if email is verified
-        if (user.isEmailVerified === false) {
-            return res.status(403).json({
-                message: 'Email not verified. Please verify your email first.',
-                error: 'EMAIL_NOT_VERIFIED',
-                email: user.email
             });
         }
 
