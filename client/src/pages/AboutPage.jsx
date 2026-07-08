@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import Footer from '../components/Footer';
+import { Lightbulb, Handshake, Earth, Target, GraduationCap } from 'lucide-react';
+import { FaReact, FaNode } from "react-icons/fa";
+import { SiMongodb, SiSocketdotio, SiVite, SiTailwindcss  } from "react-icons/si";
 
 const AboutPage = () => {
     const { theme } = useTheme();
@@ -59,25 +62,25 @@ const AboutPage = () => {
 
     const values = [
         {
-            icon: "💡",
+            icon: <Lightbulb />,
             title: "Innovation",
             desc: "Pushing boundaries in educational technology",
             gradient: "from-blue-600 to-indigo-600"
         },
         {
-            icon: "🤝",
+            icon: <Handshake />,
             title: "Collaboration",
             desc: "Learning is better together",
             gradient: "from-indigo-600 to-blue-600"
         },
         {
-            icon: "🎯",
+            icon: <Target />,
             title: "Excellence",
             desc: "Committed to quality and performance",
             gradient: "from-slate-600 to-slate-700"
         },
         {
-            icon: "🌍",
+            icon: <Earth />,
             title: "Accessibility",
             desc: "Education for everyone, everywhere",
             gradient: "from-teal-600 to-cyan-600"
@@ -85,12 +88,12 @@ const AboutPage = () => {
     ];
 
     const techStack = [
-        { name: "React", icon: "⚛️", color: "from-blue-600 to-cyan-600" },
-        { name: "Node.js", icon: "🟢", color: "from-teal-700 to-teal-600" },
-        { name: "MongoDB", icon: "🍃", color: "from-emerald-700 to-teal-700" },
-        { name: "Socket.io", icon: "🔌", color: "from-indigo-600 to-blue-600" },
-        { name: "Vite", icon: "⚡", color: "from-slate-600 to-slate-700" },
-        { name: "Tailwind", icon: "🎨", color: "from-cyan-600 to-blue-600" },
+        { name: "React", icon: <FaReact />, color: "from-blue-600 to-cyan-600" },
+        { name: "Node.js", icon: <FaNode />, color: "from-teal-700 to-teal-600" },
+        { name: "MongoDB", icon: <SiMongodb />, color: "from-emerald-700 to-teal-700" },
+        { name: "Socket.io", icon: <SiSocketdotio />, color: "from-indigo-600 to-blue-600" },
+        { name: "Vite", icon: <SiVite />, color: "from-slate-600 to-slate-700" },
+        { name: "Tailwind", icon: <SiTailwindcss />, color: "from-cyan-600 to-blue-600" },
     ];
 
     return (
@@ -167,7 +170,7 @@ const AboutPage = () => {
                             <div className={`aspect-square rounded-3xl overflow-hidden ${theme === 'dark' ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50'
                                 }`}>
                                 <div className="absolute inset-0 flex items-center justify-center text-8xl">
-                                    🎓
+                                   <GraduationCap className="w-34 h-34" />
                                 </div>
                             </div>
                         </motion.div>

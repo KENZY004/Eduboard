@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'framer-motion';
 import Footer from '../components/Footer';
+import { UserLock, Zap, Infinity, Brush, NotebookPen, Radio, Users, GlobeCheck, RefreshCcw, SquareAsterisk, Building2, Box, ALargeSmall, SlidersHorizontal } from 'lucide-react';
 
 const FeaturesPage = () => {
     const { theme } = useTheme();
@@ -38,42 +39,42 @@ const FeaturesPage = () => {
         {
             title: "Real-time Collaboration",
             description: "See changes instantly as multiple users draw together",
-            icon: "⚡",
+            icon: <Zap className = "w-8 h-8"/>,
             size: "large",
             gradient: "from-blue-600 to-indigo-600"
         },
         {
             title: "Infinite Canvas",
             description: "Never run out of space for your ideas",
-            icon: "∞",
+            icon: <Infinity className = "w-8 h-8"/>,
             size: "medium",
             gradient: "from-slate-600 to-slate-700"
         },
         {
             title: "Drawing Tools",
             description: "Professional-grade pen, shapes, and more",
-            icon: "✏️",
+            icon: <Brush className = "w-8 h-8" />,
             size: "medium",
             gradient: "from-indigo-600 to-blue-700"
         },
         {
             title: "Live Cursors",
             description: "See where everyone is working in real-time",
-            icon: "🎯",
+            icon: <Radio className = "w-8 h-8" />,
             size: "small",
             gradient: "from-teal-600 to-cyan-600"
         },
         {
             title: "Sticky Notes",
             description: "Colorful notes for brainstorming",
-            icon: "📌",
+            icon: <NotebookPen className = "w-8 h-8" />,
             size: "small",
             gradient: "from-cyan-600 to-blue-600"
         },
         {
             title: "Role-Based Access",
             description: "Teachers control, students collaborate",
-            icon: "🔒",
+            icon: <UserLock className = "w-8 h-8" />,
             size: "medium",
             gradient: "from-blue-700 to-indigo-700"
         },
@@ -83,25 +84,25 @@ const FeaturesPage = () => {
         {
             category: "Collaboration",
             items: [
-                { icon: "👥", title: "Multi-user Support", desc: "Unlimited participants" },
-                { icon: "🔄", title: "Real-time Sync", desc: "Instant updates" },
-                { icon: "💬", title: "Live Presence", desc: "See who's online" },
+                { icon: <Users />, title: "Multi-user Support", desc: "Unlimited participants", className: "w-8 h-8" },
+                { icon: <RefreshCcw />, title: "Real-time Sync", desc: "Instant updates", className: "w-8 h-8" },
+                { icon: <GlobeCheck />, title: "Live Presence", desc: "See who's online", className: "w-8 h-8" },
             ]
         },
         {
             category: "Tools",
             items: [
-                { icon: "🖊️", title: "Freehand Drawing", desc: "Smooth pen tool" },
-                { icon: "⬡", title: "Shape Tools", desc: "Perfect geometry" },
-                { icon: "📝", title: "Text & Annotations", desc: "Rich formatting" },
+                { icon: <Brush />, title: "Freehand Drawing", desc: "Smooth pen tool", className: "w-8 h-8" },
+                { icon: <Box />, title: "Shape Tools", desc: "Perfect geometry", className: "w-8 h-8" },
+                { icon: <ALargeSmall />, title: "Text & Annotations", desc: "Rich formatting", className: "w-8 h-8" },
             ]
         },
         {
             category: "Management",
             items: [
-                { icon: "📋", title: "Board Management", desc: "Organize classes" },
-                { icon: "🔑", title: "Room Codes", desc: "Easy joining" },
-                { icon: "👨‍🏫", title: "Teacher Controls", desc: "Full control" },
+                { icon: <Building2 />, title: "Board Management", desc: "Organize classes", className: "w-8 h-8"  },
+                { icon: <SquareAsterisk />, title: "Room Codes", desc: "Easy joining", className: "w-8 h-8"  },
+                { icon: <SlidersHorizontal />, title: "Teacher Controls", desc: "Full control", className: "w-8 h-8"  },
             ]
         },
     ];
@@ -215,7 +216,7 @@ const FeaturesPage = () => {
                                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 hover:opacity-10 transition-opacity duration-300`} />
 
                                 <div className="relative z-10">
-                                    <div className="text-5xl mb-4">{feature.icon}</div>
+                                    <div className="text-5xl mb-4 w-4 h-4">{feature.icon}</div>
                                     <h3 className="text-2xl font-bold mb-2">{feature.title}</h3>
                                     <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
                                         {feature.description}

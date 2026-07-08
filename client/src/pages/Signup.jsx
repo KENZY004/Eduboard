@@ -7,6 +7,8 @@ import { BsLightningChargeFill } from 'react-icons/bs';
 import StudentCharacter from '../components/StudentCharacter';
 import TeacherCharacter from '../components/TeacherCharacter';
 import { AnimatePresence } from 'framer-motion';
+import { GraduationCap, FileText } from 'lucide-react';
+import { PiChalkboardTeacherLight } from "react-icons/pi";
 
 const isValidPassword = (p) =>
   p.length >= 8 && /[0-9]/.test(p) && /[A-Z]/.test(p) && /[^A-Za-z0-9]/.test(p);
@@ -295,7 +297,7 @@ const Signup = () => {
                                     className="sr-only"
                                 />
                                 <div className="text-center">
-                                    <div className="text-lg mb-0.5">🎓</div>
+                                    <div className="text-lg mb-0.5 flex justify-center"><GraduationCap /></div>
                                     <div className="font-semibold text-white">Student</div>
                                 </div>
                             </label>
@@ -312,7 +314,7 @@ const Signup = () => {
                                     className="sr-only"
                                 />
                                 <div className="text-center">
-                                    <div className="text-lg mb-0.5">👨‍🏫</div>
+                                    <div className="text-3xl mb-0.5 flex justify-center"><PiChalkboardTeacherLight /></div>
                                     <div className="font-semibold text-white">Teacher</div>
                                 </div>
                             </label>
@@ -328,7 +330,7 @@ const Signup = () => {
                             className="space-y-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700"
                         >
                             <h3 className="text-sm font-semibold text-cyan-400 flex items-center gap-2">
-                                📄 Verification Documents
+                                <FileText /> Verification Documents
                             </h3>
                             <p className="text-xs text-slate-400">Upload documents to verify your teacher status</p>
 
@@ -497,7 +499,7 @@ const Signup = () => {
                                 <StudentCharacter className="w-full h-auto" />
                                 <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
-                                        Start Your Learning Journey! 🚀
+                                        Start Your Learning Journey! 
                                     </h3>
                                     <p className="text-slate-300 text-lg">
                                         Join thousands of students collaborating and learning together
@@ -516,7 +518,7 @@ const Signup = () => {
                                 <TeacherCharacter className="w-full h-auto" />
                                 <div className="mt-4 text-center">
                                     <h3 className="text-2xl font-bold text-white mb-3">
-                                        Empower the Next Generation! 🎓
+                                        Empower the Next Generation! 
                                     </h3>
                                     <p className="text-slate-300 text-lg">
                                         Create interactive whiteboards, share lessons, and engage your classroom
