@@ -215,12 +215,18 @@ const Login = () => {
                         transition={{ delay: 0.2 }}
                         className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-3"
                     >
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                                <BsLightningChargeFill className="text-white text-lg sm:text-xl" />
-                            </div>
-                            <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">EduBoard</span>
-                        </div>
+
+                    <div className="flex items-center gap-1">
+    <img
+        src="/logo.png"
+        alt="EduBoard Logo"
+        className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+    />
+    <span className="font-bold text-2xl sm:text-3xl text-white tracking-tight">
+        EduBoard
+    </span>
+</div>
+
                         <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
                             ← Back to Home
                         </Link>

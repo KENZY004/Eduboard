@@ -61,18 +61,23 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
                 <div className="flex items-center justify-between h-14">
                     {/* Logo */}
-                    <Link to={!token ? "/" : "/dashboard"} className="flex items-center space-x-2 group">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                            <svg
-                                className="w-5 h-5 text-white"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-                            </svg>
-                        </div>
-                        <span className="text-xl font-bold text-white">EduBoard</span>
-                    </Link>
+<Link
+    to={!token ? "/" : "/dashboard"}
+    className="flex items-center space-x-1 group"
+>
+    <img
+        src="/logo.png"
+        alt="EduBoard Logo"
+        className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+    />
+
+    <span className="text-xl font-bold tracking-tight">
+        <span className="text-white">Edu</span>
+        <span className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
+            Board
+        </span>
+    </span>
+</Link>
 
                     {/* Desktop Navigation - Only show Home/Features/About when NOT logged in */}
                     <div className="hidden md:flex items-center space-x-8">
