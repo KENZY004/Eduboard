@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -41,7 +41,11 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [tokenClient, setTokenClient] = useState(null);
 
-    const handleGoogleLogin = async (accessToken) => {
+    // Use a ref so the Google OAuth callback always gets the latest handler
+    // without recreating the tokenClient on every render (fixes stale closure bug)
+    const handleGoogleLoginRef = useRef(null);
+
+    const handleGoogleLogin = useCallback(async (accessToken) => {
         setError('');
         setLoading(true);
         try {
@@ -57,29 +61,49 @@ const Login = () => {
                 navigate(from);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Google login failed');
+            setError(err.response?.data?.message || 'Google login failed. Please try again.');
             setLoading(false);
         }
-    };
+    }, [navigate, from]);
+
+    // Keep ref always pointing to the latest handler
+    useEffect(() => {
+        handleGoogleLoginRef.current = handleGoogleLogin;
+    }, [handleGoogleLogin]);
 
     useEffect(() => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+        // Don't initialize if the client ID is the placeholder or missing
+        if (!clientId || clientId === 'your_google_client_id_here') {
+            console.warn('VITE_GOOGLE_CLIENT_ID is not configured. Google Sign-In is disabled.');
+            return;
+        }
+
         let timer;
         const initializeGoogleClient = () => {
-            if (window.google) {
+            if (window.google && window.google.accounts && window.google.accounts.oauth2) {
                 try {
                     const client = window.google.accounts.oauth2.initTokenClient({
-                        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+                        client_id: clientId,
                         scope: 'openid email profile',
+                        // Use ref so callback always calls the latest handler,
+                        // avoiding the stale closure problem
                         callback: async (tokenResponse) => {
                             if (tokenResponse && tokenResponse.access_token) {
-                                await handleGoogleLogin(tokenResponse.access_token);
+                                await handleGoogleLoginRef.current(tokenResponse.access_token);
+                            } else if (tokenResponse && tokenResponse.error) {
+                                // User dismissed the popup or an error occurred
+                                if (tokenResponse.error !== 'access_denied') {
+                                    setError(`Google sign-in error: ${tokenResponse.error}`);
+                                }
                             }
                         },
                     });
                     setTokenClient(client);
                     if (timer) clearInterval(timer);
                 } catch (err) {
-                    console.error("Error initializing Google OAuth client:", err);
+                    console.error('Error initializing Google OAuth client:', err);
                 }
             }
         };
@@ -93,10 +117,15 @@ const Login = () => {
     }, []);
 
     const handleGoogleClick = () => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        if (!clientId || clientId === 'your_google_client_id_here') {
+            setError('Google Sign-In is not configured. Please set VITE_GOOGLE_CLIENT_ID in the .env file.');
+            return;
+        }
         if (tokenClient) {
             tokenClient.requestAccessToken();
         } else {
-            setError("Google sign-in is not ready yet. Please try again.");
+            setError('Google sign-in is not ready yet. Please wait a moment and try again.');
         }
     };
 
