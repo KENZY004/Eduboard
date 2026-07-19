@@ -11,6 +11,97 @@ const {
 const { authLimiter, otpLimiter, globalAuthLimiter } = require('../middlewares/rateLimiter'); // ← NEW
                                                                                             // ← NEW
 router.use(globalAuthLimiter); // ← NEW
+
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const verifyToken = require('../utils/verifyToken');
+
+const formatUserResponse = (user) => {
+    return {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName || "",
+        profilePicture: user.profilePicture || "",
+        educationalInstitution: user.educationalInstitution || "",
+        courseOrDepartment: user.courseOrDepartment || "",
+        phoneNumber: user.phoneNumber || "",
+        bio: user.bio || "",
+        isVerified: user.isVerified,
+        verificationStatus: user.verificationStatus,
+        isEmailVerified: user.isEmailVerified
+    };
+};
+
+// Check if Cloudinary credentials are set up
+const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
+                               process.env.CLOUDINARY_API_KEY && 
+                               process.env.CLOUDINARY_API_SECRET;
+
+let upload;
+
+if (isCloudinaryConfigured) {
+    try {
+        const cloudinary = require('../config/cloudinaryConfig');
+        const { CloudinaryStorage } = require('multer-storage-cloudinary');
+        const storage = new CloudinaryStorage({
+            cloudinary: cloudinary,
+            params: {
+                folder: 'eduboard-profiles',
+                allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+                transformation: [{ width: 500, height: 500, crop: 'limit' }],
+            },
+        });
+        upload = multer({
+            storage: storage,
+            limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+            fileFilter: (req, file, cb) => {
+                const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+                if (allowed.includes(file.mimetype)) {
+                    cb(null, true);
+                } else {
+                    cb(new Error('Invalid file type. Only JPG, JPEG, PNG, WEBP allowed.'));
+                }
+            }
+        });
+    } catch (e) {
+        console.warn('Failed to initialize Cloudinary storage, falling back to local storage:', e.message);
+    }
+}
+
+if (!upload) {
+    const uploadsDir = path.join(__dirname, '../public/uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    const storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, uploadsDir);
+        },
+        filename: (req, file, cb) => {
+            const safeName = file.originalname
+                .replace(/\.\.\//g, '')
+                .replace(/[^a-zA-Z0-9._-]/g, '_');
+            const ext = path.extname(safeName);
+            const baseName = path.basename(safeName, ext).slice(0, 100);
+            cb(null, 'profile-' + Date.now() + '-' + baseName + ext);
+        }
+    });
+    upload = multer({
+        storage: storage,
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        fileFilter: (req, file, cb) => {
+            const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (allowed.includes(file.mimetype)) {
+                cb(null, true);
+            } else {
+                cb(new Error('Invalid file type. Only JPG, JPEG, PNG, WEBP allowed.'));
+            }
+        }
+    });
+}
                                                                                             // ← NEW
 // REGISTER
 router.post('/register', authLimiter, registerValidation, validate, async (req, res) => { // ← NEW
@@ -112,15 +203,7 @@ router.post('/register', authLimiter, registerValidation, validate, async (req, 
 
         res.status(201).json({
             token,
-            user: {
-                id: savedUser._id,
-                username: savedUser.username,
-                email: savedUser.email,
-                role: savedUser.role,
-                isVerified: savedUser.isVerified,
-                verificationStatus: savedUser.verificationStatus,
-                isEmailVerified: savedUser.isEmailVerified
-            },
+            user: formatUserResponse(savedUser),
             message: 'Registration successful! A verification code has been sent to your email.'
         });
     } catch (err) {
@@ -208,14 +291,7 @@ router.post('/login', authLimiter, async (req, res) => { // ← NEW
 
         res.json({
             token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                isVerified: user.isVerified,
-                verificationStatus: user.verificationStatus
-            }
+            user: formatUserResponse(user)
         });
     } catch (err) {
         console.error('Login error:', err);
@@ -393,15 +469,7 @@ router.post('/verify-registration-otp', async (req, res) => {
 
         res.status(200).json({
             token,
-            user: {
-                id: savedUser._id,
-                username: savedUser.username,
-                email: savedUser.email,
-                role: savedUser.role,
-                isVerified: savedUser.isVerified,
-                verificationStatus: savedUser.verificationStatus,
-                isEmailVerified: savedUser.isEmailVerified
-            },
+            user: formatUserResponse(savedUser),
             message: 'Email verified successfully! Registration complete.'
         });
     } catch (error) {
@@ -536,8 +604,11 @@ router.post('/google-login', authLimiter, async (req, res) => {
 
         const email = payload.email;
 
+        // Escape regex special characters for safe email search
+        const escapedEmail = email.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
         // Check if user already exists
-        let user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+        let user = await User.findOne({ email: { $regex: new RegExp(`^${escapedEmail}$`, 'i') } });
 
         if (user) {
             // User exists. 
@@ -601,14 +672,7 @@ router.post('/google-login', authLimiter, async (req, res) => {
 
         res.json({
             token: loginToken,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                isVerified: user.isVerified,
-                verificationStatus: user.verificationStatus
-            }
+            user: formatUserResponse(user)
         });
 
     } catch (err) {
@@ -618,6 +682,130 @@ router.post('/google-login', authLimiter, async (req, res) => {
             message: err.message
         });
     }
+});
+
+// GET PROFILE
+router.get('/profile', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({
+            success: true,
+            user: formatUserResponse(user)
+        });
+    } catch (error) {
+        console.error('Fetch profile error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// UPDATE PROFILE
+router.put('/profile', verifyToken, async (req, res) => {
+    try {
+        const {
+            fullName,
+            username,
+            email,
+            educationalInstitution,
+            courseOrDepartment,
+            phoneNumber,
+            bio,
+            profilePicture
+        } = req.body;
+
+        // Validation
+        if (!fullName || !fullName.trim()) {
+            return res.status(400).json({ message: 'Full Name is required' });
+        }
+        if (!email || !email.trim()) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+        if (!username || !username.trim()) {
+            return res.status(400).json({ message: 'Username is required' });
+        }
+
+        const emailRegex = /.+\@.+\..+/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Please fill a valid email address' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Duplication Checks
+        if (email.toLowerCase() !== user.email.toLowerCase()) {
+            const emailExists = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+            if (emailExists) {
+                return res.status(400).json({ message: 'A user with that email already exists' });
+            }
+        }
+
+        if (username.toLowerCase() !== user.username.toLowerCase()) {
+            const usernameExists = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+            if (usernameExists) {
+                return res.status(400).json({ message: 'A user with that username already exists' });
+            }
+        }
+
+        // Update fields
+        user.fullName = fullName.trim();
+        user.username = username.trim();
+        user.email = email.trim();
+        user.educationalInstitution = (educationalInstitution || "").trim();
+        user.courseOrDepartment = (courseOrDepartment || "").trim();
+        user.phoneNumber = (phoneNumber || "").trim();
+        user.bio = (bio || "").trim();
+        if (profilePicture !== undefined) {
+            user.profilePicture = profilePicture;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            user: formatUserResponse(user),
+            message: 'Profile updated successfully'
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+// PROFILE IMAGE UPLOAD
+router.post('/profile/upload', verifyToken, (req, res) => {
+    upload.single('image')(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+            }
+            return res.status(400).json({ message: err.message });
+        } else if (err) {
+            return res.status(400).json({ message: err.message });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        try {
+            const imageUrl = isCloudinaryConfigured && req.file.path.startsWith('http')
+                ? req.file.path
+                : `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+            res.json({
+                success: true,
+                imageUrl
+            });
+        } catch (error) {
+            console.error('Profile image upload processing error:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    });
 });
 
 module.exports = router;

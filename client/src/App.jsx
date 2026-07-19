@@ -26,6 +26,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -165,6 +166,14 @@ const AppLayout = () => {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
               </PrivateRoute>
             }
           />

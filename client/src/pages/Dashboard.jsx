@@ -23,6 +23,15 @@ import {
     FaHistory,
 } from "react-icons/fa";
 
+const getInitials = (fullName, username) => {
+    const name = fullName || username || "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+};
+
 const Dashboard = () => {
     const [roomId, setRoomId] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,8 +40,26 @@ const Dashboard = () => {
     const [copiedBoardId, setCopiedBoardId] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const user = JSON.parse(localStorage.getItem("user"));
+    const [user, setUser] = useState(() => {
+        return JSON.parse(localStorage.getItem("user") || "{}");
+    });
     const isTeacher = user?.role === "teacher";
+
+    // Sync latest user profile on mount
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await api.get("/api/auth/profile");
+                if (res.data && res.data.user) {
+                    localStorage.setItem("user", JSON.stringify(res.data.user));
+                    setUser(res.data.user);
+                }
+            } catch (err) {
+                console.error("Failed to sync user profile:", err);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     // Redirect admin to admin panel if they somehow reach this page
     useEffect(() => {
@@ -231,6 +258,21 @@ const Dashboard = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-6 self-end sm:self-auto">
+                    <button
+                        onClick={() => navigate("/profile")}
+                        className="w-10 h-10 rounded-full overflow-hidden border border-white/10 focus:outline-none hover:border-indigo-500/50 transition-colors bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-lg shadow-indigo-500/20"
+                        title="View Profile"
+                    >
+                        {user?.profilePicture ? (
+                            <img
+                                src={user.profilePicture}
+                                alt={user.username}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            getInitials(user?.fullName, user?.username)
+                        )}
+                    </button>
                     <div className="text-right hidden sm:block">
                         <p className="text-white font-medium">{user?.username}</p>
                         <p className="text-xs text-slate-500 font-mono uppercase">
