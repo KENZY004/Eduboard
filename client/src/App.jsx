@@ -99,11 +99,16 @@ const AppLayout = () => {
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          {/* FIX 2: /faq route add kiya, duplicate /contact remove kiya */}
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
+          <Route
+           path="/terms-of-service"
+           element={<TermsOfService />}
+          />
+          <Route 
+           path="/privacy-policy"
+           element={<PrivacyPolicy />} 
+           />
+           
           {/* Auth Routes */}
           <Route
             path="/login"

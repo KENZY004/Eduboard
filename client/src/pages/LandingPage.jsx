@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { Palette, Zap, Infinity } from 'lucide-react';
 
 const LandingPage = () => {
     const heroRef = useRef(null)
@@ -385,8 +386,8 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.6 }}
                         >
-                            <div className="text-4xl font-bold text-indigo-400">
-                                ∞
+                            <div className="text-4xl font-bold text-indigo-400 flex justify-center">
+                                <Infinity className="w-10 h-10" />
                             </div>
                             <div className="text-sm text-slate-400 mt-2">
                                 Infinite Canvas
@@ -397,8 +398,8 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.7 }}
                         >
-                            <div className="text-4xl font-bold text-purple-400">
-                                ⚡
+                            <div className="text-4xl font-bold text-purple-400 flex justify-center">
+                                <Zap className="w-10 h-10" />
                             </div>
                             <div className="text-sm text-slate-400 mt-2">
                                 Real-time Sync
@@ -409,8 +410,8 @@ const LandingPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.8 }}
                         >
-                            <div className="text-4xl font-bold text-pink-400">
-                                🎨
+                            <div className="text-4xl font-bold text-pink-400 flex justify-center">
+                                <Palette className="w-10 h-10" />
                             </div>
                             <div className="text-sm text-slate-400 mt-2">
                                 Creative Tools

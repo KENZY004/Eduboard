@@ -69,19 +69,20 @@ const VerifyRegistrationOTP = () => {
         }
     }, [successMessage]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+
+    const executeVerification = async (currentOtp) => {
         setError('');
         setIsLoading(true);
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-registration-otp`, { email, otp });
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-registration-otp`, { 
+                email, 
+                otp: currentOtp 
+            });
             
-            // Save token and user info
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
 
-            // Redirect based on role
             if (res.data.user.role === 'teacher') {
                 navigate('/verification-pending');
             } else {
@@ -89,10 +90,30 @@ const VerifyRegistrationOTP = () => {
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid or expired verification code');
+            setOtp(''); // Clears input on failure for better UX
         } finally {
             setIsLoading(false);
         }
     };
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (otp.length === 6) {
+            await executeVerification(otp);
+        }
+    };
+
+
+    const handleOtpChange = (e) => {
+        const cleanedValue = e.target.value.replace(/[^0-9]/g, '');
+        setOtp(cleanedValue);
+
+        if (cleanedValue.length === 6) {
+            executeVerification(cleanedValue);
+        }
+    };
+
 
     const handleResend = async () => {
         if (resendTimer > 0 || isResending) return;
@@ -177,7 +198,7 @@ const VerifyRegistrationOTP = () => {
                                 type="text"
                                 maxLength="6"
                                 value={otp}
-                                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                                onChange={handleOtpChange}
                                 className="w-full input-glass pl-12 pr-4 py-3.5 rounded-xl focus:outline-none tracking-[0.5em] font-mono text-lg"
                                 placeholder="••••••"
                                 required

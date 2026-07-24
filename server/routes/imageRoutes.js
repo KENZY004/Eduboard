@@ -19,7 +19,18 @@ const storage = new CloudinaryStorage({
     },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowed.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP allowed.'));
+        }
+    }
+});
 
 // Upload image endpoint (requires authentication)
 router.post('/upload', upload.single('image'), async (req, res) => {
@@ -82,6 +93,16 @@ router.delete('/delete/:publicId', async (req, res) => {
         console.error('Image delete error:', error);
         res.status(500).json({ message: 'Failed to delete image', error: error.message });
     }
+});
+
+router.use((err, req, res, next) => {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File too large. Max size is 5MB.' });
+    }
+    if (err.message.startsWith('Invalid file type')) {
+        return res.status(400).json({ message: err.message });
+    }
+    next(err);
 });
 
 module.exports = router;
