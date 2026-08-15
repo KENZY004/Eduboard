@@ -437,6 +437,21 @@ const sendRegistrationVerificationEmail = async (userEmail, userName, otp) => {
     if (SHOULD_RELAY) {
         return await relayEmailRequest('registration-verification', { userEmail, userName, otp });
     }
+        // Graceful fallback when email credentials are missing
+    if (!process.env.SMTP_USER && !process.env.RESEND_API_KEY) {
+        console.warn('⚠️  Email service not configured!');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📧 DEV MODE: Email credentials missing');
+        console.log(`👤 User: ${userName} (${userEmail})`);
+        console.log(`🔑 OTP: ${otp}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return { 
+            success: true, 
+            devMode: true,
+            message: 'Email service not configured. OTP logged to console.' 
+        };
+    }
+
 
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
