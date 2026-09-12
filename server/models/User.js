@@ -62,6 +62,30 @@ const UserSchema = new mongoose.Schema({
     },
     emailVerificationExpire: {
         type: Date
+    },
+    fullName: {
+        type: String,
+        default: ""
+    },
+    educationalInstitution: {
+        type: String,
+        default: ""
+    },
+    courseOrDepartment: {
+        type: String,
+        default: ""
+    },
+    phoneNumber: {
+        type: String,
+        default: ""
+    },
+    bio: {
+        type: String,
+        default: ""
+    },
+    profilePicture: {
+        type: String,
+        default: ""
     }
 }, { timestamps: true });
 

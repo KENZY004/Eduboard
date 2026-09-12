@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 if (!process.env.JWT_SECRET) {
@@ -93,12 +94,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const safeName = file.originalname
-      .replace(/\.\.\//g, '')
-      .replace(/[^a-zA-Z0-9._-]/g, '_');
-    const ext = path.extname(safeName);
-    const baseName = path.basename(safeName, ext).slice(0, 100);
-    cb(null, Date.now() + '-' + baseName + ext);
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const uniqueId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+    cb(null, `${uniqueId}${ext}`);
   }
 });
 

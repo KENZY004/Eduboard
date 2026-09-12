@@ -48,3 +48,7 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Uploaded user files
+server/public/uploads/*
+!server/public/uploads/.gitkeep
