@@ -374,6 +374,7 @@ app.delete('/api/boards/saved/:savedBoardId', verifyToken, async (req, res) => {
 
 // Track connected users per room
 const roomUsers = new Map(); // roomId -> Map of userId -> { username, socketId, role }
+const activeCursors = {}; // ← NEW: roomId -> userId -> { username, x, y, color }
 const waitingRooms = new Map(); // roomId -> Map of socketId -> userData
 
 // Socket.IO Authentication Middleware
@@ -783,6 +784,22 @@ io.on('connection', (socket) => {
     socket.to(data.roomId).emit('cursor-move', data);
   });
 
+  // ← NEW
+  socket.on('cursor:move', ({ roomId, userId, username, x, y, color }) => {
+    if (!activeCursors[roomId]) activeCursors[roomId] = {};
+    activeCursors[roomId][userId] = { username, x, y, color };
+    socket.to(roomId).emit('cursor:move', { roomId, userId, username, x, y, color });
+  });
+
+  // ← NEW
+  socket.on('cursor:leave', ({ roomId, userId }) => {
+    if (activeCursors[roomId] && activeCursors[roomId][userId]) {
+      delete activeCursors[roomId][userId];
+      if (Object.keys(activeCursors[roomId]).length === 0) delete activeCursors[roomId];
+    }
+    socket.to(roomId).emit('cursor:leave', { roomId, userId });
+  });
+
   socket.on('viewport-change', (data) => {
     // Optional: non-destructive
     socket.to(data.roomId).emit('viewport-change', data);
@@ -864,6 +881,13 @@ io.on('connection', (socket) => {
     roomUsers.forEach((users, roomId) => {
       for (const [userId, userData] of users.entries()) {
         if (userData.socketId === socket.id) {
+          // ← NEW
+          if (activeCursors[roomId] && activeCursors[roomId][userId]) {
+            delete activeCursors[roomId][userId];
+            if (Object.keys(activeCursors[roomId]).length === 0) delete activeCursors[roomId];
+            io.to(roomId).emit('cursor:leave', { roomId, userId });
+          }
+
           users.delete(userId);
           io.to(roomId).emit('room-users-updated', Array.from(users.values()));
           break;
